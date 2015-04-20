@@ -1,5 +1,5 @@
 //
-// FunctionNodeBuilder.cs
+// DataProvider.cs
 //
 // Authors:
 //   Marcos David Marin Amador <MarcosMarin@gmail.com>
@@ -29,23 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+ 
 using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Components;
+using MonoDevelop.Ide.CodeCompletion;
+
 using CBinding.Parser;
-using MonoDevelop.Ide;
+using MonoDevelop.Core;
 using MonoDevelop.Ide.Editor;
 
-namespace CBinding.Navigation
+namespace CBinding
 {
-	public class LanguageItemCommandHandler : NodeCommandHandler
+	sealed class DataWrapper : ParameterHintingData
 	{
-		public override void ActivateItem ()
+		readonly Function f;
+
+		public Function Function {
+			get {
+				return f;
+			}
+		}
+
+		public DataWrapper (Function f) : base(null)
 		{
-			LanguageItem item = (LanguageItem)CurrentNode.DataItem;
-			Document doc = IdeApp.Workbench.OpenDocument (item.File);
-			//bool isMacro = item is Macro;
-			
-			doc.Editor.CaretLocation = new DocumentLocation ((int)item.Line, 1); // TODO: get column?
+			this.f = f;
+		}
+
+		public override int ParameterCount {
+			get {
+				return f.ParameterCount;
+			}
+		}
+
+		public override bool IsParameterListAllowed {
+			get {
+				return f.IsParameterListAllowed;
+			}
+		}
+
+		public override string GetParameterName (int parameter)
+		{
+			return f.GetParameterName (parameter);
+		}
+
+		public override TooltipInformation CreateTooltipInformation (TextEditor editor, DocumentContext ctx, int currentParameter, bool smartWrap)
+		{
+			return null;
 		}
 	}
 }
