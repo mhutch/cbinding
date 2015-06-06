@@ -20,7 +20,7 @@
 	<Combine name = "${ProjectName}" directory = ".">
 		<Project name = "${ProjectName}" directory = "." type = "C/C++">
 			<Options
-				Target = "StaticLibrary"
+				Target = "Library"
 				PauseConsoleOutput = "True"
 				CompilerArgs = ""
 				LinkerArgs = ""/>

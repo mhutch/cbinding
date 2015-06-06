@@ -202,6 +202,8 @@
 		<DataType class = "CBinding.CProject"/>
 		<DataType class = "CBinding.GccCompiler"/>
 		<DataType class = "CBinding.GppCompiler"/>
+		<DataType class = "CBinding.ClangCCompiler"/>
+		<DataType class = "CBinding.ClangCXXCompiler"/>
 		<DataType class = "CBinding.Package"/>
 	</Extension>
 	

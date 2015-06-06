@@ -143,7 +143,7 @@ namespace CBinding.ProjectPad
 				
 				CProjectConfiguration config = (CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
 				
-				if (config.CompileTarget != CBinding.CompileTarget.Bin)
+				if (config.CompileTarget != CompileTarget.Exe)
 					return true;
 			}
 			

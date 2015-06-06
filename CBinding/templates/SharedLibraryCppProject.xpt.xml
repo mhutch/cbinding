@@ -20,7 +20,7 @@
 	<Combine name = "${ProjectName}" directory = ".">
 		<Project name = "${ProjectName}" directory = "." type = "C/C++">
 			<Options
-				Target = "SharedLibrary"
+				Target = "Module"
 				PauseConsoleOutput = "True"
 				CompilerArgs = ""
 				LinkerArgs = ""/>

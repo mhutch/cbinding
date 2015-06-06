@@ -47,6 +47,9 @@ using MonoDevelop.Deployment.Linux;
 using CBinding.Parser;
 using MonoDevelop.Ide;
 using System.Threading.Tasks;
+using System.Threading;
+using Mono.Unix.Native;
+using System.Diagnostics;
 
 namespace CBinding
 {
@@ -73,8 +76,10 @@ namespace CBinding
 		[ItemProperty ("Language")]
 		private Language language;
 		
-		[ItemProperty("Target")]
-		CBinding.CompileTarget target = CBinding.CompileTarget.Bin;
+		[ItemProperty ("Target")]
+		CompileTarget target = CompileTarget.Exe;
+
+		CLangManager cLangManager = CLangManager.Instance;
 		
     	private ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
@@ -90,92 +95,98 @@ namespace CBinding
 		/// Extensions for C/C++ header files
 		/// </summary>
 		public static string[] HeaderExtensions = { ".H", ".HH", ".HPP", ".HXX" };
-		
-		private void Init ()
-		{
-			packages.Project = this;
 
-			if (IdeApp.IsInitialized)
-				IdeApp.Workspace.ItemAddedToSolution += OnEntryAddedToCombine;
-		}
-		
-		public CProject ()
+		protected override void OnInitialize ()
 		{
-			Init ();
+			base.OnInitialize ();
+			packages.Project = this;
 		}
-		
-		public CProject (ProjectCreateInformation info,
-		                 XmlElement projectOptions, string language)
+
+		protected override void OnInitializeFromTemplate (ProjectCreateInformation projectCreateInfo, XmlElement template)
 		{
-			Init ();
+			base.OnInitializeFromTemplate (projectCreateInfo, template);
 			string binPath = ".";
-			
-			if (info != null) {
-				Name = info.ProjectName;
-				binPath = info.BinPath;
+			if (projectCreateInfo != null) {
+				Name = projectCreateInfo.ProjectName;
+				binPath = projectCreateInfo.BinPath;
 			}
-			
-			switch (language)
-			{
-			case "C":
-				this.language = Language.C;
-				break;
-			case "CPP":
-				this.language = Language.CPP;
-				break;
-			case "Objective C":
-				this.language = Language.OBJC;
-				break;
-			case "Objective C++":
-				this.language = Language.OBJCPP;
-				break;
-			}
-			
 			Compiler = null; // use default compiler depending on language
-			
 			CProjectConfiguration configuration =
 				(CProjectConfiguration)CreateConfiguration ("Debug");
-			
 			configuration.DefineSymbols = "DEBUG MONODEVELOP";		
 			configuration.DebugSymbols = true;
-				
 			Configurations.Add (configuration);
-			
+
 			configuration =
 				(CProjectConfiguration)CreateConfiguration ("Release");
-				
 			configuration.DebugSymbols = false;
 			configuration.OptimizationLevel = 3;
 			configuration.DefineSymbols = "MONODEVELOP";
 			Configurations.Add (configuration);
-			
+
 			foreach (CProjectConfiguration c in Configurations) {
 				c.OutputDirectory = Path.Combine (binPath, c.Id);
-				c.SourceDirectory = info.ProjectBasePath;
+				c.SourceDirectory = projectCreateInfo.ProjectBasePath;
 				c.Output = Name;
-				
-				if (projectOptions != null) {
-					if (projectOptions.Attributes["Target"] != null) {
-						c.CompileTarget = (CBinding.CompileTarget)Enum.Parse (
-						    typeof(CBinding.CompileTarget),
-						    projectOptions.Attributes["Target"].InnerText);
+
+				if (template != null) {
+					if (template.Attributes ["LanguageName"] != null) {
+						string languageName = template.Attributes ["LanguageName"].InnerText;
+						switch (languageName) {
+						case "C":
+							this.language = Language.C;
+							break;
+						case "CPP":
+							this.language = Language.CPP;
+							break;
+						case "Objective C":
+							this.language = Language.OBJC;
+							break;
+						case "Objective C++":
+							this.language = Language.OBJCPP;
+							break;
+						}
 					}
-					if (projectOptions.GetAttribute ("ExternalConsole") == "True") {
+					if (template.Attributes ["Target"] != null) {
+						c.CompileTarget = (CompileTarget)Enum.Parse (
+							typeof(CompileTarget),
+							template.Attributes ["Target"].InnerText);
+					}
+					if (template.GetAttribute ("ExternalConsole") == "True") {
 						c.ExternalConsole = true;
 						c.PauseConsoleOutput = true;
 					}
-					if (projectOptions.Attributes["PauseConsoleOutput"] != null) {
+					if (template.Attributes ["PauseConsoleOutput"] != null) {
 						c.PauseConsoleOutput = bool.Parse (
-							projectOptions.Attributes["PauseConsoleOutput"].InnerText);
+							template.Attributes ["PauseConsoleOutput"].InnerText);
 					}
-					if (projectOptions.Attributes["CompilerArgs"].InnerText != null) {
-						c.ExtraCompilerArguments = projectOptions.Attributes["CompilerArgs"].InnerText;
+					if (template.Attributes ["CompilerArgs"].InnerText != null) {
+						c.ExtraCompilerArguments = template.Attributes ["CompilerArgs"].InnerText;
 					}
-					if (projectOptions.Attributes["LinkerArgs"].InnerText != null) {
-						c.ExtraLinkerArguments = projectOptions.Attributes["LinkerArgs"].InnerText;
+					if (template.Attributes ["LinkerArgs"].InnerText != null) {
+						c.ExtraLinkerArguments = template.Attributes ["LinkerArgs"].InnerText;
 					}
 				}
-			}			
+			}
+		}
+
+		protected override void OnDefaultConfigurationChanged (ConfigurationEventArgs args)
+		{
+			base.OnDefaultConfigurationChanged (args);
+			foreach (var e in Files) {
+				if (!Loading && !IsCompileable (e.Name) &&
+				    e.BuildAction == BuildAction.Compile) {
+					e.BuildAction = BuildAction.None;
+				}
+				if (e.BuildAction == BuildAction.Compile)
+					ThreadPool.QueueUserWorkItem (o => {
+						cLangManager.UpdateTranslationUnit (this, e.Name);
+					});
+			}
+		}
+
+		public CProject ()
+		{
 		}
 
 		protected override string[] OnGetSupportedLanguages ()
@@ -229,6 +240,10 @@ namespace CBinding
 			string pkgfile = Path.Combine (BaseDirectory, Name + ".md.pc");
 			
 			CProjectConfiguration config = (CProjectConfiguration)GetConfiguration (configuration);
+			while (config == null) {
+				Thread.Sleep (20);
+				config = (CProjectConfiguration)GetConfiguration (configuration);
+			}
 			
 			List<string> headerDirectories = new List<string> ();
 			
@@ -305,7 +320,7 @@ namespace CBinding
 			pc.SourceDirectory = BaseDirectory;
 
 			return Task<BuildResult>.Factory.StartNew (delegate {
-				if (pc.CompileTarget != CompileTarget.Bin)
+				if (pc.CompileTarget != CompileTarget.Exe)
 					WriteMDPkgPackage (configuration);
 
 				return compiler_manager.Compile (this,
@@ -338,20 +353,20 @@ namespace CBinding
 			return cmd;
 		}
 
-		protected override bool OnGetCanExecute (ExecutionContext context, ConfigurationSelector solutionConfiguration)
+		protected override bool OnGetCanExecute (MonoDevelop.Projects.ExecutionContext context, ConfigurationSelector solutionConfiguration)
 		{
 			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (solutionConfiguration);
 			ExecutionCommand cmd = CreateExecutionCommand (conf);
-			return (target == CBinding.CompileTarget.Bin) && context.ExecutionHandler.CanExecute (cmd);
+			return (target == CompileTarget.Exe) && context.ExecutionHandler.CanExecute (cmd);
 		}
 
-		protected async override Task DoExecute (ProgressMonitor monitor, ExecutionContext context, ConfigurationSelector configuration)
+		protected async override Task DoExecute (ProgressMonitor monitor, MonoDevelop.Projects.ExecutionContext context, ConfigurationSelector configuration)
 		{
 			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (configuration);
 			bool pause = conf.PauseConsoleOutput;
 			OperationConsole console;
 			
-			if (conf.CompileTarget != CBinding.CompileTarget.Bin) {
+			if (conf.CompileTarget != CompileTarget.Exe) {
 				MessageService.ShowMessage ("Compile target is not an executable!");
 				return;
 			}
@@ -397,7 +412,14 @@ namespace CBinding
 			
 			return conf;
 		}
-		
+
+		protected override void OnGetTypeTags (HashSet<string> types)
+		{
+			base.OnGetTypeTags (types);
+			types.Add ("C/C++");
+			types.Add ("Native");
+		}
+
 		public Language Language {
 			get { return language; }
 			set { language = value; }
@@ -449,38 +471,42 @@ namespace CBinding
 				}
 				
 				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					TagDatabaseManager.Instance.UpdateFileTags (this, e.ProjectFile.Name);
+					ThreadPool.QueueUserWorkItem (o => {
+						cLangManager.AddToTranslationUnits (this, e.ProjectFile.Name);
+					});
 			}
 		}
-		
-		protected override void OnFileChangedInProject (ProjectFileEventArgs e)
+
+		protected override void OnFileChangedInProject (ProjectFileEventArgs args)
 		{
-			base.OnFileChangedInProject (e);
-			
-			foreach (ProjectFileEventInfo fe in e)
-				TagDatabaseManager.Instance.UpdateFileTags (this, fe.ProjectFile.Name);
-		}
-		
-		protected override void OnFileRemovedFromProject (ProjectFileEventArgs e)
-		{
-			base.OnFileRemovedFromProject (e);
-			
-			foreach (ProjectFileEventInfo fe in e)
-				TagDatabaseManager.Instance.RemoveFileInfo (this, fe.ProjectFile.Name);
+			base.OnFileChangedInProject (args);
+			foreach (ProjectFileEventInfo e in args) {
+				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
+				    e.ProjectFile.BuildAction == BuildAction.Compile) {
+					e.ProjectFile.BuildAction = BuildAction.None;
+				}
+				if (e.ProjectFile.BuildAction == BuildAction.Compile)
+					ThreadPool.QueueUserWorkItem (o => {
+						cLangManager.UpdateTranslationUnit (this, e.ProjectFile.Name);
+					});
+			}
 		}
 
-		
-		private static void OnEntryAddedToCombine (object sender, SolutionItemEventArgs e)
+		protected override void OnFileRemovedFromProject (ProjectFileEventArgs args)
 		{
-			CProject p = e.SolutionItem as CProject;
-			
-			if (p == null)
-				return;
-			
-			foreach (ProjectFile f in p.Files)
-				TagDatabaseManager.Instance.UpdateFileTags (p, f.Name);
+			base.OnFileRemovedFromProject (args);
+			foreach (ProjectFileEventInfo e in args) {
+				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
+				    e.ProjectFile.BuildAction == BuildAction.Compile) {
+					e.ProjectFile.BuildAction = BuildAction.None;
+				}
+				if (e.ProjectFile.BuildAction == BuildAction.Compile)
+					ThreadPool.QueueUserWorkItem (o => {
+						cLangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
+					});
+			}
 		}
-		
+
 		internal void NotifyPackageRemovedFromProject (Package package)
 		{
 			Runtime.AssertMainThread ();
@@ -516,13 +542,13 @@ namespace CBinding
 				string targetDirectory = string.Empty;
 				
 				switch (target) {
-				case CompileTarget.Bin:
+				case CompileTarget.Exe:
 					targetDirectory = TargetDirectory.ProgramFiles;
 					break;
-				case CompileTarget.SharedLibrary:
+				case CompileTarget.Module:
 					targetDirectory = TargetDirectory.ProgramFiles;
 					break;
-				case CompileTarget.StaticLibrary:
+				case CompileTarget.Library:
 					targetDirectory = TargetDirectory.ProgramFiles;
 					break;
 				}					
@@ -531,7 +557,7 @@ namespace CBinding
 			}
 			
 			// PkgPackage
-			if (target != CompileTarget.Bin) {
+			if (target != CompileTarget.Exe) {
 				string pkgfile = WriteDeployablePgkPackage (this, conf);
 				deployFiles.Add (new DeployFile (this, Path.Combine (BaseDirectory, pkgfile), pkgfile, LinuxTargetDirectory.PkgConfig));
 			}

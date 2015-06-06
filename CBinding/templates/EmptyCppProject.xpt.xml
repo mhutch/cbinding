@@ -19,7 +19,7 @@
 	<Combine name = "${ProjectName}" directory = ".">
 		<Project name = "${ProjectName}" directory = "." type = "C/C++">
 			<Options
-				Target = "Bin"
+				Target = "Exe"
 				PauseConsoleOutput = "True"
 				CompilerArgs = ""
 				LinkerArgs = ""/>

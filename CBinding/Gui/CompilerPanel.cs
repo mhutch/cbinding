@@ -42,7 +42,7 @@ namespace CBinding
 		private CProject project;
 		private object[] compilers;
 		private ICompiler active_compiler;
-		
+
 		public CompilerPanel (CProject project)
 		{
 			this.Build ();
@@ -73,7 +73,7 @@ namespace CBinding
 			
 			Update ();
 		}
-		
+
 		public void Store ()
 		{
 			if (project == null)
@@ -93,7 +93,7 @@ namespace CBinding
 		{
 			Update ();
 		}
-		
+
 		private void Update ()
 		{
 			foreach (ICompiler compiler in compilers) {
@@ -109,16 +109,16 @@ namespace CBinding
 				useCcacheCheckBox.Sensitive = false;
 		}
 	}
-	
+
 	public class CompilerPanelBinding : ItemOptionsPanel
 	{
 		CompilerPanel panel;
-		
+
 		public override Gtk.Widget CreatePanelWidget ()
 		{
 			return panel = new CompilerPanel ((CProject)ConfiguredProject);
 		}
-		
+
 		public override void ApplyChanges ()
 		{
 			panel.Store ();

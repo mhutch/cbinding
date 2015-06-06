@@ -39,11 +39,16 @@ using MonoDevelop.Core.Serialization;
 
 namespace CBinding
 {
-	public enum CompileTarget {
-		Bin,
-		StaticLibrary,
-		SharedLibrary
-	};
+	public enum CVersion
+	{
+		CustomVersionString,
+		ISOC,
+		C99,
+		C11,
+		ISOCPP,
+		CPP03,
+		CPP11
+	}
 
 	// TODO: Warning levels should be compiler specific...
 	public enum WarningLevel {
@@ -61,7 +66,7 @@ namespace CBinding
 		string output = string.Empty;
 		
 		[ItemProperty("CompileTarget")]
-		CBinding.CompileTarget target = CBinding.CompileTarget.Bin;
+		CompileTarget target = CompileTarget.Exe;
 		
 		[ItemProperty ("Includes")]
 		[ItemProperty ("Include", Scope = "*", ValueType = typeof(string))]
@@ -74,7 +79,13 @@ namespace CBinding
 		[ItemProperty ("Libs")]
 		[ItemProperty ("Lib", Scope = "*", ValueType = typeof(string))]
     	private ArrayList libs = new ArrayList ();
-		
+
+		[ItemProperty ("CVersion")]
+		private CVersion cVersion = CVersion.CustomVersionString;
+
+		[ItemProperty ("CustomCVersionString", DefaultValue = "")]
+		private string customVersionString = string.Empty;
+
 		[ItemProperty ("WarningLevel", DefaultValue=WarningLevel.Normal)]
 		private WarningLevel warning_level = WarningLevel.Normal;
 		
@@ -120,15 +131,15 @@ namespace CBinding
 				
 				switch (target)
 				{
-				case CompileTarget.Bin:
+				case CompileTarget.Exe:
 					break;
-				case CompileTarget.StaticLibrary:
+				case CompileTarget.Library:
 					if (!Output.StartsWith ("lib"))
 						prefix = "lib";
 					if (!Output.EndsWith (".a"))
 						suffix = ".a";
 					break;
-				case CompileTarget.SharedLibrary:
+				case CompileTarget.Module:
 					if (!Output.StartsWith ("lib"))
 						prefix = "lib";
 					if (!Output.EndsWith (".so"))
@@ -169,7 +180,22 @@ namespace CBinding
 			get { return precompileHeaders; }
 			set { precompileHeaders = value; }
 		}
-		
+
+		public CVersion CVersion {
+			get { return cVersion; }
+			set { cVersion = value; }
+		}
+
+		public string CustomVersionString {
+			get {
+				return customVersionString;
+			}
+			set {
+				customVersionString = value;
+			}
+		}
+
+
 		public WarningLevel WarningLevel {
 			get { return warning_level; }
 			set { warning_level = value; }
@@ -217,7 +243,8 @@ namespace CBinding
 			libs = conf.libs;
 			source_directory_path = conf.source_directory_path;
 			use_ccache = conf.use_ccache;
-			
+			cVersion = conf.cVersion;
+			customVersionString = conf.customVersionString;
 			warning_level = conf.warning_level;
 			warnings_as_errors = conf.warnings_as_errors;
 			optimization = conf.optimization;

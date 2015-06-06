@@ -116,13 +116,13 @@ namespace CBinding
 			if (success) {
 				switch (configuration.CompileTarget)
 				{
-				case CBinding.CompileTarget.Bin:
+				case CompileTarget.Exe:
 					MakeBin (project, projectFiles, configuration, packages, cr, monitor, outputName);
 					break;
-				case CBinding.CompileTarget.StaticLibrary:
+				case CompileTarget.Library:
 					MakeStaticLibrary (project, projectFiles, configuration, packages, cr, monitor, outputName);
 					break;
-				case CBinding.CompileTarget.SharedLibrary:
+				case CompileTarget.Module:
 					MakeSharedLibrary (project, projectFiles, configuration, packages, cr, monitor, outputName);
 					break;
 				}
@@ -146,7 +146,77 @@ namespace CBinding
 			result["PROJECTFILENAME"] = project.FileName;
 			return result;
 		}
-		
+
+		public string[] GetCompilerFlagsAsArray (Project project, CProjectConfiguration configuration)
+		{
+			List<string> args = new List<string> ();
+
+			if (configuration.DebugSymbols)
+				args.Add ("-g");
+
+			if (configuration.CompileTarget == CompileTarget.Module)
+				args.Add ("-fPIC");
+
+			switch (configuration.WarningLevel) {
+			case WarningLevel.None:
+				args.Add ("-w");
+				break;
+			case WarningLevel.Normal:
+				break;
+			case WarningLevel.All:
+				args.Add ("-Wall");
+				break;
+			}
+			switch (configuration.CVersion) {
+			case CVersion.ISOC:
+				args.Add ("-std=c90");
+				break;
+			case CVersion.C99:
+				args.Add ("-std=c99");
+				break;
+			case CVersion.C11:
+				args.Add ("-std=c11");
+				break;
+			case CVersion.ISOCPP:		
+				args.Add ("-std=c++99");
+				break;
+			case CVersion.CPP03:
+				args.Add ("-std=c++03");
+				break;
+			case CVersion.CPP11:
+				args.Add ("-std=c++11");
+				break;
+			case CVersion.CustomVersionString:
+				args.Add (configuration.CustomVersionString);
+				break;
+			}
+
+			if (configuration.WarningsAsErrors)
+				args.Add ("-Werror");
+
+			args.Add ("-O" + configuration.OptimizationLevel);
+
+			if (configuration.ExtraCompilerArguments != null && configuration.ExtraCompilerArguments.Length > 0) {
+				string extraCompilerArgs = ExpandBacktickedParameters (configuration.ExtraCompilerArguments.Replace ('\n', ' '));
+				args.Add (extraCompilerArgs);
+			}
+
+			if (configuration.DefineSymbols != null && configuration.DefineSymbols.Length > 0)
+				args.Add (ProcessDefineSymbols (configuration.DefineSymbols));
+
+			if (configuration.Includes != null)
+				foreach (string inc in configuration.Includes)
+					args.Add ("-I\"" + StringParserService.Parse (inc, GetStringTags (project)) + "\"");
+
+			if (configuration.PrecompileHeaders) {
+				string precdir = Path.Combine (configuration.IntermediateOutputDirectory, "prec");
+				precdir = Path.Combine (precdir, configuration.Id);
+				args.Add ("-I\"" + precdir + "\"");
+			}
+
+			return args.ToArray ();
+		}
+
 		public override string GetCompilerFlags (Project project, CProjectConfiguration configuration)
 		{
 			StringBuilder args = new StringBuilder ();
@@ -154,7 +224,7 @@ namespace CBinding
 			if (configuration.DebugSymbols)
 				args.Append ("-g ");
 			
-			if (configuration.CompileTarget == CBinding.CompileTarget.SharedLibrary)
+			if (configuration.CompileTarget == CompileTarget.Library)
 				args.Append ("-fPIC ");
 			
 			switch (configuration.WarningLevel)

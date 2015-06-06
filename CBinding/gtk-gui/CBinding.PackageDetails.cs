@@ -5,28 +5,51 @@ namespace CBinding
 	public partial class PackageDetails
 	{
 		private global::Gtk.VBox vbox3;
+		
 		private global::Gtk.Table table1;
+		
 		private global::Gtk.Label descriptionLabel;
+		
 		private global::Gtk.Label label7;
+		
 		private global::Gtk.Label label8;
+		
 		private global::Gtk.Label label9;
+		
 		private global::Gtk.Label nameLabel;
+		
 		private global::Gtk.Label versionLabel;
+		
 		private global::Gtk.VBox vbox4;
+		
 		private global::Gtk.Label label13;
+		
 		private global::Gtk.ScrolledWindow scrolledwindow1;
+		
 		private global::Gtk.TreeView requiresTreeView;
+		
 		private global::Gtk.VBox vbox2;
+		
 		private global::Gtk.Label label1;
+		
 		private global::Gtk.HBox hbox1;
+		
 		private global::Gtk.ScrolledWindow scrolledwindow2;
+		
 		private global::Gtk.TreeView libPathsTreeView;
+		
 		private global::Gtk.ScrolledWindow scrolledwindow3;
+		
 		private global::Gtk.TreeView libsTreeView;
+		
 		private global::Gtk.VBox vbox5;
+		
 		private global::Gtk.Label label2;
+		
 		private global::Gtk.ScrolledWindow scrolledwindow4;
+		
 		private global::Gtk.TreeView cflagsTreeView;
+		
 		private global::Gtk.Button buttonOk;
 
 		protected virtual void Build ()
@@ -276,7 +299,7 @@ namespace CBinding
 				this.Child.ShowAll ();
 			}
 			this.DefaultWidth = 608;
-			this.DefaultHeight = 518;
+			this.DefaultHeight = 528;
 			this.Hide ();
 			this.buttonOk.Clicked += new global::System.EventHandler (this.OnButtonOkClicked);
 		}

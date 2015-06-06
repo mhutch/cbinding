@@ -5,14 +5,23 @@ namespace CBinding
 	public partial class GeneralOptionsPanel
 	{
 		private global::Gtk.Table table1;
+		
 		private global::Gtk.ComboBox cCombo;
+		
 		private global::Gtk.ComboBox cppCombo;
+		
 		private global::Gtk.Button ctagsBrowse;
+		
 		private global::Gtk.Entry ctagsEntry;
+		
 		private global::Gtk.Label label1;
+		
 		private global::Gtk.Label label2;
+		
 		private global::Gtk.Label label3;
+		
 		private global::Gtk.CheckButton parseLocalVariablesCheck;
+		
 		private global::Gtk.CheckButton parseSystemTagsCheck;
 
 		protected virtual void Build ()

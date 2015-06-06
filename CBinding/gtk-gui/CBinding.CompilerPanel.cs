@@ -5,7 +5,9 @@ namespace CBinding
 	public partial class CompilerPanel
 	{
 		private global::Gtk.Table table2;
+		
 		private global::Gtk.ComboBox compilerComboBox;
+		
 		private global::Gtk.CheckButton useCcacheCheckBox;
 
 		protected virtual void Build ()
@@ -24,10 +26,6 @@ namespace CBinding
 			this.compilerComboBox.Name = "compilerComboBox";
 			this.table2.Add (this.compilerComboBox);
 			global::Gtk.Table.TableChild w1 = ((global::Gtk.Table.TableChild)(this.table2 [this.compilerComboBox]));
-			w1.TopAttach = ((uint)(1));
-			w1.BottomAttach = ((uint)(2));
-			w1.LeftAttach = ((uint)(1));
-			w1.RightAttach = ((uint)(2));
 			w1.XOptions = ((global::Gtk.AttachOptions)(4));
 			w1.YOptions = ((global::Gtk.AttachOptions)(4));
 			// Container child table2.Gtk.Table+TableChild
@@ -39,10 +37,8 @@ namespace CBinding
 			this.useCcacheCheckBox.UseUnderline = true;
 			this.table2.Add (this.useCcacheCheckBox);
 			global::Gtk.Table.TableChild w2 = ((global::Gtk.Table.TableChild)(this.table2 [this.useCcacheCheckBox]));
-			w2.TopAttach = ((uint)(2));
-			w2.BottomAttach = ((uint)(3));
-			w2.LeftAttach = ((uint)(1));
-			w2.RightAttach = ((uint)(2));
+			w2.TopAttach = ((uint)(1));
+			w2.BottomAttach = ((uint)(2));
 			w2.XOptions = ((global::Gtk.AttachOptions)(4));
 			w2.YOptions = ((global::Gtk.AttachOptions)(4));
 			this.Add (this.table2);
