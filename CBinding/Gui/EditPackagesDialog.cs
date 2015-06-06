@@ -196,7 +196,7 @@ namespace CBinding
 				if (null != c && c is CProject) {
 					CProject cproj = (CProject)c;
 					CProjectConfiguration conf = (CProjectConfiguration)cproj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-					if (conf.CompileTarget != CBinding.CompileTarget.Bin) {
+					if (conf.CompileTarget != CompileTarget.Exe) {
 						cproj.WriteMDPkgPackage (conf.Selector);
 						package = new Package (cproj);
 						packages.Add (package);
