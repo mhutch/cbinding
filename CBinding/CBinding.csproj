@@ -287,4 +287,8 @@
   <ItemGroup>
     <Folder Include="CLang\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClangSharp.dll" />
+    <None Include="libclang.so" />
+  </ItemGroup>
 </Project>
