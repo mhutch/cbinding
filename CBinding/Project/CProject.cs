@@ -76,7 +76,7 @@ namespace CBinding
 		[ItemProperty ("Language")]
 		private Language language;
 		
-		[ItemProperty ("Target")]
+		[ItemProperty ("OutputType")]
 		CompileTarget target = CompileTarget.Exe;
 
 		CLangManager cLangManager = CLangManager.Instance;
@@ -212,7 +212,7 @@ namespace CBinding
 		
 		protected override IEnumerable<SolutionItem> OnGetReferencedItems (ConfigurationSelector configuration)
 		{
-			foreach (var p in base.GetReferencedItems (configuration))
+			foreach (var p in base.OnGetReferencedItems (configuration))
 				yield return p;
 
 			if (ParentSolution == null)

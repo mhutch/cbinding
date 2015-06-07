@@ -65,7 +65,7 @@ namespace CBinding
 		[ItemProperty("OutputName")]
 		string output = string.Empty;
 		
-		[ItemProperty("CompileTarget")]
+		[ItemProperty("OutputType")]
 		CompileTarget target = CompileTarget.Exe;
 		
 		[ItemProperty ("Includes")]
