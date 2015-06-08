@@ -25,7 +25,7 @@
     <AssemblyOriginatorKeyFile>.</AssemblyOriginatorKeyFile>
     <DefineConstants>DEBUG</DefineConstants>
     <NoWarn>1591;1573</NoWarn>
-    <DocumentationFile>..\..\monodevelop\main\build\AddIns\BackendBindings\ClangSharp.dll</DocumentationFile>
+    <DocumentationFile>..\..\monodevelop\main\build\AddIns\BackendBindings\MonoDevelop.CBinding.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -129,9 +129,6 @@
     <Reference Include="Microsoft.CodeAnalysis.Desktop">
       <HintPath>..\..\monodevelop\main\build\bin\Microsoft.CodeAnalysis.Desktop.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="ClangSharp">
-      <HintPath>ClangSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -275,6 +272,8 @@
     <Compile Include="CLang\CLangManager.cs" />
     <Compile Include="Compiler\ClangCCompiler.cs" />
     <Compile Include="Compiler\ClangCXXCompiler.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Generated.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
@@ -288,7 +287,6 @@
     <Folder Include="CLang\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClangSharp.dll" />
     <None Include="libclang.so" />
   </ItemGroup>
 </Project>
