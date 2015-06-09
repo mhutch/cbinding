@@ -124,6 +124,10 @@
 		    blockCommentStartTag = "#[["
 		    blockCommentEndTag = "]]" />
     </Extension>
+	
+	<Extension path = "/MonoDevelop/SourceEditor2/SyntaxModes">
+    	<Templates resource="CMake-Syntax"/>
+    </Extension>
     
 	<Extension path = "/MonoDevelop/Ide/GlobalOptionsDialog/Projects">
 		<Section

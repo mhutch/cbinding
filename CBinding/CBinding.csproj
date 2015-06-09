@@ -209,6 +209,9 @@
     <EmbeddedResource Include="icons\update.png">
       <LogicalName>update.png</LogicalName>
     </EmbeddedResource>
+	<EmbeddedResource Include="CMake\SyntaxHighlight.xml">
+    	<LogicalName>CMake-Syntax</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Project\CProject.cs" />
