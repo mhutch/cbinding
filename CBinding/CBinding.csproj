@@ -274,6 +274,9 @@
     <Compile Include="Compiler\ClangCXXCompiler.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Generated.cs" />
+    <Compile Include="Parser\ClangCompletionUnit.cs" />
+    <Compile Include="Parser\ClangCompletionCategory.cs" />
+    <Compile Include="Parser\ClangSymbolDatabase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

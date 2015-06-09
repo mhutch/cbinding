@@ -146,13 +146,6 @@ namespace CBinding
 				CXUnsavedFile[] unsaved_files = UnsavedFiles;
 				uint num_unsaved_files = Convert.ToUInt32 (unsaved_files.Length);
 				uint options = (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns | (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns;
-				Console.WriteLine (
-					"Completing with: " + name
-					+ " " + complete_filename
-					+ " " + complete_line
-					+ " " + complete_column
-					+ " " + num_unsaved_files
-					+ " " + options);
 				IntPtr pResults = clang.codeCompleteAt (
 					                  TU,
 					                  complete_filename, 
@@ -163,10 +156,8 @@ namespace CBinding
 					                  options);
 				if (pResults.ToInt64 () != 0) {
 					CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
-					Console.WriteLine ("Completed with: " + results.NumResults +" results");
 					return results;	
 				}
-				Console.WriteLine ("Completion provided no results! :(");
 				CXCodeCompleteResults dummy = new CXCodeCompleteResults ();
 				dummy.NumResults = 0;
 				dummy.Results = new IntPtr(0);

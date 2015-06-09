@@ -220,34 +220,51 @@ namespace CBinding
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
 			ICompletionDataList list = new CompletionDataList ();
-			CXCodeCompleteResults results = CLangManager.Instance.codeComplete (completionContext, this.DocumentContext, this);
-			if (results.Results.ToInt64 () != 0) {
-				for(int i = 0; i < results.NumResults; i++) {
-					Console.WriteLine (i);
-					IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
-					Console.WriteLine(iteratingPointer.ToString ());
-					CXCompletionResult result_item = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
-					IntPtr compstring = result_item.CompletionString;
-					uint completionchunknum = clang.getNumCompletionChunks (compstring);
-					for (uint j = 0; j < completionchunknum; j++) {
-						if (clang.getCompletionChunkKind(compstring, j) != CXCompletionChunkKind.CXCompletionChunk_TypedText)
-							continue;
-						CXString cxstring = clang.getCompletionChunkText(compstring, j);
-						string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
-						Console.WriteLine ("Result" + i + " is: "  + realstring);
-						MonoDevelop.Ide.CodeCompletion.CompletionData item = new MonoDevelop.Ide.CodeCompletion.CompletionData (realstring);
-						list.Add (item);
+			List<ClangCompletionUnit> listbuilder = new List <ClangCompletionUnit> ();
+			if (allowedChars.Contains (completionChar)) {
+				CXCodeCompleteResults results = CLangManager.Instance.codeComplete (completionContext, this.DocumentContext, this);
+				if (results.Results.ToInt64 () != 0) {
+					for(int i = 0; i < results.NumResults; i++) {
+						IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
+						CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
+						CXCursorKind completionType = resultItem.CursorKind;
+						CXCompletionString completionString = new CXCompletionString(resultItem.CompletionString);
+						uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
+						for (uint j = 0; j < completionchunknum; j++) {
+							if (clang.getCompletionChunkKind(completionString.Pointer, j) != CXCompletionChunkKind.CXCompletionChunk_TypedText)
+								continue;
+							uint priority = clang.getCompletionPriority (completionString.Pointer);
+							CXString cxstring = clang.getCompletionChunkText(completionString.Pointer, j);
+							string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
+							MonoDevelop.Ide.CodeCompletion.CompletionData item = new MonoDevelop.Ide.CodeCompletion.CompletionData (realstring);
+							switch (completionType) {
+							case CXCursorKind.CXCursor_FunctionDecl:
+								item.CompletionCategory = new ClangCompletionCategory ("Function");
+								break;
+							default:
+								item.CompletionCategory = new ClangCompletionCategory ("Other");
+								break;
+							}
+							listbuilder.Add (new ClangCompletionUnit(priority, item));
+						}
 					}
 				}
 				//TODO enable when fixed, follow status at: https://github.com/mjsabby/ClangSharp/issues/7
 				//clang.disposeCodeCompleteResults (out results);
 			}
+			listbuilder.Sort (
+				(ClangCompletionUnit x, ClangCompletionUnit y) => { 
+					return x.priority.CompareTo (y.priority);
+				});
+			int pos = 0;
+			foreach (var t in listbuilder)
+				list.Insert (pos++, t.data);
 			return Task.FromResult (list);
 		}
 
 		public override Task<ICompletionDataList> CodeCompletionCommand (CodeCompletionContext completionContext)
 		{
-			return HandleCodeCompletionAsync (completionContext, 'c');
+			return HandleCodeCompletionAsync (completionContext, ' ');
 		}
 		
 
