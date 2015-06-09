@@ -2,7 +2,7 @@
 <Template
 	originator   = "Marcos David Marin Amador" 
     created      = "08/16/2007"
-    lastModified = "08/16/2007">
+    lastModified = "06/09/2015">
 	
 	<!-- Template Header -->
 	<TemplateConfiguration>
@@ -38,6 +38,11 @@
 
 // Add function definitions here
 ]]></File>
+				<File name = "CMakeLists.txt"><![CDATA[cmake_minimum_required (VERSION 3.0)
+project (${ProjectName} CXX)
+
+add_library (${ProjectName} STATIC main.cpp)
+include_directories ("${PROJECT_SOURCE_DIR}")]]></File>
 			</Files>
 		</Project>
 	</Combine>

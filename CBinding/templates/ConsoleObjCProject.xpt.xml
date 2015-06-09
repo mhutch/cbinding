@@ -2,7 +2,7 @@
 <Template
 	originator   = "Levi Bard" 
     created      = "07/30/2010"
-    lastModified = "07/30/2010">
+    lastModified = "06/09/2015">
 	
 	<!-- Template Header -->
 	<TemplateConfiguration>
@@ -33,6 +33,11 @@ int main( int argc, const char *argv[] ) {
 	return 0;
 }
 ]]></File>
+				<File name = "CMakeLists.txt"><![CDATA[cmake_minimum_required (VERSION 3.0)
+project (${ProjectName} OBJC)
+
+add_executable (${ProjectName} main.m)
+include_directories ("${PROJECT_SOURCE_DIR}")]]></File>
 			</Files>
 		</Project>
 	</Combine>
