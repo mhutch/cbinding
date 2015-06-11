@@ -3,6 +3,22 @@ namespace CBinding
 
 	public class ClangCompletionCategory : MonoDevelop.Ide.CodeCompletion.CompletionCategory
 	{
+		public static string functionCategory = "Function";
+		public static string namespaceCategory = "Namespace";
+		public static string functionTemplateCategory = "Function template";
+		public static string methodCategory = "Class method";
+		public static string classCategory = "Class";
+		public static string structCategory = "Struct";
+		public static string enumerationCategory = "Enumeration";
+		public static string enumeratorCategory = "Enumerator";
+		public static string unionCategory = "Union";
+		public static string typedefCategory = "Typedef";
+		public static string variablesCategory = "Variable";
+		public static string parameterCategory = "Parameter";
+		public static string macroCategory = "Macro";
+		public static string otherCategory = "Other";
+
+
 		public ClangCompletionCategory(){
 			
 		}
@@ -15,7 +31,7 @@ namespace CBinding
 		#region implemented abstract members of CompletionCategory
 		public override int CompareTo (MonoDevelop.Ide.CodeCompletion.CompletionCategory other)
 		{
-			return 0;
+			return this.DisplayText.CompareTo(other.DisplayText);
 		}
 		#endregion
 	}

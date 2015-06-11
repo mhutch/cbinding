@@ -44,7 +44,6 @@ using MonoDevelop.Projects;
 using MonoDevelop.Core.Serialization;
 using MonoDevelop.Deployment;
 using MonoDevelop.Deployment.Linux;
-using CBinding.Parser;
 using MonoDevelop.Ide;
 using System.Threading.Tasks;
 using System.Threading;
@@ -79,7 +78,8 @@ namespace CBinding
 		[ItemProperty ("OutputType")]
 		CompileTarget target = CompileTarget.Exe;
 
-		CLangManager cLangManager = CLangManager.Instance;
+		public CLangManager cLangManager;
+		public ClangSymbolDatabase db;
 		
     	private ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
@@ -100,6 +100,8 @@ namespace CBinding
 		{
 			base.OnInitialize ();
 			packages.Project = this;
+			cLangManager = new CLangManager (this);
+			db = new ClangSymbolDatabase (this);
 		}
 
 		protected override void OnInitializeFromTemplate (ProjectCreateInformation projectCreateInfo, XmlElement template)

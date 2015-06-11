@@ -1828,7 +1828,7 @@ namespace ClangSharp
         public static extern void sortCodeCompletionResults(out CXCompletionResult @Results, uint @NumResults);
 
         [DllImport(libraryPath, EntryPoint = "clang_disposeCodeCompleteResults", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void disposeCodeCompleteResults(out CXCodeCompleteResults @Results);
+        public static extern void disposeCodeCompleteResults(IntPtr @Results);
 
         [DllImport(libraryPath, EntryPoint = "clang_codeCompleteGetNumDiagnostics", CallingConvention = CallingConvention.Cdecl)]
         public static extern uint codeCompleteGetNumDiagnostics(out CXCodeCompleteResults @Results);

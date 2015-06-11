@@ -37,15 +37,15 @@ using System.Collections.Generic;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.CodeCompletion;
 
-using CBinding.Parser;
 using MonoDevelop.Core;
 using MonoDevelop.Ide.Editor;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace CBinding
 {
-	sealed class DataWrapper : ParameterHintingData
+	sealed class DataWrapper : MonoDevelop.Ide.CodeCompletion.ParameterHintingData
 	{
 		readonly Function f;
 
@@ -60,6 +60,11 @@ namespace CBinding
 			this.f = f;
 		}
 
+		public DataWrapper () : base(null)
+		{
+			this.f = null;
+		}
+
 		public override int ParameterCount {
 			get {
 				return f.ParameterCount;
@@ -68,18 +73,21 @@ namespace CBinding
 
 		public override bool IsParameterListAllowed {
 			get {
-				return f.IsParameterListAllowed;
+				return false; //f.IsParameterListAllowed;
 			}
 		}
 
 		public override string GetParameterName (int parameter)
 		{
-			return f.GetParameterName (parameter);
+			return f.Parameters[parameter];
 		}
 
 		public override Task<TooltipInformation> CreateTooltipInformation (TextEditor editor, DocumentContext ctx, int currentParameter, bool smartWrap, CancellationToken ctoken)
 		{
-			return Task.FromResult<TooltipInformation> (null);
+			var tooltip = new TooltipInformation ();
+			tooltip.SignatureMarkup = f.Signature;
+			tooltip.SummaryMarkup = "";
+			return Task.FromResult<TooltipInformation> (tooltip);
 		}
 	}
 }

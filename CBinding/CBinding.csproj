@@ -216,57 +216,17 @@
     <Compile Include="Project\ProjectPackageEventArgs.cs" />
     <Compile Include="Gui\OutputOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.OutputOptionsPanel.cs" />
-    <Compile Include="Navigation\ProjectNodeBuilderExtension.cs" />
-    <Compile Include="Navigation\NamespaceNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectReferencesExtension.cs" />
     <Compile Include="ProjectPad\ProjectPackagesFolderNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
-    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
-    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
-    <Compile Include="Navigation\ClassNodeBuilder.cs" />
-    <Compile Include="Navigation\LanguageItemCommandHandler.cs" />
-    <Compile Include="Navigation\StructureNodeBuilder.cs" />
-    <Compile Include="Navigation\MemberNodeBuilder.cs" />
-    <Compile Include="Navigation\VariableNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
-    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
-    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
-    <Compile Include="Navigation\UnionNodeBuilder.cs" />
-    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
-    <Compile Include="Navigation\LanguageItemEventArgs.cs" />
-    <Compile Include="Navigation\ClassPadEventArgs.cs" />
-    <Compile Include="Parser\ProjectInformation.cs" />
-    <Compile Include="Parser\ProjectInformationManager.cs" />
-    <Compile Include="Parser\TagDatabaseManager.cs" />
-    <Compile Include="Parser\Tag.cs" />
     <Compile Include="Gui\CTextEditorExtension.cs" />
     <Compile Include="Gui\DataProvider.cs" />
-    <Compile Include="Parser\Class.cs" />
-    <Compile Include="Parser\Enumeration.cs" />
-    <Compile Include="Parser\Enumerator.cs" />
-    <Compile Include="Parser\Function.cs" />
-    <Compile Include="Parser\LanguageItem.cs" />
-    <Compile Include="Parser\Macro.cs" />
-    <Compile Include="Parser\Member.cs" />
-    <Compile Include="Parser\Namespace.cs" />
-    <Compile Include="Parser\Structure.cs" />
-    <Compile Include="Parser\Typedef.cs" />
-    <Compile Include="Parser\Union.cs" />
-    <Compile Include="Parser\Variable.cs" />
     <Compile Include="Gui\GeneralOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.GeneralOptionsPanel.cs" />
-    <Compile Include="Parser\Local.cs" />
     <Compile Include="Gui\PackageDetails.cs" />
     <Compile Include="gtk-gui\CBinding.PackageDetails.cs" />
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="Parser\CDocumentParser.cs" />
-    <Compile Include="Parser\CompilationUnitDataProvider.cs" />
-    <Compile Include="Parser\DataProvider.cs" />
-    <Compile Include="Parser\CTagsManager.cs" />
-    <Compile Include="Parser\ExuberantCTagsManager.cs" />
-    <Compile Include="Parser\BsdCTagsManager.cs" />
     <Compile Include="AddinInfo.cs" />
     <Compile Include="Gui\DataWrapper.cs" />
     <Compile Include="CLang\CLangManager.cs" />
@@ -276,7 +236,21 @@
     <Compile Include="Generated.cs" />
     <Compile Include="Parser\ClangCompletionUnit.cs" />
     <Compile Include="Parser\ClangCompletionCategory.cs" />
+    <Compile Include="Parser\Symbol.cs" />
+    <Compile Include="Parser\Function.cs" />
+    <Compile Include="Parser\MemberFunction.cs" />
+    <Compile Include="Parser\FunctionTemplate.cs" />
+    <Compile Include="Parser\Class.cs" />
     <Compile Include="Parser\ClangSymbolDatabase.cs" />
+    <Compile Include="Parser\Namespace.cs" />
+    <Compile Include="Parser\Struct.cs" />
+    <Compile Include="Parser\Enumeration.cs" />
+    <Compile Include="Parser\Enumerator.cs" />
+    <Compile Include="Parser\Union.cs" />
+    <Compile Include="Parser\Typedef.cs" />
+    <Compile Include="Parser\Variable.cs" />
+    <Compile Include="Parser\Macro.cs" />
+    <Compile Include="Parser\TranslationUnitParser.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
@@ -288,8 +262,10 @@
   </ProjectExtensions>
   <ItemGroup>
     <Folder Include="CLang\" />
+    <Folder Include="Navigation\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="libclang.so" />
+    <None Include="Parser\CDocumentParser.cs" />
   </ItemGroup>
 </Project>

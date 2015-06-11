@@ -37,9 +37,9 @@ using System.Collections.Generic;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.CodeCompletion;
 
-using CBinding.Parser;
 using MonoDevelop.Core;
 using MonoDevelop.Ide.Editor;
+using ClangSharp;
 
 namespace CBinding
 {
@@ -48,25 +48,13 @@ namespace CBinding
 		private TextEditor editor;
 		private List<Function> functions = new List<Function> ();
 
-		public ParameterDataProvider (int startOffset, TextEditor editor, ProjectInformation info, string functionName) :base (startOffset)
+		public ParameterDataProvider (int startOffset, TextEditor editor, ClangSymbolDatabase info, string functionName) :base (startOffset)
 		{
 			this.editor = editor;
-			
+
 			foreach (Function f in info.Functions) {
-				if (f.Name == functionName) {
+				if (f.Signature == functionName) {
 					data.Add (new DataWrapper (f));
-				}
-			}
-			
-			string currentFile = editor.FileName;
-			
-			if (info.IncludedFiles.ContainsKey (currentFile)) {
-				foreach (CBinding.Parser.FileInformation fi in info.IncludedFiles[currentFile]) {
-					foreach (Function f in fi.Functions) {
-						if (f.Name == functionName) {
-							data.Add (new DataWrapper (f));
-						}
-					}
 				}
 			}
 		}
@@ -110,18 +98,18 @@ namespace CBinding
 			Function function = ((DataWrapper)this[overload]).Function;
 			string paramTxt = string.Join (", ", parameterMarkup);
 			
-			int len = function.FullName.LastIndexOf ("::");
+			int len = function.Signature.LastIndexOf ("::");
 			string prename = null;
 			
 			if (len > 0)
-				prename = GLib.Markup.EscapeText (function.FullName.Substring (0, len + 2));
+				prename = GLib.Markup.EscapeText (function.Signature.Substring (0, len + 2));
 			
 			string cons = string.Empty;
 			
 			if (function.IsConst)
 				cons = " const";
 			
-			return prename + "<b>" + function.Name + "</b>" + " (" + paramTxt + ")" + cons;
+			return prename + "<b>" + function.Signature + "</b>" + " (" + paramTxt + ")" + cons;
 		}
 		
 		public string GetDescription (int overload, int currentParameter)
@@ -145,11 +133,60 @@ namespace CBinding
 		private string description;
 		private string completion_string;
 		
-		public CompletionData (LanguageItem item)
+		public CompletionData (CXCompletionResult item, string dataString){
+			if (item.CursorKind == CXCursorKind.CXCursor_ClassDecl) {
+				image = Stock.Class;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.classCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_StructDecl) {
+				image = Stock.Struct;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.structCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_UnionDecl) {
+				image = "md-union";
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.unionCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_EnumDecl) {
+				image = Stock.Enum;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumerationCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_EnumConstantDecl) {
+				image = Stock.Literal;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumeratorCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_FunctionDecl) {
+				image = Stock.Method;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.functionCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_FunctionTemplate) {
+				image = Stock.Method;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.functionTemplateCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_Namespace) {
+				image = Stock.NameSpace;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.namespaceCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_TypedefDecl) {
+				image = Stock.Interface;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.typedefCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_CXXMethod) {
+				image = Stock.Field;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.methodCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_VarDecl) {
+				image = Stock.Field;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.variablesCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_MacroDefinition) {
+				image = Stock.Literal;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.macroCategory);
+}			else if (item.CursorKind == CXCursorKind.CXCursor_ParmDecl) {
+				image = Stock.Field;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.parameterCategory);
+}			else {
+				image = Stock.Literal;
+				this.CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.otherCategory);
+}
+			this.text = dataString;
+			this.completion_string = dataString;
+			this.description = string.Empty;
+		}
+
+		public CompletionData (Symbol item)
 		{
 			if (item is Class)
 				image = Stock.Class;
-			else if (item is Structure)
+			else if (item is Struct)
 				image = Stock.Struct;
 			else if (item is Union)
 				image = "md-union";
@@ -163,7 +200,7 @@ namespace CBinding
 				image = Stock.NameSpace;
 			else if (item is Typedef)
 				image = Stock.Interface;
-			else if (item is Member)
+			else if (item is MemberFunction)
 				image = Stock.Field;
 			else if (item is Variable)
 				image = Stock.Field;
@@ -172,8 +209,8 @@ namespace CBinding
 			else
 				image = Stock.Literal;
 			
-			this.text = item.Name;
-			this.completion_string = item.Name;
+			this.text = item.Signature;
+			this.completion_string = item.Signature;
 			this.description = string.Empty;
 		}
 		
@@ -193,5 +230,4 @@ namespace CBinding
 			get { return completion_string; }
 		}
 	}
-
 }

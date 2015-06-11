@@ -22,19 +22,8 @@ namespace CBinding
 {
 	public class CLangManager
 	{
-		private static CLangManager instance;
 		private static object syncroot = new object ();
-
-		public static CLangManager Instance {
-			get {
-				lock (syncroot) {		
-					if (instance == null)
-						instance = new CLangManager ();
-					return instance;
-				}
-			}
-		}
-
+		private CProject project;
 		private CXIndex index;
 		private Dictionary<string, CXTranslationUnit> translationUnits;
 
@@ -64,8 +53,9 @@ namespace CBinding
 			}
 		}
 
-		private CLangManager ()
+		public CLangManager (CProject proj)
 		{
+			project = proj;
 			index = clang.createIndex (0, 0);
 			translationUnits = new Dictionary<string, CXTranslationUnit> ();
 		}
@@ -99,6 +89,8 @@ namespace CBinding
 						Convert.ToUInt32 (UnsavedFiles.Length),
 						(uint)CXTranslationUnit_Flags.CXTranslationUnit_PrecompiledPreamble,
 						out TU);
+					TranslationUnitParser parser = new TranslationUnitParser(project.db);
+					clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr(0)));
 					if(error != CXErrorCode.CXError_Success) {
 						throw new InvalidComObjectException (((uint)error).ToString ());
 					}
@@ -129,24 +121,26 @@ namespace CBinding
 			lock (syncroot) {
 				clang.disposeTranslationUnit (translationUnits [fileName]);
 				translationUnits.Remove (fileName);
+				foreach (var f in project.Files)
+					UpdateTranslationUnit (project, f.Name);
 			}
 		}
 
-		public CXCodeCompleteResults codeComplete (
+		public IntPtr codeComplete (
 			CodeCompletionContext completionContext,
 			DocumentContext documentContext,
 			CTextEditorExtension editor)
 		{
 			lock (syncroot) {
 				string name = documentContext.Name;
-				CXTranslationUnit TU = CLangManager.Instance.TranslationUnits [name];
+				CXTranslationUnit TU = TranslationUnits [name];
 				string complete_filename = editor.Editor.CreateDocumentSnapshot ().FileName;
-				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine);
-				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn);
+				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine)-1;
+				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn)-1;
 				CXUnsavedFile[] unsaved_files = UnsavedFiles;
 				uint num_unsaved_files = Convert.ToUInt32 (unsaved_files.Length);
 				uint options = (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns | (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns;
-				IntPtr pResults = clang.codeCompleteAt (
+				return clang.codeCompleteAt (
 					                  TU,
 					                  complete_filename, 
 					                  complete_line, 
@@ -154,14 +148,6 @@ namespace CBinding
 					                  unsaved_files, 
 					                  num_unsaved_files, 
 					                  options);
-				if (pResults.ToInt64 () != 0) {
-					CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
-					return results;	
-				}
-				CXCodeCompleteResults dummy = new CXCodeCompleteResults ();
-				dummy.NumResults = 0;
-				dummy.Results = new IntPtr(0);
-				return dummy;
 			}
 		}
 	}

@@ -47,28 +47,28 @@ namespace CBinding.Parser
 		public override System.Threading.Tasks.Task<ParsedDocument> Parse (ParseOptions options, System.Threading.CancellationToken cancellationToken)
 		{
 			var fileName = options.FileName;
-			var project = options.Project;
+			var project = options.Project as CProject;
 			var doc = new DefaultParsedDocument (fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			ProjectInformation pi = ProjectInformationManager.Instance.Get (project);
+			ClangSymbolDatabase db = project.db;
 			
 			string content = options.Content.Text;
 			string[] contentLines = content.Split (new string[]{Environment.NewLine}, StringSplitOptions.None);
 			
 			var globals = new DefaultUnresolvedTypeDefinition ("", GettextCatalog.GetString ("(Global Scope)"));
-			lock (pi) {
+			lock (db) {
 				// Add containers to type list
-				foreach (LanguageItem li in pi.Containers ()) {
-					if (null == li.Parent && FilePath.Equals (li.File, fileName)) {
-						var tmp = AddLanguageItem (pi, globals, li, contentLines) as IUnresolvedTypeDefinition;
+				foreach (Symbol sym in db.Containers ()) {
+					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
+						var tmp = AddLanguageItem (db, globals, sym, contentLines) as IUnresolvedTypeDefinition;
 						if (null != tmp){ /*doc.TopLevelTypeDefinitions.Add (tmp);*/ }
 					}
 				}
 				
 				// Add global category for unscoped symbols
-				foreach (LanguageItem li in pi.InstanceMembers ()) {
-					if (null == li.Parent && FilePath.Equals (li.File, fileName)) {
-						AddLanguageItem (pi, globals, li, contentLines);
+				foreach (Symbol sym in db.InstanceMembers ()) {
+					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
+						AddLanguageItem (db, globals, sym, contentLines);
 					}
 				}
 			}
@@ -145,65 +145,65 @@ namespace CBinding.Parser
 		
 		static readonly Regex paramExpression = new Regex (@"(?<type>[^\s]+)\s+(?<subtype>[*&]*)(?<name>[^\s[]+)(?<array>\[.*)?", RegexOptions.Compiled);
 		
-		static object AddLanguageItem (ProjectInformation pi, DefaultUnresolvedTypeDefinition klass, LanguageItem li, string[] contentLines)
+		static object AddLanguageItem (ClangSymbolDatabase db, DefaultUnresolvedTypeDefinition klass, Symbol sym, string[] contentLines)
 		{
 			
-			if (li is Class || li is Structure || li is Enumeration) {
-				var type = LanguageItemToIType (pi, li, contentLines);
+			if (sym is Class || sym is Struct || sym is Enumeration) {
+				var type = LanguageItemToIType (db, sym, contentLines);
 				klass.NestedTypes.Add (type);
 				return type;
 			}
 			
-			if (li is Function) {
-				var method = FunctionToIMethod (pi, klass, (Function)li, contentLines);
+			if (sym is Function) {
+				var method = FunctionToIMethod (db, klass, (Function)sym, contentLines);
 				klass.Members.Add (method);
 				return method;
 			}
 			
-			var field = LanguageItemToIField (klass, li, contentLines);
+			var field = LanguageItemToIField (klass, sym, contentLines);
 			klass.Members.Add (field);
 			return field;
 		}
 		
 		/// <summary>
-		/// Create an IMember from a LanguageItem,
+		/// Create an IMember from a Symbol,
 		/// using the source document to locate declaration bounds.
 		/// </summary>
 		/// <param name="pi">
 		/// A <see cref="ProjectInformation"/> for the current project.
 		/// </param>
 		/// <param name="item">
-		/// A <see cref="LanguageItem"/>: The item to convert.
+		/// A <see cref="Symbol"/>: The item to convert.
 		/// </param>
 		/// <param name="contentLines">
 		/// A <see cref="System.String[]"/>: The document in which item is defined.
 		/// </param>
-		static DefaultUnresolvedTypeDefinition LanguageItemToIType (ProjectInformation pi, LanguageItem item, string[] contentLines)
+		static DefaultUnresolvedTypeDefinition LanguageItemToIType (ClangSymbolDatabase db, Symbol sym, string[] contentLines)
 		{
-			var klass = new DefaultUnresolvedTypeDefinition ("", item.File);
-			if (item is Class || item is Structure) {
-				klass.Region = new DomRegion ((int)item.Line, 1, FindFunctionEnd (contentLines, (int)item.Line-1) + 2, 1);
-				klass.Kind = item is Class ? TypeKind.Class : TypeKind.Struct;
-				foreach (LanguageItem li in pi.AllItems ()) {
-					if (klass.Equals (li.Parent) && FilePath.Equals (li.File, item.File))
-						AddLanguageItem (pi, klass, li, contentLines);
+			var klass = new DefaultUnresolvedTypeDefinition ("", sym.File);
+			if (sym is Class || sym is Struct) {
+				klass.Region = new DomRegion ((int)sym.Line, 1, FindFunctionEnd (contentLines, (int)sym.Line-1) + 2, 1);
+				klass.Kind = sym is Class ? TypeKind.Class : TypeKind.Struct;
+				foreach (Symbol iteratorSym in db.AllItems ()) {
+					if (klass.Equals (iteratorSym.Parent) && FilePath.Equals (iteratorSym.File, iteratorSym.File))
+						AddLanguageItem (db, klass, iteratorSym, contentLines);
 				}
 				return klass;
 			}
 			
-			klass.Region = new DomRegion ((int)item.Line, 1, (int)item.Line + 1, 1);
+			klass.Region = new DomRegion ((int)sym.Line, 1, (int)sym.Line + 1, 1);
 			klass.Kind = TypeKind.Enum;
 			return klass;
 		}
 		
-		static IUnresolvedField LanguageItemToIField (IUnresolvedTypeDefinition type, LanguageItem item, string[] contentLines)
+		static IUnresolvedField LanguageItemToIField (IUnresolvedTypeDefinition type, Symbol item, string[] contentLines)
 		{
 			var result = new DefaultUnresolvedField (type, item.Name);
 			result.Region = new DomRegion ((int)item.Line, 1, (int)item.Line + 1, 1);
 			return result;
 		}
 		
-		static IUnresolvedMethod FunctionToIMethod (ProjectInformation pi, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
+		static IUnresolvedMethod FunctionToIMethod (ClangSymbolDatabase db, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
 		{
 			var method = new DefaultUnresolvedMethod (type, function.Name);
 			method.Region = new DomRegion ((int)function.Line, 1, FindFunctionEnd (contentLines, (int)function.Line-1)+2, 1);

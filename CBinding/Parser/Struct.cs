@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ClangSharp;
 using ICSharpCode.NRefactory6.CSharp;
 using System.Collections.Generic;
@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace CBinding
 {
-	public class Class : Symbol
+	public class Struct: Symbol
 	{
-		public Class (CXCursor cursor) : base (cursor)
+		public Struct (CXCursor cursor) : base (cursor)
 		{
 		}
 	}

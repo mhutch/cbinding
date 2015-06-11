@@ -55,6 +55,7 @@ using System.Threading;
 using ClangSharp;
 using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.MonoCSharp;
+using MonoDevelop.Projects;
 
 namespace CBinding
 {
@@ -219,15 +220,16 @@ namespace CBinding
 
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
+			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			List<ClangCompletionUnit> listbuilder = new List <ClangCompletionUnit> ();
-			if (allowedChars.Contains (completionChar)) {
-				CXCodeCompleteResults results = CLangManager.Instance.codeComplete (completionContext, this.DocumentContext, this);
+			if (allowedChars.Contains (completionChar) && completionChar != '(') {
+				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
+				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
 					for(int i = 0; i < results.NumResults; i++) {
 						IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
 						CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
-						CXCursorKind completionType = resultItem.CursorKind;
 						CXCompletionString completionString = new CXCompletionString(resultItem.CompletionString);
 						uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
 						for (uint j = 0; j < completionchunknum; j++) {
@@ -236,21 +238,13 @@ namespace CBinding
 							uint priority = clang.getCompletionPriority (completionString.Pointer);
 							CXString cxstring = clang.getCompletionChunkText(completionString.Pointer, j);
 							string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
-							MonoDevelop.Ide.CodeCompletion.CompletionData item = new MonoDevelop.Ide.CodeCompletion.CompletionData (realstring);
-							switch (completionType) {
-							case CXCursorKind.CXCursor_FunctionDecl:
-								item.CompletionCategory = new ClangCompletionCategory ("Function");
-								break;
-							default:
-								item.CompletionCategory = new ClangCompletionCategory ("Other");
-								break;
-							}
+							clang.disposeString (cxstring);
+							CompletionData item = new CompletionData (resultItem, realstring);
 							listbuilder.Add (new ClangCompletionUnit(priority, item));
 						}
 					}
 				}
-				//TODO enable when fixed, follow status at: https://github.com/mjsabby/ClangSharp/issues/7
-				//clang.disposeCodeCompleteResults (out results);
+				clang.disposeCodeCompleteResults (pResults);
 			}
 			listbuilder.Sort (
 				(ClangCompletionUnit x, ClangCompletionUnit y) => { 
@@ -266,12 +260,27 @@ namespace CBinding
 		{
 			return HandleCodeCompletionAsync (completionContext, ' ');
 		}
-		
+
+
 
 
 		public override Task<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> HandleParameterCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
-			return null;
+			if (completionChar != '(')
+				return null;
+			
+			List<MonoDevelop.Ide.CodeCompletion.ParameterHintingData> data = new List <MonoDevelop.Ide.CodeCompletion.ParameterHintingData> ();
+			var functions = (DocumentContext.Project as CProject).db.Functions;
+			//Get the current line, then cut the end after the caret position, get the last "word", which will be the function name before '('
+			string functionName = Editor.GetLineText (Editor.CaretLine);
+			functionName = functionName.Substring (0, Editor.CaretColumn-1);
+			string[] words = functionName.Split(new char[]{' ', '\t'});
+			functionName = words [words.Length - 1].Split (new char[]{' ', '\t', '('})[0];
+			foreach (var func in functions) {
+				if (func.SimpleName.Equals (functionName))
+					data.Add (new DataWrapper (func));
+			}
+			return Task.FromResult (new MonoDevelop.Ide.CodeCompletion.ParameterHintingResult (data,0));
 		}
 		
 		private bool AllWhiteSpace (string lineText)
@@ -334,7 +343,6 @@ namespace CBinding
 			object tag = path[index].Tag;
 			DropDownBoxListWindow.IListDataProvider provider = null;
 			if (tag is ParsedDocument) {
-				provider = new CBinding.Parser.CompilationUnitDataProvider (Editor, DocumentContext);
 			} else {
 				// TODO: Roslyn port
 				//provider = new DataProvider (Editor, DocumentContext, tag, new NetAmbience ());
