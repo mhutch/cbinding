@@ -135,7 +135,7 @@ namespace CBinding
 			lock (syncroot) {
 				string name = documentContext.Name;
 				CXTranslationUnit TU = TranslationUnits [name];
-				string complete_filename = editor.Editor.CreateDocumentSnapshot ().FileName;
+				string complete_filename = editor.Editor.FileName;
 				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine);
 				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn);
 				CXUnsavedFile[] unsaved_files = UnsavedFiles;

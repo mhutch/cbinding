@@ -243,7 +243,6 @@ namespace CBinding
 			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			if (shouldCompleteOn(completionChar)) {
-				project.cLangManager.UpdateTranslationUnit (project, Editor.FileName);
 				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
@@ -288,7 +287,6 @@ namespace CBinding
 			if (project == null)
 				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
 
-			project.cLangManager.UpdateTranslationUnit (project, Editor.FileName);
 			var functions = (DocumentContext.Project as CProject).db.Functions;
 			string lineText = Editor.GetLineText (Editor.CaretLine).TrimEnd ();
 			if (lineText.EndsWith (completionChar.ToString (), StringComparison.Ordinal))
