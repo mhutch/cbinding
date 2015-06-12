@@ -40,11 +40,11 @@ namespace CBinding
 				lock (syncroot) {
 					List<CXUnsavedFile> unsavedFiles = new List<CXUnsavedFile> ();
 					foreach (Document doc in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
-						if (doc.IsDirty && doc.Name != IdeApp.Workbench.ActiveDocument.Name) {
+						if (doc.IsDirty) {
 							CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+							unsavedFile.Filename = doc.FileName;
 							unsavedFile.Length = doc.Editor.Text.Length;
 							unsavedFile.Contents = doc.Editor.Text;
-							Console.WriteLine ("Adding USF: " + unsavedFile.Length + " " + unsavedFile.Contents);
 							unsavedFiles.Add (unsavedFile);
 						}
 					}
