@@ -159,7 +159,6 @@ namespace CBinding
 						if(GetClosingBraceForLine(Editor, line, out braceOpeningLine) >= 0)
 						{
 							Editor.ReplaceText (line.Offset, line.Length, GetIndent(Editor, braceOpeningLine, 0) + "}" + lineText.Substring(lineCursorIndex));
-							previous = descriptor.KeyChar;
 							return false;
 						}
 					}
@@ -201,20 +200,17 @@ namespace CBinding
 								if(GetClosingBraceForLine (Editor, line, out openingLine) >= 0)
 								{
 									Editor.InsertAtCaret (Editor.EolMarker + GetIndent(Editor, openingLine, 0));
-									previous = descriptor.KeyChar;
 									return false;
 								}
 							}
 						
 							// Default indentation method
 							Editor.InsertAtCaret (Editor.EolMarker + indent + GetIndent(Editor, Editor.OffsetToLineNumber (line.Offset), lineCursorIndex));
-							previous = descriptor.KeyChar;
 							return false;
 						
 					}
 				}
 			}
-			previous = descriptor.KeyChar;
 			return base.KeyPress (descriptor);
 		}
 
@@ -265,6 +261,7 @@ namespace CBinding
 				}
 				clang.disposeCodeCompleteResults (pResults);
 			}
+			previous = completionChar;
 			list.Sort ((x, y) => x.CompareTo (y));
 			return Task.FromResult (list);
 		}
