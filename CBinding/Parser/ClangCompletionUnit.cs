@@ -1,12 +1,15 @@
+using ClangSharp;
+
 namespace CBinding
 {
-	public class ClangCompletionUnit {
+	public class ClangCompletionUnit : CompletionData {
 		public uint priority;
-		public MonoDevelop.Ide.CodeCompletion.CompletionData data;
-		public ClangCompletionUnit(uint prio, MonoDevelop.Ide.CodeCompletion.CompletionData dat){
+		public ClangCompletionUnit(CXCompletionResult item, string dataString, uint prio) : base(item, dataString){
 			priority = prio;
-			data = dat;
+		}
+		public override int CompareTo (object obj)
+		{
+			return priority.CompareTo ((obj as ClangCompletionUnit).priority);
 		}
 	}
-	
 }

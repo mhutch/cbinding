@@ -241,7 +241,6 @@
     <Compile Include="Parser\MemberFunction.cs" />
     <Compile Include="Parser\FunctionTemplate.cs" />
     <Compile Include="Parser\Class.cs" />
-    <Compile Include="Parser\ClangSymbolDatabase.cs" />
     <Compile Include="Parser\Namespace.cs" />
     <Compile Include="Parser\Struct.cs" />
     <Compile Include="Parser\Enumeration.cs" />
@@ -251,6 +250,8 @@
     <Compile Include="Parser\Variable.cs" />
     <Compile Include="Parser\Macro.cs" />
     <Compile Include="Parser\TranslationUnitParser.cs" />
+    <Compile Include="Parser\ClangFileSymbolDatabase.cs" />
+    <Compile Include="Parser\ClangProjectSymbolDatabase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

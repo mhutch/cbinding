@@ -6,11 +6,11 @@ using GLib;
 using System.Runtime.InteropServices;
 
 namespace CBinding
-{
-	public class ClangSymbolDatabase
+{	
+	public class ClangFileSymbolDatabase
 	{
 
-		protected CProject project;
+		protected string file;
 
 		protected List<Namespace> namespaces = new List<Namespace> ();
 		protected List<Function> functions = new List<Function> ();
@@ -26,9 +26,9 @@ namespace CBinding
 		protected List<Typedef> typedefs = new List<Typedef> ();
 		protected List<Symbol> others = new List<Symbol> ();
 
-		public ClangSymbolDatabase (CProject proj)
+		public ClangFileSymbolDatabase (string file)
 		{
-			project = proj;
+			this.file = file;
 		}
 
 		public void AddToDatabase (CXCursor cursor)

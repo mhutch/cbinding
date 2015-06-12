@@ -79,7 +79,7 @@ namespace CBinding
 		CompileTarget target = CompileTarget.Exe;
 
 		public CLangManager cLangManager;
-		public ClangSymbolDatabase db;
+		public ClangProjectSymbolDatabase db;
 		
     	private ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
@@ -101,7 +101,7 @@ namespace CBinding
 			base.OnInitialize ();
 			packages.Project = this;
 			cLangManager = new CLangManager (this);
-			db = new ClangSymbolDatabase (this);
+			db = new ClangProjectSymbolDatabase (this);
 		}
 
 		protected override void OnInitializeFromTemplate (ProjectCreateInformation projectCreateInfo, XmlElement template)

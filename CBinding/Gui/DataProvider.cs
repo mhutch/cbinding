@@ -46,14 +46,13 @@ namespace CBinding
 	public class ParameterDataProvider : MonoDevelop.Ide.CodeCompletion.ParameterHintingResult
 	{
 		private TextEditor editor;
-		private List<Function> functions = new List<Function> ();
 
-		public ParameterDataProvider (int startOffset, TextEditor editor, ClangSymbolDatabase info, string functionName) :base (startOffset)
+		public ParameterDataProvider (int startOffset, TextEditor editor, List<Function> functions, string functionName) :base (startOffset)
 		{
 			this.editor = editor;
 
-			foreach (Function f in info.Functions) {
-				if (f.Signature == functionName) {
+			foreach (Function f in functions) {
+				if (f.SimpleName == functionName) {
 					data.Add (new DataWrapper (f));
 				}
 			}

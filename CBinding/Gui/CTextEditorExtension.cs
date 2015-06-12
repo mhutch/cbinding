@@ -56,22 +56,20 @@ using ClangSharp;
 using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.MonoCSharp;
 using MonoDevelop.Projects;
+using MonoDevelop.Ide.Editor.Projection;
 
 namespace CBinding
 {
 	public class CTextEditorExtension : CompletionTextEditorExtension, IPathedDocument
 	{
+		private char previous = ' ';
+
 		// Allowed chars to be next to an identifier
 		private static char[] allowedChars = new char[] {
 			'.', ':', ' ', '\t', '=', '*', '+', '-', '/', '%', ',', '&',
 			'|', '^', '{', '}', '[', ']', '(', ')', '\n', '!', '?', '<', '>'
 		};
-		
-		// Allowed Chars to be next to an identifier excluding ':' (to get the full name in '::' completion).
-		private static char[] allowedCharsMinusColon = new char[] {
-			'.', ' ', '\t', '=', '*', '+', '-', '/', '%', ',', '&', '|',
-			'^', '{', '}', '[', ']', '(', ')', '\n', '!', '?', '<', '>'
-		};
+
 
 		public override string CompletionLanguage {
 			get {
@@ -161,6 +159,7 @@ namespace CBinding
 						if(GetClosingBraceForLine(Editor, line, out braceOpeningLine) >= 0)
 						{
 							Editor.ReplaceText (line.Offset, line.Length, GetIndent(Editor, braceOpeningLine, 0) + "}" + lineText.Substring(lineCursorIndex));
+							previous = descriptor.KeyChar;
 							return false;
 						}
 					}
@@ -202,28 +201,49 @@ namespace CBinding
 								if(GetClosingBraceForLine (Editor, line, out openingLine) >= 0)
 								{
 									Editor.InsertAtCaret (Editor.EolMarker + GetIndent(Editor, openingLine, 0));
+									previous = descriptor.KeyChar;
 									return false;
 								}
 							}
 						
 							// Default indentation method
 							Editor.InsertAtCaret (Editor.EolMarker + indent + GetIndent(Editor, Editor.OffsetToLineNumber (line.Offset), lineCursorIndex));
-							
+							previous = descriptor.KeyChar;
 							return false;
 						
 					}
 				}
 			}
-			
+			previous = descriptor.KeyChar;
 			return base.KeyPress (descriptor);
+		}
+
+		private bool shouldCompleteOn(char pressed) {
+			switch (pressed) {
+			case '.':
+				return true;
+			case ' ':
+				return true;
+			case '>':
+				if (previous == '-')
+					return true;
+				return false;
+			case ':':
+				if (previous == ':')
+					return true;
+				return false;
+			default:
+				return false;
+
+			}
 		}
 
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
 			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
-			List<ClangCompletionUnit> listbuilder = new List <ClangCompletionUnit> ();
-			if (allowedChars.Contains (completionChar) && completionChar != '(') {
+			if (shouldCompleteOn(completionChar)) {
+				project.cLangManager.UpdateTranslationUnit (project, Editor.FileName);
 				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
@@ -239,20 +259,14 @@ namespace CBinding
 							CXString cxstring = clang.getCompletionChunkText(completionString.Pointer, j);
 							string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
 							clang.disposeString (cxstring);
-							CompletionData item = new CompletionData (resultItem, realstring);
-							listbuilder.Add (new ClangCompletionUnit(priority, item));
+							ClangCompletionUnit item = new ClangCompletionUnit (resultItem, realstring, priority);
+							list.Add (item);
 						}
 					}
 				}
 				clang.disposeCodeCompleteResults (pResults);
 			}
-			listbuilder.Sort (
-				(ClangCompletionUnit x, ClangCompletionUnit y) => { 
-					return x.priority.CompareTo (y.priority);
-				});
-			int pos = 0;
-			foreach (var t in listbuilder)
-				list.Insert (pos++, t.data);
+			list.Sort ((x, y) => x.CompareTo (y));
 			return Task.FromResult (list);
 		}
 
@@ -268,19 +282,28 @@ namespace CBinding
 		{
 			if (completionChar != '(')
 				return null;
-			
-			List<MonoDevelop.Ide.CodeCompletion.ParameterHintingData> data = new List <MonoDevelop.Ide.CodeCompletion.ParameterHintingData> ();
+
+			CProject project = DocumentContext.Project as CProject;
+
+			if (project == null)
+				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
+
+			project.cLangManager.UpdateTranslationUnit (project, Editor.FileName);
 			var functions = (DocumentContext.Project as CProject).db.Functions;
-			//Get the current line, then cut the end after the caret position, get the last "word", which will be the function name before '('
-			string functionName = Editor.GetLineText (Editor.CaretLine);
-			functionName = functionName.Substring (0, Editor.CaretColumn-1);
-			string[] words = functionName.Split(new char[]{' ', '\t'});
-			functionName = words [words.Length - 1].Split (new char[]{' ', '\t', '('})[0];
-			foreach (var func in functions) {
-				if (func.SimpleName.Equals (functionName))
-					data.Add (new DataWrapper (func));
-			}
-			return Task.FromResult (new MonoDevelop.Ide.CodeCompletion.ParameterHintingResult (data,0));
+			string lineText = Editor.GetLineText (Editor.CaretLine).TrimEnd ();
+			if (lineText.EndsWith (completionChar.ToString (), StringComparison.Ordinal))
+				lineText = lineText.Remove (lineText.Length - 1).TrimEnd ();
+
+			int nameStart = lineText.LastIndexOfAny (allowedChars);
+
+			nameStart++;
+
+			string functionName = lineText.Substring (nameStart).Trim ();
+
+			if (string.IsNullOrEmpty (functionName))
+				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
+
+			return Task.FromResult ((MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)new ParameterDataProvider (nameStart, Editor, functions, functionName));
 		}
 		
 		private bool AllWhiteSpace (string lineText)

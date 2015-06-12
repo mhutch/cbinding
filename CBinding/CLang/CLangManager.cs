@@ -89,7 +89,8 @@ namespace CBinding
 						Convert.ToUInt32 (UnsavedFiles.Length),
 						(uint)CXTranslationUnit_Flags.CXTranslationUnit_PrecompiledPreamble,
 						out TU);
-					TranslationUnitParser parser = new TranslationUnitParser(project.db);
+					project.db.Reset (fileName);
+					TranslationUnitParser parser = new TranslationUnitParser(project.db, fileName);
 					clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr(0)));
 					if(error != CXErrorCode.CXError_Success) {
 						throw new InvalidComObjectException (((uint)error).ToString ());
@@ -135,8 +136,8 @@ namespace CBinding
 				string name = documentContext.Name;
 				CXTranslationUnit TU = TranslationUnits [name];
 				string complete_filename = editor.Editor.CreateDocumentSnapshot ().FileName;
-				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine)-1;
-				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn)-1;
+				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine);
+				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn);
 				CXUnsavedFile[] unsaved_files = UnsavedFiles;
 				uint num_unsaved_files = Convert.ToUInt32 (unsaved_files.Length);
 				uint options = (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns | (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns;

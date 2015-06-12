@@ -5,14 +5,16 @@ using ClangSharp;
 namespace CBinding
 {
 	public class TranslationUnitParser{
-		private ClangSymbolDatabase db;
+		private ClangProjectSymbolDatabase db;
+		private string file;
 
-		public TranslationUnitParser(ClangSymbolDatabase db){
+		public TranslationUnitParser(ClangProjectSymbolDatabase db, string file){
 			this.db = db;
+			this.file = file;
 		}
 
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
-			db.AddToDatabase (cursor);
+			db.AddToDatabase (file, cursor);
 			return CXChildVisitResult.CXChildVisit_Recurse;
 		}
 
