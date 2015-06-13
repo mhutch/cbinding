@@ -247,6 +247,9 @@
     <Compile Include="Parser\TranslationUnitParser.cs" />
     <Compile Include="Parser\ClangFileSymbolDatabase.cs" />
     <Compile Include="Parser\ClangProjectSymbolDatabase.cs" />
+    <Compile Include="Parser\ClassTemplate.cs" />
+    <Compile Include="Parser\Field.cs" />
+    <Compile Include="Parser\ClassTemplatePartial.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

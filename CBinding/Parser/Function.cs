@@ -10,7 +10,7 @@ namespace CBinding
 {
 	public class Function : Symbol
 	{
-		string simpleName;
+		protected string simpleName;
 		public Function (CXCursor cursor) : base (cursor){
 			CXString cxstring = clang.getCursorSpelling (cursor);
 			simpleName = Marshal.PtrToStringAnsi (clang.getCString (cxstring));

@@ -4,14 +4,16 @@ using ICSharpCode.NRefactory6.CSharp;
 using System.Collections.Generic;
 using GLib;
 using System.Runtime.InteropServices;
+using CBinding;
 
 namespace CBinding
 {
-	public class FunctionTemplate : Function
+	public class Field : Symbol
 	{
-		public FunctionTemplate (CXCursor cursor) : base (cursor)
+		public Field(CXCursor cursor) : base(cursor)
 		{
 		}
+
 	}
-		
+
 }

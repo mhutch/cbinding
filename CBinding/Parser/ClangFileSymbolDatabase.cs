@@ -17,6 +17,9 @@ namespace CBinding
 		protected List<MemberFunction> memberFunctions = new List<MemberFunction> ();
 		protected List<FunctionTemplate> functionTemplates = new List<FunctionTemplate> ();
 		protected List<Class> classes = new List<Class> ();
+		protected List<ClassTemplate> classTemplates = new List<ClassTemplate> ();
+		protected List<ClassTemplatePartial> classTemplatePartials = new List<ClassTemplatePartial> ();
+		protected List<Field> fields = new List<Field> ();
 		protected List<Struct> structs = new List<Struct> ();
 		protected List<Enumeration> enumerations = new List<Enumeration> ();
 		protected List<Enumerator> enumerators = new List<Enumerator> ();
@@ -39,6 +42,15 @@ namespace CBinding
 				break;
 			case CXCursorKind.CXCursor_ClassDecl:
 				classes.Add (new Class (cursor));
+				break;
+			case CXCursorKind.CXCursor_FieldDecl:
+				fields.Add (new Field (cursor));
+				break;
+			case CXCursorKind.CXCursor_ClassTemplate:
+				classes.Add (new ClassTemplate (cursor));
+				break;
+			case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
+				classTemplatePartials.Add (new ClassTemplatePartial (cursor));
 				break;
 			case CXCursorKind.CXCursor_StructDecl:
 				structs.Add (new Struct (cursor));
@@ -103,6 +115,24 @@ namespace CBinding
 		public List<Class> Classes {
 			get {
 				return classes;
+			}
+		}
+
+		public List<Field> Fields {
+			get {
+				return fields;
+			}
+		}
+
+		public List<ClassTemplate> ClassTemplates {
+			get {
+				return classTemplates;
+			}
+		}
+
+		public List<ClassTemplatePartial> ClassTemplatePartials {
+			get {
+				return classTemplatePartials;
 			}
 		}
 

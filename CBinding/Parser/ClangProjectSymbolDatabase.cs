@@ -71,6 +71,22 @@ namespace CBinding
 				return ret;			}
 		}
 
+		public List<ClassTemplate> ClassTemplates {
+			get {
+				List<ClassTemplate> ret = new List<ClassTemplate>();
+				foreach (var iter in db)
+					ret.AddRange (iter.Value.ClassTemplates);
+				return ret;			}
+		}
+
+		public List<ClassTemplatePartial> ClassTemplatesPartials {
+			get {
+				List<ClassTemplatePartial> ret = new List<ClassTemplatePartial>();
+				foreach (var iter in db)
+					ret.AddRange (iter.Value.ClassTemplatePartials);
+				return ret;			}
+		}
+
 		public List<Struct> Structs {
 			get {
 				List<Struct> ret = new List<Struct>();

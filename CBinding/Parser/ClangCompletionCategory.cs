@@ -8,6 +8,9 @@ namespace CBinding
 		public static string functionTemplateCategory = "Function template";
 		public static string methodCategory = "Class method";
 		public static string classCategory = "Class";
+		public static string classTemplateCategory = "Class template";
+		public static string classTemplatePartialCategory = "Class template partial specialization";
+		public static string fieldCategory = "Field";
 		public static string structCategory = "Struct";
 		public static string enumerationCategory = "Enumeration";
 		public static string enumeratorCategory = "Enumerator";

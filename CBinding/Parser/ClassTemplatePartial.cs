@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using ClangSharp;
 using ICSharpCode.NRefactory6.CSharp;
 using System.Collections.Generic;
@@ -7,11 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace CBinding
 {
-	public class FunctionTemplate : Function
+	public class ClassTemplatePartial : ClassTemplate
 	{
-		public FunctionTemplate (CXCursor cursor) : base (cursor)
+		public ClassTemplatePartial (CXCursor cursor) : base (cursor)
 		{
 		}
 	}
-		
 }
