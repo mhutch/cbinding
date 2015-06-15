@@ -239,6 +239,8 @@ namespace CBinding
 			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			if (shouldCompleteOn(completionChar)) {
+				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
+				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
 				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
@@ -254,6 +256,17 @@ namespace CBinding
 							CXString cxstring = clang.getCompletionChunkText(completionString.Pointer, j);
 							string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
 							clang.disposeString (cxstring);
+							if (resultItem.CursorKind == CXCursorKind.CXCursor_Destructor
+								|| resultItem.CursorKind == CXCursorKind.CXCursor_UnaryOperator
+								|| resultItem.CursorKind == CXCursorKind.CXCursor_BinaryOperator
+								|| resultItem.CursorKind == CXCursorKind.CXCursor_CompoundAssignOperator
+								|| System.Text.RegularExpressions.Regex.IsMatch (realstring, operatorPattern)
+								|| (fieldOrMethodMode
+									&& (resultItem.CursorKind == CXCursorKind.CXCursor_ClassDecl 
+									|| resultItem.CursorKind == CXCursorKind.CXCursor_StructDecl)
+								)){
+								continue;
+							}
 							ClangCompletionUnit item = new ClangCompletionUnit (resultItem, realstring, priority);
 							list.Add (item);
 						}
