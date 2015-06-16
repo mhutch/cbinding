@@ -117,6 +117,9 @@ namespace CBinding
 						unsavedFiles,
 						clang.defaultReparseOptions (translationUnits[fileName])
 					);
+					project.db.Reset (fileName);
+					TranslationUnitParser parser = new TranslationUnitParser(project.db, fileName);
+					clang.visitChildren (clang.getTranslationUnitCursor (translationUnits[fileName]), parser.Visit, new CXClientData (new IntPtr(0)));
 				} else {
 					AddToTranslationUnits (project, fileName);
 				}
