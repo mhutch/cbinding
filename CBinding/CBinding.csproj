@@ -90,8 +90,8 @@
     <EmbeddedResource Include="icons\update.png">
       <LogicalName>update.png</LogicalName>
     </EmbeddedResource>
-	<EmbeddedResource Include="CMake\SyntaxHighlight.xml">
-    	<LogicalName>CMake-Syntax</LogicalName>
+    <EmbeddedResource Include="CMake\SyntaxHighlight.xml">
+      <LogicalName>CMake-Syntax</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
@@ -235,6 +235,8 @@
     <Compile Include="Parser\BsdCTagsManager.cs" />
     <Compile Include="Properties\AddinInfo.cs" />
     <Compile Include="Gui\DataWrapper.cs" />
+    <Compile Include="CMake\CMakeCompletionDataLists.cs" />
+    <Compile Include="CMake\CMakeTextEditorExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

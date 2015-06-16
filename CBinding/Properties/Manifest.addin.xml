@@ -34,7 +34,7 @@
 			id = "CMake file"
 			insertbefore = "AllFiles"
 			_label = "CMake Files"
-			extensions = "CMakeLists.txt"/>
+			extensions = "CMakeLists.txt,*.cmake"/>
 	</Extension>
 
 	<Extension path = "/MonoDevelop/Ide/FileTemplates">
@@ -88,8 +88,9 @@
 			<File pattern="*.mm" />
 			<File pattern="*.M" />
 		</MimeType>
-		<MimeType id="text/x-cmake" icon="md-h-file" isText="true">
+		<MimeType id="text/x-cmake" icon="md-text-file-icon" isText="true">
 			<File pattern="CMakeLists.txt" />
+			<File pattern="*.cmake" />
 		</MimeType>
 	</Extension>
 	
@@ -213,7 +214,8 @@
 	</Extension>
 	
 	<Extension path = "/MonoDevelop/Ide/TextEditorExtensions">
-		<Class fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M,.txt" class = "CBinding.CTextEditorExtension" />
+		<Class fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M" class = "CBinding.CTextEditorExtension" />
+		<Class fileExtensions=".txt" class = "CBinding.CMakeTextEditorExtension" />
 	</Extension>
 
 	<Extension path = "/MonoDevelop/ProjectModel/SerializableClasses">
