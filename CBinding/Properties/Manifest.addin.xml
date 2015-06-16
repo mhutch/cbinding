@@ -215,7 +215,7 @@
 	
 	<Extension path = "/MonoDevelop/Ide/TextEditorExtensions">
 		<Class fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M" class = "CBinding.CTextEditorExtension" />
-		<Class fileExtensions=".txt" class = "CBinding.CMakeTextEditorExtension" />
+		<Class fileExtensions=".txt,.cmake" class = "CBinding.CMakeTextEditorExtension" />
 	</Extension>
 
 	<Extension path = "/MonoDevelop/ProjectModel/SerializableClasses">
