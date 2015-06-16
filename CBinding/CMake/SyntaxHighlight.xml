@@ -27,7 +27,7 @@
 		<Word>)</Word>
 	</Keywords>
 	
-	<Keywords color = "Keyword(Selection)">
+	<Keywords color = "Keyword(Selection)" ignorecase = "true">
 		<Word>add_compile_options</Word>
 		<Word>add_custom_command</Word>
 		<Word>add_custom_target</Word>
@@ -130,7 +130,7 @@
 		<Word>write_file</Word>
 	</Keywords>
 	
-	<Keywords color = "Keyword(Constants)">
+	<Keywords color = "Keyword(Constants)" ignorecase = "true">
 		<Word>CMAKE_ARGC</Word>
 		<Word>CMAKE_ARGV0</Word>
 		<Word>CMAKE_AR</Word>
@@ -338,5 +338,13 @@
 		<Word>CPACK_SET_DESTDIR</Word>
 		<Word>CPACK_WARN_ON_ABSOLUTE_INSTALL_DESTINATION</Word>
 	</Keywords>
-
+	
+	<Rule name = "String">
+		<Span color = "String(Escape)" rule = "String" stopateol = "true">
+			<Begin>${</Begin>
+			<End>}</End>
+		</Span>
+	</Rule>
+	
+	<Rule name = "Comment" />
 </SyntaxMode>
