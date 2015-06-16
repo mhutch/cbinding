@@ -1372,7 +1372,7 @@ namespace ClangSharp
         public static extern uint defaultReparseOptions(CXTranslationUnit @TU);
 
         [DllImport(libraryPath, EntryPoint = "clang_reparseTranslationUnit", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int reparseTranslationUnit(CXTranslationUnit @TU, uint @num_unsaved_files, out CXUnsavedFile @unsaved_files, uint @options);
+        public static extern int reparseTranslationUnit(CXTranslationUnit @TU, uint @num_unsaved_files, CXUnsavedFile[] @unsaved_files, uint @options);
 
         [DllImport(libraryPath, EntryPoint = "clang_getTUResourceUsageName", CallingConvention = CallingConvention.Cdecl)]
         public static extern string getTUResourceUsageName(CXTUResourceUsageKind @kind);

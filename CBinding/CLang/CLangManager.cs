@@ -109,11 +109,17 @@ namespace CBinding
 		public void UpdateTranslationUnit (CProject project, string fileName)
 		{
 			lock (syncroot) {
+				CXUnsavedFile[] unsavedFiles = UnsavedFiles;
 				if (translationUnits.ContainsKey (fileName)) {
-					clang.disposeTranslationUnit (translationUnits [fileName]);
-					translationUnits.Remove (fileName);
+					clang.reparseTranslationUnit (
+						translationUnits[fileName],
+						Convert.ToUInt32 (unsavedFiles.Length),
+						unsavedFiles,
+						clang.defaultReparseOptions (translationUnits[fileName])
+					);
+				} else {
+					AddToTranslationUnits (project, fileName);
 				}
-				AddToTranslationUnits (project, fileName);
 			}
 		}
 
@@ -149,6 +155,41 @@ namespace CBinding
 					                  unsaved_files, 
 					                  num_unsaved_files, 
 					                  options);
+			}
+		}
+
+		public CXCursor getCursor (string fileName, DocumentLocation location) {
+			lock (syncroot) {
+				//this update is needed to avoid saving (and reparsing) before asking a cursor
+				UpdateTranslationUnit (project, fileName);
+				CXTranslationUnit TU = TranslationUnits [fileName];
+				CXFile file = clang.getFile (TU, fileName);
+				CXSourceLocation loc = clang.getLocation (
+					TU,
+					file,
+					Convert.ToUInt32 (location.Line),
+					Convert.ToUInt32 (location.Column)
+				);
+				return clang.getCursor (TU, loc);
+			}
+		}
+
+		public CXCursor getCursorReferenced (CXCursor refereeCursor) {
+			lock (syncroot) {
+				return clang.getCursorReferenced (refereeCursor);
+			}
+		}
+
+		public SourceLocation getCursorLocation (CXCursor cursor) {
+			lock (syncroot) {
+				CXSourceLocation loc = clang.getCursorLocation (cursor);
+				CXFile file;
+				uint line, column, offset;
+				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
+				CXString cxstring = clang.getFileName (file);
+				string fileName = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
+				clang.disposeString (cxstring);
+				return new SourceLocation (fileName, line, column);
 			}
 		}
 	}

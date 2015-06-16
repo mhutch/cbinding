@@ -410,11 +410,23 @@ namespace CBinding
 		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void GotoDeclaration ()
 		{
+			CProject project = DocumentContext.Project as CProject;
+			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
+			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
+			if (!(referencedCursor.Equals (clang.getNullCursor ()))) {
+				SourceLocation loc = project.cLangManager.getCursorLocation (referencedCursor);
+				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
+			}
 		}
-		
+
 		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void CanGotoDeclaration (CommandInfo item)
 		{
+			CProject project = DocumentContext.Project as CProject;
+			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
+			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
+			item.Visible = !(referencedCursor.Equals (clang.getNullCursor ()));
+			item.Bypass = !item.Visible;
 		}
 	
 	}

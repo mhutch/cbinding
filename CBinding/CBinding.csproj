@@ -250,6 +250,7 @@
     <Compile Include="Parser\ClassTemplate.cs" />
     <Compile Include="Parser\Field.cs" />
     <Compile Include="Parser\ClassTemplatePartial.cs" />
+    <Compile Include="Parser\SourceLocation.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
