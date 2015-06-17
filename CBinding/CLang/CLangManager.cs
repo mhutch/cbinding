@@ -40,13 +40,11 @@ namespace CBinding
 				lock (syncroot) {
 					List<CXUnsavedFile> unsavedFiles = new List<CXUnsavedFile> ();
 					foreach (Document doc in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
-						if (doc.IsDirty) {
-							CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-							unsavedFile.Filename = doc.FileName;
-							unsavedFile.Length = doc.Editor.Text.Length;
-							unsavedFile.Contents = doc.Editor.Text;
-							unsavedFiles.Add (unsavedFile);
-						}
+						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+						unsavedFile.Filename = doc.FileName;
+						unsavedFile.Length = doc.Editor.Text.Length;
+						unsavedFile.Contents = doc.Editor.Text;
+						unsavedFiles.Add (unsavedFile);
 					}
 					return unsavedFiles.ToArray ();
 				}
@@ -189,12 +187,68 @@ namespace CBinding
 				CXFile file;
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
-				CXString cxstring = clang.getFileName (file);
-				string fileName = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
-				clang.disposeString (cxstring);
-				return new SourceLocation (fileName, line, column);
+				var fileName = getFileNameString (file);
+				return new SourceLocation (fileName, line, column, offset);
 			}
 		}
+
+		public SourceLocation getSourceLocation(CXSourceLocation loc) {
+			lock (syncroot) {
+				CXFile file;
+				uint line, column, offset;
+				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
+				var fileName = getFileNameString (file);
+				return new SourceLocation (fileName, line, column, offset);
+			}
+		}
+
+		public void findReferences(FindReferencesHandler visitor) {
+			foreach (var T in translationUnits) {
+				clang.visitChildren (
+					clang.getTranslationUnitCursor (T.Value),
+					visitor.Visit,
+					new CXClientData (new IntPtr(0))
+				);
+			}
+		}
+
+		public string getCursorSpelling(CXCursor cursor){
+			lock(syncroot){
+				CXString cxstring = clang.getCursorSpelling (cursor);
+				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+				clang.disposeString (cxstring);
+				return spelling;
+			}
+		}
+
+		public string getCursorDisplayName(CXCursor cursor){
+			lock(syncroot){
+				CXString cxstring = clang.getCursorDisplayName (cursor);
+				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+				clang.disposeString (cxstring);
+				return spelling;
+			}
+		}
+
+		public string getCursorUSRString (CXCursor cursor)
+		{
+			lock (syncroot) {
+				CXString cxstring = clang.getCursorUSR (cursor);
+				string USR = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+				clang.disposeString (cxstring);
+				return USR;
+			}
+		}
+
+		public string getFileNameString (CXFile file)
+		{
+			lock (syncroot) {
+				CXString cxstring = clang.getFileName (file);
+				string fileName = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+				clang.disposeString (cxstring);
+				return fileName;
+			}
+		} 
 	}
 }
 

@@ -118,10 +118,14 @@ namespace ClangSharp
         public uint @NumResults;
     }
 
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+	public delegate CXVisitorResult CXCursorAndRangeVisitorDelegate(IntPtr @context, CXCursor @cursor, CXSourceRange @range);
+
     public partial struct CXCursorAndRangeVisitor
     {
         public IntPtr @context;
-        public IntPtr @visit;
+
+		public CXCursorAndRangeVisitorDelegate visit;
     }
 
     public partial struct CXIdxLoc

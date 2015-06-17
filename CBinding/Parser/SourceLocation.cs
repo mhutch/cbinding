@@ -5,11 +5,13 @@ namespace CBinding
 		string fileName;
 		uint line;
 		uint column;
+		uint offset;
 
-		public SourceLocation(string fileName, uint line, uint column) {
+		public SourceLocation(string fileName, uint line, uint column, uint offset) {
 			this.fileName = fileName;
 			this.line = line;
 			this.column = column;
+			this.offset = offset;
 		}
 
 		public string FileName {
@@ -39,6 +41,11 @@ namespace CBinding
 			}
 		}
 
+		public uint Offset {
+			get {
+				return offset;
+			}
+		}
 	}
 
 }

@@ -57,6 +57,7 @@ using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.MonoCSharp;
 using MonoDevelop.Projects;
 using MonoDevelop.Ide.Editor.Projection;
+using MonoDevelop.Ide.Commands;
 
 namespace CBinding
 {
@@ -413,7 +414,7 @@ namespace CBinding
 			CProject project = DocumentContext.Project as CProject;
 			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
 			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
-			if (!(referencedCursor.Equals (clang.getNullCursor ()))) {
+			if (clang.Cursor_isNull (referencedCursor) == 0) {
 				SourceLocation loc = project.cLangManager.getCursorLocation (referencedCursor);
 				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
 			}
@@ -428,6 +429,61 @@ namespace CBinding
 			item.Visible = !(referencedCursor.Equals (clang.getNullCursor ()));
 			item.Bypass = !item.Visible;
 		}
-	
+
+		#region copied with modifications from CSharpBinding
+		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.FindReferences)]
+		public void FindReferencesHandler_Update (CommandInfo ci)
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
+				DocumentContext.Project as CProject,
+				doc
+			);
+			findReferencesHandler.Update (ci);
+		}
+
+		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.FindReferences)]
+		public void FindReferences ()
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
+				DocumentContext.Project as CProject,
+				doc
+			);
+			findReferencesHandler.Run ();
+		}
+
+		/*readonly FindDerivedSymbolsHandler findDerivedSymbolsHandler = new FindDerivedSymbolsHandler (DocumentContext.Project as CProject);
+		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.FindDerivedClasses)]
+		public void FindDerivedClasses_Update (CommandInfo ci)
+		{
+			findDerivedSymbolsHandler.Update (ci);
+		}
+
+		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.FindDerivedClasses)]
+		public void FindDerivedClasses ()
+		{
+			findDerivedSymbolsHandler.Run (DocumentContext.Project as CProject);
+		}*/
+
+		/*
+		[CommandUpdateHandler (EditCommands.Rename)]
+		public void RenameCommand_Update (CommandInfo ci)
+		{
+			RenameHandler renameHandler = new RenameHandler (DocumentContext.Project as CProject);
+			renameHandler.Update (ci);
+		}
+
+		[CommandHandler (EditCommands.Rename)]
+		public void RenameCommand ()
+		{
+			RenameHandler renameHandler = new RenameHandler (DocumentContext.Project as CProject);
+			renameHandler.Run (Editor, DocumentContext);
+		}*/
+		#endregion
 	}
 }

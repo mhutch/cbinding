@@ -109,6 +109,7 @@
     <Folder Include="Navigation\" />
     <Folder Include="Gui\" />
     <Folder Include="ProjectPad\" />
+    <Folder Include="Refactoring\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Mono.Posix" />
@@ -251,6 +252,10 @@
     <Compile Include="Parser\Field.cs" />
     <Compile Include="Parser\ClassTemplatePartial.cs" />
     <Compile Include="Parser\SourceLocation.cs" />
+    <Compile Include="Refactoring\RenameHandler.cs" />
+    <Compile Include="Refactoring\Reference.cs" />
+    <Compile Include="Refactoring\FindReferencesHandler.cs" />
+    <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
