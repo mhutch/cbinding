@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class Union : Symbol
 	{
-		public Union (CXCursor cursor) : base (cursor)
+		public Union (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

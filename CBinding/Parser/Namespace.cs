@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class Namespace : Symbol
 	{
-		public Namespace (CXCursor cursor) : base (cursor)
+		public Namespace (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

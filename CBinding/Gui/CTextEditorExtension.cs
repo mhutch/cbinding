@@ -60,6 +60,7 @@ using MonoDevelop.Ide.Editor.Projection;
 using MonoDevelop.Ide.Commands;
 using CBinding.Refactoring;
 using CBinding.Parser;
+using MonoDevelop.Refactoring;
 
 
 namespace CBinding
@@ -315,7 +316,10 @@ namespace CBinding
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
 
-			return Task.FromResult ((MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)new ParameterDataProvider (nameStart, Editor, functions, functionName));
+			return Task.FromResult (
+				(MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)
+				new ParameterDataProvider (nameStart, Editor,functions.Values.ToList (), functionName)
+			);
 		}
 		
 		private bool AllWhiteSpace (string lineText)
@@ -414,23 +418,15 @@ namespace CBinding
 		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void GotoDeclaration ()
 		{
-			CProject project = DocumentContext.Project as CProject;
-			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
-			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
-			if (clang.Cursor_isNull (referencedCursor) == 0) {
-				SourceLocation loc = project.cLangManager.getCursorLocation (referencedCursor);
-				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
-			}
+			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			gotoDec.Run ();
 		}
 
 		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void CanGotoDeclaration (CommandInfo item)
 		{
-			CProject project = DocumentContext.Project as CProject;
-			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
-			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
-			item.Visible = !(referencedCursor.Equals (clang.getNullCursor ()));
-			item.Bypass = !item.Visible;
+			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			gotoDec.Update (item);
 		}
 
 		#region copied with modifications from CSharpBinding

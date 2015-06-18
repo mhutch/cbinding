@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class Variable : Symbol
 	{
-		public Variable (CXCursor cursor) : base (cursor)
+		public Variable (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

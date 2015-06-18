@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class Typedef : Symbol
 	{
-		public Typedef (CXCursor cursor) : base (cursor)
+		public Typedef (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

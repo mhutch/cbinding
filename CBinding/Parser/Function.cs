@@ -10,36 +10,25 @@ namespace CBinding.Parser
 {
 	public class Function : Symbol
 	{
-		protected string simpleName;
-		public Function (CXCursor cursor) : base (cursor){
-			CXString cxstring = clang.getCursorSpelling (cursor);
-			simpleName = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
-			clang.disposeString (cxstring);
-		}
-		public string SimpleName {
-			get {
-				return simpleName;
+		string[] parameters;
+		int parameterCount;
+
+		public Function (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) {
+			parameterCount = clang.Cursor_getNumArguments (cursor);
+			if (parameterCount != -1) {
+				parameters = new string[ParameterCount];
+				for (uint i = 0; i < ParameterCount; i++) {
+					parameters [i] = project.cLangManager.getCursorDisplayName (clang.Cursor_getArgument (cursor, i));
+				}
 			}
 		}
 
 		public int ParameterCount {
-			get { return clang.Cursor_getNumArguments (represented); }
+			get { return parameterCount; }
 		}
-
-		public bool IsConst {
-			get {
-				return Convert.ToBoolean (clang.isConstQualifiedType(clang.getCursorType (represented)));
-			}
-		}
-
+			
 		public string[] Parameters{
-			get{
-				string[] parameters	= new string[ParameterCount];
-				for(uint i = 0; i < ParameterCount; i++){
-					CXString cxstring = clang.getCursorDisplayName (clang.Cursor_getArgument (represented, i));
-					parameters [i] = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
-					clang.disposeString (cxstring);
-				}
+			get {
 				return parameters;
 			}
 		}

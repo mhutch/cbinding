@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class ClassTemplatePartial : ClassTemplate
 	{
-		public ClassTemplatePartial (CXCursor cursor) : base (cursor)
+		public ClassTemplatePartial (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

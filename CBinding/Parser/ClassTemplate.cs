@@ -10,7 +10,7 @@ namespace CBinding.Parser
 {
 	public class ClassTemplate : Class
 	{
-		public ClassTemplate (CXCursor cursor) : base (cursor)
+		public ClassTemplate (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

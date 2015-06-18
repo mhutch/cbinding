@@ -103,6 +103,7 @@ namespace CBinding
 			packages.Project = this;
 			cLangManager = new CLangManager (this);
 			db = new ClangProjectSymbolDatabase (this);
+			cLangManager.startBackgroundParsingThread ();
 		}
 
 		protected override void OnInitializeFromTemplate (ProjectCreateInformation projectCreateInfo, XmlElement template)

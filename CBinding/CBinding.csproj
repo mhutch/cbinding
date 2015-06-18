@@ -256,6 +256,9 @@
     <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
     <Compile Include="Parser\DataProvider.cs" />
     <Compile Include="Parser\DataWrapper.cs" />
+    <Compile Include="Refactoring\GotoDefinitionHandler.cs" />
+    <Compile Include="Refactoring\RefactoryCommands.cs" />
+    <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

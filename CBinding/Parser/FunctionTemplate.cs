@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class FunctionTemplate : Function
 	{
-		public FunctionTemplate (CXCursor cursor) : base (cursor)
+		public FunctionTemplate (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

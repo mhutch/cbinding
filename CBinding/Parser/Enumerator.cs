@@ -9,7 +9,7 @@ namespace CBinding.Parser
 {
 	public class Enumerator : Symbol
 	{
-		public Enumerator (CXCursor cursor) : base (cursor)
+		public Enumerator (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
 		{
 		}
 	}

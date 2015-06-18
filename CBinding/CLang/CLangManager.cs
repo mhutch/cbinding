@@ -14,11 +14,12 @@ using MonoDevelop.Ide.CodeCompletion;
 using MonoDevelop.Ide.Editor;
 using MonoDevelop.Components.PropertyGrid;
 
-
+using System.Linq;
 using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.CSharp;
 using CBinding.Refactoring;
 using CBinding.Parser;
+using MonoDevelop.Components.Docking;
 
 namespace CBinding
 {
@@ -28,6 +29,7 @@ namespace CBinding
 		private CProject project;
 		private CXIndex index;
 		private Dictionary<string, CXTranslationUnit> translationUnits;
+		private bool started = false;
 
 		public Dictionary<string, CXTranslationUnit> TranslationUnits {
 			get {				
@@ -163,8 +165,6 @@ namespace CBinding
 
 		public CXCursor getCursor (string fileName, DocumentLocation location) {
 			lock (syncroot) {
-				//this update is needed to avoid saving (and reparsing) before asking a cursor
-				UpdateTranslationUnit (project, fileName);
 				CXTranslationUnit TU = TranslationUnits [fileName];
 				CXFile file = clang.getFile (TU, fileName);
 				CXSourceLocation loc = clang.getLocation (
@@ -180,6 +180,12 @@ namespace CBinding
 		public CXCursor getCursorReferenced (CXCursor refereeCursor) {
 			lock (syncroot) {
 				return clang.getCursorReferenced (refereeCursor);
+			}
+		}
+
+		public CXCursor getCursorDefinition (CXCursor cursor) {
+			lock (syncroot) {
+				return clang.getCursorDefinition (cursor);
 			}
 		}
 
@@ -250,7 +256,40 @@ namespace CBinding
 				clang.disposeString (cxstring);
 				return fileName;
 			}
-		} 
+		}
+
+		public void startBackgroundParsingThread () {
+			lock (syncroot) {
+				if (!started) {
+					started = true;
+					ThreadPool.QueueUserWorkItem (doStartBackgroundParsingThread);
+				}
+			}
+		}
+
+		private void doStartBackgroundParsingThread (object state) {
+			while (project.Loading)
+				Thread.Sleep (50);
+			while (true) {
+				lock (syncroot) {
+					if (MonoDevelop.Ide.IdeApp.Workbench.Documents.Any (doc => doc.IsDirty)) {
+						foreach (var TU in translationUnits) {
+							CXUnsavedFile[] unsavedFiles = UnsavedFiles;
+							clang.reparseTranslationUnit (
+								translationUnits [TU.Key],
+								Convert.ToUInt32 (unsavedFiles.Length),
+								unsavedFiles,
+								clang.defaultReparseOptions (translationUnits [TU.Key])
+							);
+							project.db.Reset (TU.Key);
+							TranslationUnitParser parser = new TranslationUnitParser (project.db, TU.Key);
+							clang.visitChildren (clang.getTranslationUnitCursor (translationUnits [TU.Key]), parser.Visit, new CXClientData (new IntPtr (0)));
+						}
+					}
+				}
+				Thread.Sleep (300);
+			}
+		}
 	}
 }
 
