@@ -5,8 +5,9 @@ using MonoDevelop.Core;
 using ClangSharp;
 using System.Collections.Generic;
 using MonoDevelop.Ide.Editor;
+using CBinding.Parser;
 
-namespace CBinding
+namespace CBinding.Refactoring
 {
 	//Based on code from CSharpBinding
 	class Reference

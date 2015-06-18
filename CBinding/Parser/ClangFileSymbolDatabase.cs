@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using GLib;
 using System.Runtime.InteropServices;
 
-namespace CBinding
+namespace CBinding.Parser
 {	
 	public class ClangFileSymbolDatabase
 	{

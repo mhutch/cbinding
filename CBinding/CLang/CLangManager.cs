@@ -17,6 +17,8 @@ using MonoDevelop.Components.PropertyGrid;
 
 using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.CSharp;
+using CBinding.Refactoring;
+using CBinding.Parser;
 
 namespace CBinding
 {

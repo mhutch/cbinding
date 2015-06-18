@@ -49,6 +49,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Mono.Unix.Native;
 using System.Diagnostics;
+using CBinding.Parser;
 
 namespace CBinding
 {

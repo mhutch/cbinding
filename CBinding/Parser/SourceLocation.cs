@@ -1,4 +1,4 @@
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class SourceLocation
 	{

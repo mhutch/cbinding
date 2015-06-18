@@ -217,14 +217,12 @@
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
     <Compile Include="Gui\CTextEditorExtension.cs" />
-    <Compile Include="Gui\DataProvider.cs" />
     <Compile Include="Gui\GeneralOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.GeneralOptionsPanel.cs" />
     <Compile Include="Gui\PackageDetails.cs" />
     <Compile Include="gtk-gui\CBinding.PackageDetails.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\AddinInfo.cs" />
-    <Compile Include="Gui\DataWrapper.cs" />
     <Compile Include="CLang\CLangManager.cs" />
     <Compile Include="Compiler\ClangCCompiler.cs" />
     <Compile Include="Compiler\ClangCXXCompiler.cs" />
@@ -256,6 +254,8 @@
     <Compile Include="Refactoring\Reference.cs" />
     <Compile Include="Refactoring\FindReferencesHandler.cs" />
     <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
+    <Compile Include="Parser\DataProvider.cs" />
+    <Compile Include="Parser\DataWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

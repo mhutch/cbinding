@@ -6,7 +6,7 @@ using GLib;
 using System.Runtime.InteropServices;
 using CBinding;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class Field : Symbol
 	{

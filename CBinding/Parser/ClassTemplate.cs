@@ -6,7 +6,7 @@ using GLib;
 using System.Runtime.InteropServices;
 using ICSharpCode.NRefactory.CSharp;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class ClassTemplate : Class
 	{

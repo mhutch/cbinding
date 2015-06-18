@@ -11,7 +11,7 @@ using MonoDevelop.Ide.Gui;
 using System.Runtime.InteropServices;
 using System.Collections;
 
-namespace CBinding
+namespace CBinding.Refactoring
 {	//Based on code from CSharpBinding
 	public class FindReferencesHandler
 	{

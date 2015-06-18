@@ -6,7 +6,7 @@ using GLib;
 using System.Runtime.InteropServices;
 using System.IO;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 
 	public class Symbol

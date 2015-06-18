@@ -58,6 +58,9 @@ using ICSharpCode.NRefactory.MonoCSharp;
 using MonoDevelop.Projects;
 using MonoDevelop.Ide.Editor.Projection;
 using MonoDevelop.Ide.Commands;
+using CBinding.Refactoring;
+using CBinding.Parser;
+
 
 namespace CBinding
 {

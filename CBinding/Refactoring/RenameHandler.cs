@@ -5,7 +5,7 @@ using MonoDevelop.Ide.Gui;
 using ClangSharp;
 using MonoDevelop.Core;
 
-namespace CBinding
+namespace CBinding.Refactoring
 {/*
 	//Based on code from CSharpBinding
 	public class RenameHandler

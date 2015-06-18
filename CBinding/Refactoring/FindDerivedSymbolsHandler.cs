@@ -1,4 +1,4 @@
-namespace CBinding
+namespace CBinding.Refactoring
 {/*
 	//Based on code from CSharpBinding
 	class FindDerivedSymbolsHandler

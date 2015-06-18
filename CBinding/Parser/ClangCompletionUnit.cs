@@ -1,6 +1,6 @@
 using ClangSharp;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class ClangCompletionUnit : CompletionData {
 		public uint priority;

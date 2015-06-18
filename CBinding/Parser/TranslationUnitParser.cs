@@ -2,7 +2,7 @@ using System;
 using ClangSharp;
 
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class TranslationUnitParser{
 		private ClangProjectSymbolDatabase db;

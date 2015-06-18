@@ -44,7 +44,7 @@ using MonoDevelop.Ide.Gui.Pads.ClassBrowser;
 using ICSharpCode.NRefactory.CSharp;
 using System.IO;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class ParameterDataProvider : MonoDevelop.Ide.CodeCompletion.ParameterHintingResult
 	{
