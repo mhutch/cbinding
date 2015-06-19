@@ -270,7 +270,6 @@ namespace CBinding
 			while (true) {
 				lock (syncroot) {
 					if (MonoDevelop.Ide.IdeApp.Workbench.Documents.Any (doc => doc.IsDirty)) {
-						Console.WriteLine ("parsing");
 						foreach (var TU in translationUnits) {
 							CXUnsavedFile[] unsavedFiles = UnsavedFiles;
 							clang.reparseTranslationUnit (
@@ -300,7 +299,8 @@ namespace CBinding
 
 		private void diagnoseTranslationUnit (string fileName)
 		{
-			Console.WriteLine ("diagnosing");
+			lock (syncroot) {
+				
 			Document doc = null;
 			foreach (var d in IdeApp.Workbench.Documents)
 				if (d.Name.Equals (fileName))
@@ -316,41 +316,38 @@ namespace CBinding
 			}
 			CXTranslationUnit TU = translationUnits [fileName];
 			uint numDiag = clang.getNumDiagnostics (TU);
-			Console.WriteLine (numDiag);
-			for (uint i = 0; i < numDiag; i++) {
-				CXDiagnostic diag = clang.getDiagnostic (TU, i);
-				string spelling = getDiagnosticSpelling (diag);
-				uint numRanges = clang.getDiagnosticNumRanges (diag);
-				Console.WriteLine (spelling + " " + numRanges);
-				if (numRanges != 0) {
-					for (uint j = 0; j < numRanges; j++) {
-						SourceLocation loc = getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
-						int len = (int)(getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j))).Offset - loc.Offset);
+				for (uint i = 0; i < numDiag; i++) {
+					CXDiagnostic diag = clang.getDiagnostic (TU, i);
+					string spelling = getDiagnosticSpelling (diag);
+					uint numRanges = clang.getDiagnosticNumRanges (diag);
+					if (numRanges != 0) {
+						for (uint j = 0; j < numRanges; j++) {
+							SourceLocation loc = getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
+							int len = (int)(getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j))).Offset - loc.Offset);
+							ITextSegmentMarker m = doc.Editor.TextMarkerFactory.CreateErrorMarker (
+								                      doc.Editor,
+								                      new Error (ErrorType.Error, spelling),
+								                      (int)loc.Offset,
+								                      len
+							                      );
+
+							markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+							doc.Editor.AddMarker (m);
+						}
+					} else {
+						SourceLocation loc = getSourceLocation (clang.getDiagnosticLocation (diag));
 						ITextSegmentMarker m = doc.Editor.TextMarkerFactory.CreateErrorMarker (
 							                      doc.Editor,
 							                      new Error (ErrorType.Error, spelling),
 							                      (int)loc.Offset,
-							                      len
-						                      );
-						Console.WriteLine (" " + loc.Offset + " " + len);
-
-						markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
-						doc.Editor.AddMarker (m);
-					}
-				}
-				else {
-					SourceLocation loc = getSourceLocation (clang.getDiagnosticLocation (diag));
-					ITextSegmentMarker m = doc.Editor.TextMarkerFactory.CreateErrorMarker (
-						doc.Editor,
-						new Error (ErrorType.Error, spelling),
-						(int)loc.Offset,
 						//when there is no range associated with a diagnostic, only a location
 						//there is no way to get associated length, only by tampering more with editor
 						//but diags without a range might not worth that effort, eg.: undeclared variables
-						3
-					);
-					markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
-					doc.Editor.AddMarker (m);
+							                      3
+						                      );
+						markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+						doc.Editor.AddMarker (m);
+					}
 				}
 			}
 		}
