@@ -20,6 +20,10 @@ using ICSharpCode.NRefactory.CSharp;
 using CBinding.Refactoring;
 using CBinding.Parser;
 using MonoDevelop.Components.Docking;
+using MonoDevelop.Ide.Gui.Pads;
+using MonoDevelop.Ide.Tasks;
+using Mono.TextEditor;
+using MonoDevelop.Ide.TypeSystem;
 
 namespace CBinding
 {
@@ -30,6 +34,7 @@ namespace CBinding
 		private CXIndex index;
 		private Dictionary<string, CXTranslationUnit> translationUnits;
 		private bool started = false;
+		private List<KeyValuePair<TextEditor, ITextSegmentMarker>> markers = new List<KeyValuePair<TextEditor, ITextSegmentMarker>>();
 
 		public Dictionary<string, CXTranslationUnit> TranslationUnits {
 			get {				
@@ -71,6 +76,8 @@ namespace CBinding
 
 		public void AddToTranslationUnits (CProject project, string fileName)
 		{
+			while (project.Loading)
+				Thread.Sleep (50);
 			lock (syncroot) {
 				ClangCCompiler compiler = new ClangCCompiler ();
 				CProjectConfiguration active_configuration =
@@ -81,30 +88,18 @@ namespace CBinding
 				}
 				string[] args = compiler.GetCompilerFlagsAsArray (project, active_configuration);
 				try {
-					CXTranslationUnit TU = new CXTranslationUnit();
-					CXErrorCode error = clang.parseTranslationUnit2 (
+					translationUnits.Add (fileName, clang.createTranslationUnitFromSourceFile (
 						index,
 						fileName,
-						args,
 						args.Length,
-						UnsavedFiles,
+						args,
 						Convert.ToUInt32 (UnsavedFiles.Length),
-						(uint)CXTranslationUnit_Flags.CXTranslationUnit_PrecompiledPreamble,
-						out TU);
-					project.db.Reset (fileName);
-					TranslationUnitParser parser = new TranslationUnitParser(project.db, fileName);
-					clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr(0)));
-					if(error != CXErrorCode.CXError_Success) {
-						throw new InvalidComObjectException (((uint)error).ToString ());
-					}
-					translationUnits.Add (fileName, TU);
+						UnsavedFiles)
+					);
+					UpdateTranslationUnit (project, fileName);
 				} catch (ArgumentException) {
 					Console.WriteLine (fileName + " is already added, not adding");
-				} catch (InvalidComObjectException ex) {
-					Console.WriteLine ("Parse translation unit failed with error code:" + ex.Message);
-					throw;
 				}
-
 			}
 		}
 
@@ -120,8 +115,10 @@ namespace CBinding
 						clang.defaultReparseOptions (translationUnits[fileName])
 					);
 					project.db.Reset (fileName);
+					CXTranslationUnit TU = translationUnits [fileName];
 					TranslationUnitParser parser = new TranslationUnitParser(project.db, fileName);
-					clang.visitChildren (clang.getTranslationUnitCursor (translationUnits[fileName]), parser.Visit, new CXClientData (new IntPtr(0)));
+					clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr(0)));
+					diagnoseTranslationUnit (fileName);
 				} else {
 					AddToTranslationUnits (project, fileName);
 				}
@@ -163,7 +160,7 @@ namespace CBinding
 			}
 		}
 
-		public CXCursor getCursor (string fileName, DocumentLocation location) {
+		public CXCursor getCursor (string fileName, MonoDevelop.Ide.Editor.DocumentLocation location) {
 			lock (syncroot) {
 				CXTranslationUnit TU = TranslationUnits [fileName];
 				CXFile file = clang.getFile (TU, fileName);
@@ -273,6 +270,7 @@ namespace CBinding
 			while (true) {
 				lock (syncroot) {
 					if (MonoDevelop.Ide.IdeApp.Workbench.Documents.Any (doc => doc.IsDirty)) {
+						Console.WriteLine ("parsing");
 						foreach (var TU in translationUnits) {
 							CXUnsavedFile[] unsavedFiles = UnsavedFiles;
 							clang.reparseTranslationUnit (
@@ -284,10 +282,76 @@ namespace CBinding
 							project.db.Reset (TU.Key);
 							TranslationUnitParser parser = new TranslationUnitParser (project.db, TU.Key);
 							clang.visitChildren (clang.getTranslationUnitCursor (translationUnits [TU.Key]), parser.Visit, new CXClientData (new IntPtr (0)));
+							diagnoseTranslationUnit (TU.Key);
 						}
 					}
 				}
 				Thread.Sleep (300);
+			}
+		}
+
+		public string getDiagnosticSpelling (CXDiagnostic diag)
+		{
+			CXString cxstring = clang.getDiagnosticSpelling (diag);
+			string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+			clang.disposeString (cxstring);
+			return spelling;
+		}
+
+		private void diagnoseTranslationUnit (string fileName)
+		{
+			Console.WriteLine ("diagnosing");
+			Document doc = null;
+			foreach (var d in IdeApp.Workbench.Documents)
+				if (d.Name.Equals (fileName))
+					doc = d;
+			if (doc == null)
+				return;
+			foreach (var marker in markers) {
+				if(doc.Editor == marker.Key)
+					try {
+					doc.Editor.RemoveMarker (marker.Value);
+					} catch (Exception) {
+					}
+			}
+			CXTranslationUnit TU = translationUnits [fileName];
+			uint numDiag = clang.getNumDiagnostics (TU);
+			Console.WriteLine (numDiag);
+			for (uint i = 0; i < numDiag; i++) {
+				CXDiagnostic diag = clang.getDiagnostic (TU, i);
+				string spelling = getDiagnosticSpelling (diag);
+				uint numRanges = clang.getDiagnosticNumRanges (diag);
+				Console.WriteLine (spelling + " " + numRanges);
+				if (numRanges != 0) {
+					for (uint j = 0; j < numRanges; j++) {
+						SourceLocation loc = getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
+						int len = (int)(getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j))).Offset - loc.Offset);
+						ITextSegmentMarker m = doc.Editor.TextMarkerFactory.CreateErrorMarker (
+							                      doc.Editor,
+							                      new Error (ErrorType.Error, spelling),
+							                      (int)loc.Offset,
+							                      len
+						                      );
+						Console.WriteLine (" " + loc.Offset + " " + len);
+
+						markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+						doc.Editor.AddMarker (m);
+					}
+				}
+				else {
+					SourceLocation loc = getSourceLocation (clang.getDiagnosticLocation (diag));
+					ITextSegmentMarker m = doc.Editor.TextMarkerFactory.CreateErrorMarker (
+						doc.Editor,
+						new Error (ErrorType.Error, spelling),
+						(int)loc.Offset,
+						//when there is no range associated with a diagnostic, only a location
+						//there is no way to get associated length, only by tampering more with editor
+						//but diags without a range might not worth that effort, eg.: undeclared variables
+						3
+					);
+					markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+					doc.Editor.AddMarker (m);
+				}
 			}
 		}
 	}

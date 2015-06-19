@@ -39,8 +39,16 @@ namespace CBinding.Refactoring
 			if (USRReferenced.Equals (USR)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				Reference reference = new Reference (project, cursor, range);
-				if (!references.Contains (reference))
-					references.Add (reference);
+				var doc = IdeApp.Workbench.GetDocument (reference.FileName);
+				if (doc != null) {
+					if (!references.Contains (reference)
+					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
+					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
+						&& !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 1)).Equals (':')
+					    && !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 2)).Equals (':')) {
+						references.Add (reference);
+					}			
+				}
 			}
 			return CXChildVisitResult.CXChildVisit_Recurse;
 		}

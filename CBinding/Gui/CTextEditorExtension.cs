@@ -46,7 +46,6 @@ using MonoDevelop.Components.Commands;
 using MonoDevelop.Ide.TypeSystem;
 using ICSharpCode.NRefactory.TypeSystem;
 using ICSharpCode.NRefactory.Completion;
-using ICSharpCode.NRefactory6.CSharp.Completion;
 using MonoDevelop.Ide.Editor;
 using MonoDevelop.Core.Text;
 using MonoDevelop.Ide.Editor.Extension;

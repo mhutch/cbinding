@@ -122,14 +122,6 @@
       <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="ICSharpCode.NRefactory6.CSharp">
-      <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory6.CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Desktop">
-      <HintPath>..\..\monodevelop\main\build\bin\Microsoft.CodeAnalysis.Desktop.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
       <HintPath>..\..\monodevelop\main\build\bin\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>False</Private>
