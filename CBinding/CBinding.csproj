@@ -97,7 +97,6 @@
   <Import Project="..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets')" />
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Parser\CDocumentParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
@@ -251,6 +250,7 @@
     <Compile Include="Refactoring\GotoDefinitionHandler.cs" />
     <Compile Include="Refactoring\RefactoryCommands.cs" />
     <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
+    <Compile Include="Parser\CDocumentParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

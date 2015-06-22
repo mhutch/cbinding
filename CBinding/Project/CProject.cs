@@ -184,7 +184,7 @@ namespace CBinding
 				}
 				if (e.BuildAction == BuildAction.Compile)
 					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.UpdateTranslationUnit (this, e.Name);
+						cLangManager.CompilerArgumentsUpdate();
 					});
 			}
 		}

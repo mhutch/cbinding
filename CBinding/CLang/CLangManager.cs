@@ -34,7 +34,8 @@ namespace CBinding
 		private CXIndex index;
 		private Dictionary<string, CXTranslationUnit> translationUnits;
 		private bool started = false;
-		private List<KeyValuePair<TextEditor, ITextSegmentMarker>> markers = new List<KeyValuePair<TextEditor, ITextSegmentMarker>>();
+		private List<KeyValuePair<string, ITextSegmentMarker>> markers = new List<KeyValuePair<string, ITextSegmentMarker>>();
+		private Dictionary<string, bool> shouldReparse = new Dictionary<string, bool>();
 
 		public Dictionary<string, CXTranslationUnit> TranslationUnits {
 			get {				
@@ -49,11 +50,13 @@ namespace CBinding
 				lock (syncroot) {
 					List<CXUnsavedFile> unsavedFiles = new List<CXUnsavedFile> ();
 					foreach (Document doc in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
-						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Filename = doc.FileName;
-						unsavedFile.Length = doc.Editor.Text.Length;
-						unsavedFile.Contents = doc.Editor.Text;
-						unsavedFiles.Add (unsavedFile);
+						if (doc.IsDirty) {
+							CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+							unsavedFile.Filename = doc.FileName;
+							unsavedFile.Length = doc.Editor.Text.Length;
+							unsavedFile.Contents = doc.Editor.Text;
+							unsavedFiles.Add (unsavedFile);
+						}
 					}
 					return unsavedFiles.ToArray ();
 				}
@@ -96,6 +99,7 @@ namespace CBinding
 						Convert.ToUInt32 (UnsavedFiles.Length),
 						UnsavedFiles)
 					);
+					shouldReparse.Add (fileName, false);
 					UpdateTranslationUnit (project, fileName);
 				} catch (ArgumentException) {
 					Console.WriteLine (fileName + " is already added, not adding");
@@ -130,8 +134,34 @@ namespace CBinding
 			lock (syncroot) {
 				clang.disposeTranslationUnit (translationUnits [fileName]);
 				translationUnits.Remove (fileName);
+				shouldReparse.Remove (fileName);
 				foreach (var f in project.Files)
-					UpdateTranslationUnit (project, f.Name);
+					shouldReparse [f.Name] = true;
+			}
+		}
+
+		public void CompilerArgumentsUpdate () {
+			lock (syncroot) {
+				ClangCCompiler compiler = new ClangCCompiler ();
+				CProjectConfiguration active_configuration =
+					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
+				while (active_configuration == null) {
+					Thread.Sleep (20);
+					active_configuration = (CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
+				}
+				string[] args = compiler.GetCompilerFlagsAsArray (project, active_configuration);
+				var unsavedFiles = UnsavedFiles;
+				foreach (var TU in translationUnits) {
+					clang.disposeTranslationUnit (translationUnits [TU.Key]);
+					translationUnits [TU.Key] = clang.createTranslationUnitFromSourceFile (
+						index,
+						TU.Key,
+						args.Length,
+						args,
+						Convert.ToUInt32 (unsavedFiles.Length),
+						unsavedFiles					
+					);
+				}
 			}
 		}
 
@@ -269,9 +299,9 @@ namespace CBinding
 				Thread.Sleep (50);
 			while (true) {
 				lock (syncroot) {
-					if (MonoDevelop.Ide.IdeApp.Workbench.Documents.Any (doc => doc.IsDirty)) {
-						foreach (var TU in translationUnits) {
-							CXUnsavedFile[] unsavedFiles = UnsavedFiles;
+					CXUnsavedFile[] unsavedFiles = UnsavedFiles;
+					foreach (var TU in translationUnits) {
+						if (shouldReparse[TU.Key]) {
 							clang.reparseTranslationUnit (
 								translationUnits [TU.Key],
 								Convert.ToUInt32 (unsavedFiles.Length),
@@ -282,6 +312,7 @@ namespace CBinding
 							TranslationUnitParser parser = new TranslationUnitParser (project.db, TU.Key);
 							clang.visitChildren (clang.getTranslationUnitCursor (translationUnits [TU.Key]), parser.Visit, new CXClientData (new IntPtr (0)));
 							diagnoseTranslationUnit (TU.Key);
+							shouldReparse [TU.Key] = false;
 						}
 					}
 				}
@@ -300,22 +331,19 @@ namespace CBinding
 		private void diagnoseTranslationUnit (string fileName)
 		{
 			lock (syncroot) {
-				
-			Document doc = null;
-			foreach (var d in IdeApp.Workbench.Documents)
-				if (d.Name.Equals (fileName))
-					doc = d;
-			if (doc == null)
-				return;
-			foreach (var marker in markers) {
-				if(doc.Editor == marker.Key)
-					try {
-					doc.Editor.RemoveMarker (marker.Value);
-					} catch (Exception) {
-					}
-			}
-			CXTranslationUnit TU = translationUnits [fileName];
-			uint numDiag = clang.getNumDiagnostics (TU);
+				Document doc = null;
+				foreach (var d in IdeApp.Workbench.Documents)
+					if (d.Name.Equals (fileName))
+						doc = d;
+				if (doc == null)
+					return;
+				foreach (var marker in markers) {
+					if(doc.FileName.ToString ().Equals (marker.Key)) {
+						doc.Editor.RemoveMarker (marker.Value);
+					}				
+				}
+				CXTranslationUnit TU = translationUnits [fileName];
+				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);
 					string spelling = getDiagnosticSpelling (diag);
@@ -331,7 +359,7 @@ namespace CBinding
 								                      len
 							                      );
 
-							markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+							markers.Add (new KeyValuePair<string, ITextSegmentMarker> (doc.FileName, m));
 							doc.Editor.AddMarker (m);
 						}
 					} else {
@@ -345,10 +373,16 @@ namespace CBinding
 						//but diags without a range might not worth that effort, eg.: undeclared variables
 							                      3
 						                      );
-						markers.Add (new KeyValuePair<TextEditor, ITextSegmentMarker> (doc.Editor, m));
+						markers.Add (new KeyValuePair<string, ITextSegmentMarker> (doc.FileName, m));
 						doc.Editor.AddMarker (m);
 					}
 				}
+			}
+		}
+	
+		public void reparseImminent (string fileName) {
+			lock (syncroot) {
+				shouldReparse [fileName] = true;
 			}
 		}
 	}

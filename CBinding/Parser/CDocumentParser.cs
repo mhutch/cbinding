@@ -40,7 +40,8 @@ using MonoDevelop.Core.Text;
 namespace CBinding.Parser
 {
 	/// <summary>
-	/// Ctags-based document parser helper
+	/// clang-based document parser helper dummy
+	/// returned ParsedDocument is not used anywhere, but this method triggers reparse
 	/// </summary>
 	public class CDocumentParser:  TypeSystemParser
 	{
@@ -50,18 +51,23 @@ namespace CBinding.Parser
 			var project = options.Project as CProject;
 			var doc = new DefaultParsedDocument (fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			ClangSymbolDatabase db = project.db;
-			
+			if (project != null)
+				project.cLangManager.reparseImminent (fileName);
+
+
+			/*
 			string content = options.Content.Text;
 			string[] contentLines = content.Split (new string[]{Environment.NewLine}, StringSplitOptions.None);
 			
 			var globals = new DefaultUnresolvedTypeDefinition ("", GettextCatalog.GetString ("(Global Scope)"));
 			lock (db) {
 				// Add containers to type list
-				foreach (Symbol sym in db.Containers ()) {
-					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
+				foreach (var sym in db.Containers) {
+					if (null == sym.Value.Parent && FilePath.Equals (sym.Value.FileName, fileName)) {
 						var tmp = AddLanguageItem (db, globals, sym, contentLines) as IUnresolvedTypeDefinition;
-						if (null != tmp){ /*doc.TopLevelTypeDefinitions.Add (tmp);*/ }
+						if (null != tmp){
+						//doc.TopLevelTypeDefinitions.Add (tmp);
+						}
 					}
 				}
 				
@@ -71,12 +77,12 @@ namespace CBinding.Parser
 						AddLanguageItem (db, globals, sym, contentLines);
 					}
 				}
-			}
+			}*/
 			
 			//doc.TopLevelTypeDefinitions.Add (globals);
 			return System.Threading.Tasks.Task.FromResult((ParsedDocument)doc);
 		}
-		
+		/*
 		/// <summary>
 		/// Finds the end of a function's definition by matching braces.
 		/// </summary>
@@ -144,8 +150,8 @@ namespace CBinding.Parser
 		}
 		
 		static readonly Regex paramExpression = new Regex (@"(?<type>[^\s]+)\s+(?<subtype>[*&]*)(?<name>[^\s[]+)(?<array>\[.*)?", RegexOptions.Compiled);
-		
-		static object AddLanguageItem (ClangSymbolDatabase db, DefaultUnresolvedTypeDefinition klass, Symbol sym, string[] contentLines)
+
+		static object AddLanguageItem (ClangProjectSymbolDatabase db, DefaultUnresolvedTypeDefinition klass, Symbol sym, string[] contentLines)
 		{
 			
 			if (sym is Class || sym is Struct || sym is Enumeration) {
@@ -164,7 +170,7 @@ namespace CBinding.Parser
 			klass.Members.Add (field);
 			return field;
 		}
-		
+
 		/// <summary>
 		/// Create an IMember from a Symbol,
 		/// using the source document to locate declaration bounds.
@@ -203,7 +209,7 @@ namespace CBinding.Parser
 			return result;
 		}
 		
-		static IUnresolvedMethod FunctionToIMethod (ClangSymbolDatabase db, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
+		static IUnresolvedMethod FunctionToIMethod (ClangProjectSymbolDatabase db, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
 		{
 			var method = new DefaultUnresolvedMethod (type, function.Name);
 			method.Region = new DomRegion ((int)function.Line, 1, FindFunctionEnd (contentLines, (int)function.Line-1)+2, 1);
@@ -224,8 +230,6 @@ namespace CBinding.Parser
 			if (!abort)
 				parameters.ForEach (p => method.Parameters.Add (p));
 			return method;
-		}
-		
-		
+		}*/
 	}
 }

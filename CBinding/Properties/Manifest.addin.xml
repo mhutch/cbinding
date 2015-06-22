@@ -223,9 +223,9 @@
 	</Module>
 -->
 	
-	<!---<Extension path = "/MonoDevelop/TypeSystem/Parser">
+	<Extension path = "/MonoDevelop/TypeSystem/Parser">
 		<Parser class="CBinding.Parser.CDocumentParser" mimeType = "text/x-csrc, text/x-chdr, text/x-c++src, text/x-c++hdr, text/x-objcsrc, text/x-objc++src" />
-	</Extension> -->
+	</Extension>
 	<Extension path = "/MonoDevelop/Ide/Commands">
 		<Command id = "CBinding.Refactoring.RefactoryCommands.GotoDefinition"
        		_label = "Go to definition"
