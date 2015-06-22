@@ -237,6 +237,11 @@
     <Compile Include="Gui\DataWrapper.cs" />
     <Compile Include="CMake\CMakeCompletionDataLists.cs" />
     <Compile Include="CMake\CMakeTextEditorExtension.cs" />
+    <Compile Include="CMake\CMakeFileFormat.cs" />
+    <Compile Include="CMake\CMakeTarget.cs" />
+    <Compile Include="CMake\CMakeCommand.cs" />
+    <Compile Include="CMake\CMakeArgument.cs" />
+    <Compile Include="CMake\CMakeVariableParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
