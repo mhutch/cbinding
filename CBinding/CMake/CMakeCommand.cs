@@ -48,7 +48,9 @@ namespace CBinding {
 
 		public void AddArgument (string argument)
 		{
-			Arguments.Add (new CMakeArgument (argument));
+			CMakeArgument arg = new CMakeArgument (argument);
+			if (!Arguments.Contains (arg))
+				Arguments.Add (arg);
 		}
 
 		public bool RemoveArgument (string argument)

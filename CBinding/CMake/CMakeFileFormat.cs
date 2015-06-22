@@ -44,9 +44,9 @@ namespace CBinding {
 		public string ProjectName = ""; //Comes from `project (project_name)` cmake command.
 		public Dictionary<string, CMakeCommand> SetCommands = new Dictionary<string, CMakeCommand> ();
 		public Dictionary<string, CMakeTarget> Targets = new Dictionary<string, CMakeTarget> ();
-		public Dictionary<FilePath, CMakeFileFormat> Children;
-		public CMakeFileFormat Parent;
+		public Dictionary<FilePath, CMakeFileFormat> Children = new Dictionary<FilePath, CMakeFileFormat> ();
 		
+		CMakeFileFormat parent;
 		Dictionary<string, CMakeCommand> allCommands = new Dictionary<string, CMakeCommand> ();
 		Stack<string> blocks = new Stack<string> ();
 		MonoDevelop.Projects.Text.TextFile contentFile;
@@ -127,14 +127,14 @@ namespace CBinding {
 				}
 				break;
 			case "add_subdirectory":
-				if (Parent == null) {
+				if (parent == null) {
 					FilePath temp = new FilePath (command.Arguments [0].ToString ());
 					if (!Children.ContainsKey (temp))
 						Children.Add (temp, new CMakeFileFormat (temp, Project, this));
 				} else {
 					FilePath temp = new FilePath (command.Arguments [0].ToString ());
-					if (!Parent.Children.ContainsKey (temp))
-						Children.Add (temp, new CMakeFileFormat (temp, Project, Parent));
+					if (!parent.Children.ContainsKey (temp))
+						Children.Add (temp, new CMakeFileFormat (temp, Project, parent));
 				}
 				break;
 			default:
@@ -148,6 +148,13 @@ namespace CBinding {
 
 		public void Parse ()
 		{
+			Targets.Clear ();
+			SetCommands.Clear ();
+			allCommands.Clear ();
+			blocks.Clear ();
+			Children.Clear ();
+			ProjectName = "";
+			
 			contentFile = new MonoDevelop.Projects.Text.TextFile(File);
 			foreach (Match m in readNextCommand ()) {
 				parseCommand (m);
@@ -222,7 +229,7 @@ namespace CBinding {
 		{
 			contentFile.Text = "";
 			foreach (var command in allCommands)
-				contentFile.Text += command.Value.ToString ();
+				contentFile.Text += command.Value.ToString () + '\n';
 
 			contentFile.Save ();
 		}
@@ -244,7 +251,7 @@ namespace CBinding {
 		{
 			File = file;
 			Project = project;
-			this.Parent = parent;
+			this.parent = parent;
 		}
 	}
 }
