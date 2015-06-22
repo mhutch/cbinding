@@ -247,6 +247,16 @@ namespace CBinding
 			}
 		}
 
+		public void findReferences(RenameHandlerDialog visitor) {
+			foreach (var T in translationUnits) {
+				clang.visitChildren (
+					clang.getTranslationUnitCursor (T.Value),
+					visitor.Visit,
+					new CXClientData (new IntPtr(0))
+				);
+			}
+		}
+
 		public string getCursorSpelling(CXCursor cursor){
 			lock(syncroot){
 				CXString cxstring = clang.getCursorSpelling (cursor);

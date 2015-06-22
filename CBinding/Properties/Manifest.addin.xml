@@ -243,6 +243,9 @@
 		<Condition id="FileType" fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M">
 			<CommandItem id = "MonoDevelop.Refactoring.RefactoryCommands.FindReferences" insertafter="MonoDevelop.SourceEditor.SourceEditorCommands.MarkerOperations" />
 		</Condition>
+		<Condition id="FileType" fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M">
+			<CommandItem id = "MonoDevelop.Ide.Commands.EditCommands.Rename" insertafter="MonoDevelop.SourceEditor.SourceEditorCommands.MarkerOperations" />
+		</Condition>
 	</Extension>
 	
 	<Extension path = "/MonoDevelop/Ide/CompletionCharacters">

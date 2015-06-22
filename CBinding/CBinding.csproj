@@ -241,7 +241,6 @@
     <Compile Include="Parser\Field.cs" />
     <Compile Include="Parser\ClassTemplatePartial.cs" />
     <Compile Include="Parser\SourceLocation.cs" />
-    <Compile Include="Refactoring\RenameHandler.cs" />
     <Compile Include="Refactoring\Reference.cs" />
     <Compile Include="Refactoring\FindReferencesHandler.cs" />
     <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
@@ -251,6 +250,8 @@
     <Compile Include="Refactoring\RefactoryCommands.cs" />
     <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
     <Compile Include="Parser\CDocumentParser.cs" />
+    <Compile Include="Gui\RenameHandlerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.RenameHandlerDialog.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

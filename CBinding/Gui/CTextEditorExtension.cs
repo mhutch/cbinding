@@ -468,20 +468,26 @@ namespace CBinding
 			findDerivedSymbolsHandler.Run (DocumentContext.Project as CProject);
 		}*/
 
-		/*
+
 		[CommandUpdateHandler (EditCommands.Rename)]
 		public void RenameCommand_Update (CommandInfo ci)
 		{
-			RenameHandler renameHandler = new RenameHandler (DocumentContext.Project as CProject);
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
 			renameHandler.Update (ci);
 		}
 
 		[CommandHandler (EditCommands.Rename)]
 		public void RenameCommand ()
 		{
-			RenameHandler renameHandler = new RenameHandler (DocumentContext.Project as CProject);
-			renameHandler.Run (Editor, DocumentContext);
-		}*/
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
+			renameHandler.RunRename ();
+		}
 		#endregion
 	}
 }
