@@ -64,24 +64,28 @@ namespace CBinding
 
 		public void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
-			ThreadPool.QueueUserWorkItem (o => {
-				try {
-					project.cLangManager.findReferences (this);
-					int i = 0;
-					int diff = newSpelling.Length - spelling.Length;
-					foreach (var reference in references) {
-						try {
-							document.Editor.ReplaceText (
-							new TextSegment (Convert.ToInt32 (reference.Offset) + i*diff, Convert.ToInt32 (reference.Length)),
-								newSpelling);
-						} catch (Exception){
-						}
-						i++;
+			throw new NotImplementedException();
+
+			try {
+				project.cLangManager.findReferences (this);
+				references.Sort ();
+				int diff = newSpelling.Length - spelling.Length;
+				Dictionary<string, int> offsets = new Dictionary<string, int>();
+				foreach (var reference in references) {
+					try {
+						if(!offsets.ContainsKey (reference.FileName))
+							offsets.Add (reference.FileName, 0);
+						int i = offsets[reference.FileName];
+						document.Editor.ReplaceText (
+						new TextSegment (Convert.ToInt32 (reference.Offset) + i*diff, Convert.ToInt32 (reference.Length)),
+							newSpelling);
+						offsets[reference.FileName] = i++;
+					} catch (Exception){
 					}
-				} catch (Exception ex) {
-					LoggingService.LogError ("Error renaming references", ex);
-				} 
-			});
+				}
+			} catch (Exception ex) {
+				LoggingService.LogError ("Error renaming references", ex);
+			} 
 		}
 
 		public void Update (CommandInfo info)

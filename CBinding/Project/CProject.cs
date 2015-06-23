@@ -103,7 +103,6 @@ namespace CBinding
 			packages.Project = this;
 			cLangManager = new CLangManager (this);
 			db = new ClangProjectSymbolDatabase (this);
-			cLangManager.startBackgroundParsingThread ();
 		}
 
 		protected override void OnInitializeFromTemplate (ProjectCreateInformation projectCreateInfo, XmlElement template)
@@ -171,21 +170,6 @@ namespace CBinding
 						c.ExtraLinkerArguments = template.Attributes ["LinkerArgs"].InnerText;
 					}
 				}
-			}
-		}
-
-		protected override void OnDefaultConfigurationChanged (ConfigurationEventArgs args)
-		{
-			base.OnDefaultConfigurationChanged (args);
-			foreach (var e in Files) {
-				if (!Loading && !IsCompileable (e.Name) &&
-				    e.BuildAction == BuildAction.Compile) {
-					e.BuildAction = BuildAction.None;
-				}
-				if (e.BuildAction == BuildAction.Compile)
-					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.CompilerArgumentsUpdate();
-					});
 			}
 		}
 
@@ -459,38 +443,6 @@ namespace CBinding
 			}
 		}
 		
-		protected override void OnFileAddedToProject (ProjectFileEventArgs args)
-		{
-			base.OnFileAddedToProject (args);
-			
-			foreach (ProjectFileEventInfo e in args) {
-				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-				    e.ProjectFile.BuildAction == BuildAction.Compile) {
-					e.ProjectFile.BuildAction = BuildAction.None;
-				}
-				
-				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.AddToTranslationUnits (this, e.ProjectFile.Name);
-					});
-			}
-		}
-
-		protected override void OnFileChangedInProject (ProjectFileEventArgs args)
-		{
-			base.OnFileChangedInProject (args);
-			foreach (ProjectFileEventInfo e in args) {
-				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-				    e.ProjectFile.BuildAction == BuildAction.Compile) {
-					e.ProjectFile.BuildAction = BuildAction.None;
-				}
-				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.UpdateTranslationUnit (this, e.ProjectFile.Name);
-					});
-			}
-		}
-
 		protected override void OnFileRemovedFromProject (ProjectFileEventArgs args)
 		{
 			base.OnFileRemovedFromProject (args);
@@ -500,9 +452,7 @@ namespace CBinding
 					e.ProjectFile.BuildAction = BuildAction.None;
 				}
 				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
-					});
+					cLangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
 			}
 		}
 

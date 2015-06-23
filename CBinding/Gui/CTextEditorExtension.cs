@@ -34,7 +34,6 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
-
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.Gui;
@@ -42,24 +41,16 @@ using MonoDevelop.Ide.Gui.Content;
 using MonoDevelop.Ide.CodeCompletion;
 using MonoDevelop.Components;
 using MonoDevelop.Components.Commands;
-
 using MonoDevelop.Ide.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory.Completion;
 using MonoDevelop.Ide.Editor;
-using MonoDevelop.Core.Text;
 using MonoDevelop.Ide.Editor.Extension;
 using System.Threading.Tasks;
 using System.Threading;
 using ClangSharp;
 using System.Runtime.InteropServices;
-using ICSharpCode.NRefactory.MonoCSharp;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Editor.Projection;
 using MonoDevelop.Ide.Commands;
 using CBinding.Refactoring;
 using CBinding.Parser;
-using MonoDevelop.Refactoring;
 
 
 namespace CBinding
@@ -67,6 +58,7 @@ namespace CBinding
 	public class CTextEditorExtension : CompletionTextEditorExtension, IPathedDocument
 	{
 		private char previous = ' ';
+		private List<CXUnsavedFile> unsavedFiles;
 
 		// Allowed chars to be next to an identifier
 		private static char[] allowedChars = new char[] {
@@ -240,12 +232,22 @@ namespace CBinding
 
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
+			unsavedFiles = new List<CXUnsavedFile> ();
+			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
+				if (openDocument.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Filename = openDocument.FileName;
+					unsavedFile.Length = openDocument.Editor.Text.Length;
+					unsavedFile.Contents = openDocument.Editor.Text;
+					unsavedFiles.Add (unsavedFile);
+				}
+			}
 			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			if (shouldCompleteOn(completionChar)) {
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
 				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
-				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
+				IntPtr pResults = project.cLangManager.codeComplete (DocumentContext, unsavedFiles.ToArray (), this);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
 					for(int i = 0; i < results.NumResults; i++) {

@@ -25,62 +25,93 @@
 // THE SOFTWARE.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
-using MonoDevelop.Core;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide;
 using MonoDevelop.Ide.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem.Implementation;
-using MonoDevelop.Core.Text;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Editor;
 
 namespace CBinding.Parser
 {
+	
+	public class CParsedDocument : DefaultParsedDocument {
+		public CXTranslationUnit TU { get; set;}
+		public CLangManager Manager { get; private set;}
+		public CProject Project { get; set;}
+		List<CXUnsavedFile> unsavedFiles;
+
+
+		public CParsedDocument(CProject proj, string fileName) : base(fileName)
+		{
+			Project = proj;
+			Manager = proj.cLangManager;
+			unsavedFiles = new List<CXUnsavedFile> ();
+			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
+				if (openDocument.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Filename = openDocument.FileName;
+					unsavedFile.Length = openDocument.Editor.Text.Length;
+					unsavedFile.Contents = openDocument.Editor.Text;
+					unsavedFiles.Add (unsavedFile);
+				}
+			}
+			TU = Manager.createTranslationUnit(proj, fileName, unsavedFiles.ToArray ());
+		}
+
+		public void parse ()
+		{
+			lock (Manager.syncroot) {
+				var unsavedFilesArray = unsavedFiles.ToArray ();
+				clang.reparseTranslationUnit (
+					TU,
+					Convert.ToUInt32 (unsavedFilesArray.Length),
+					unsavedFilesArray,
+					clang.defaultReparseOptions (TU)
+				);
+				Manager.UpdateDatabase (Project, FileName, TU);
+			}
+		}
+
+		public void diagnose ()
+		{
+			lock (Manager.syncroot) {
+				uint numDiag = clang.getNumDiagnostics (TU);
+				for (uint i = 0; i < numDiag; i++) {
+					CXDiagnostic diag = clang.getDiagnostic (TU, i);
+					string spelling = diag.ToString ();
+					uint numRanges = clang.getDiagnosticNumRanges (diag);
+					if (numRanges != 0) {
+						for (uint j = 0; j < numRanges; j++) {
+							SourceLocation begin = Manager.getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
+							SourceLocation end = Manager.getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j)));
+							Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (begin.Line, begin.Column, end.Line, end.Column)));
+						}
+					} else {
+						SourceLocation loc = Manager.getSourceLocation (clang.getDiagnosticLocation (diag));
+						Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (loc.Line, loc.Column, loc.Line, loc.Column + 1)));
+					}
+				}
+			}
+		}
+	}
+
 	/// <summary>
-	/// clang-based document parser helper dummy
-	/// returned ParsedDocument is not used anywhere, but this method triggers reparse
+	/// clang-based document parser helper
 	/// </summary>
 	public class CDocumentParser:  TypeSystemParser
 	{
-		public override System.Threading.Tasks.Task<ParsedDocument> Parse (ParseOptions options, System.Threading.CancellationToken cancellationToken)
+		
+		public override System.Threading.Tasks.Task<ParsedDocument> Parse(ParseOptions options, System.Threading.CancellationToken cancellationToken)
 		{
 			var fileName = options.FileName;
 			var project = options.Project as CProject;
-			var doc = new DefaultParsedDocument (fileName);
+			if (project == null)
+				return System.Threading.Tasks.Task.FromResult (new DefaultParsedDocument (fileName) as ParsedDocument);
+			var doc = new CParsedDocument (project, fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			if (project != null)
-				project.cLangManager.reparseImminent (fileName);
-
-
-			/*
-			string content = options.Content.Text;
-			string[] contentLines = content.Split (new string[]{Environment.NewLine}, StringSplitOptions.None);
-			
-			var globals = new DefaultUnresolvedTypeDefinition ("", GettextCatalog.GetString ("(Global Scope)"));
-			lock (db) {
-				// Add containers to type list
-				foreach (var sym in db.Containers) {
-					if (null == sym.Value.Parent && FilePath.Equals (sym.Value.FileName, fileName)) {
-						var tmp = AddLanguageItem (db, globals, sym, contentLines) as IUnresolvedTypeDefinition;
-						if (null != tmp){
-						//doc.TopLevelTypeDefinitions.Add (tmp);
-						}
-					}
-				}
-				
-				// Add global category for unscoped symbols
-				foreach (Symbol sym in db.InstanceMembers ()) {
-					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
-						AddLanguageItem (db, globals, sym, contentLines);
-					}
-				}
-			}*/
-			
-			//doc.TopLevelTypeDefinitions.Add (globals);
-			return System.Threading.Tasks.Task.FromResult((ParsedDocument)doc);
+			doc.parse ();
+			doc.diagnose ();
+			return System.Threading.Tasks.Task.FromResult (doc as ParsedDocument);
 		}
 		/*
 		/// <summary>

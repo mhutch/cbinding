@@ -18,8 +18,12 @@ namespace CBinding.Refactoring
 		CProject project;
 		CXCursor cursorReferenced;
 		string USRReferenced;
-		string spelling;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CBinding.Refactoring.FindReferencesHandler"/> class.
+		/// </summary>
+		/// <param name="proj">Proj.</param>
+		/// <param name="doc">Document.</param>
 		public FindReferencesHandler (CProject proj, Document doc) {
 			project = proj;
 			cursorReferenced = project.cLangManager.getCursorReferenced(
@@ -29,10 +33,15 @@ namespace CBinding.Refactoring
 				)
 			);
 			USRReferenced = project.cLangManager.getCursorUSRString (cursorReferenced);
-			spelling = project.cLangManager.getCursorSpelling(cursorReferenced);
 		}
 
 		private List<Reference> references = new List<Reference>();
+		/// <summary>
+		/// Visit the specified cursor, parent and data.
+		/// </summary>
+		/// <param name="cursor">Cursor.</param>
+		/// <param name="parent">Parent.</param>
+		/// <param name="data">Data.</param>
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
 			CXCursor referenced = project.cLangManager.getCursorReferenced (cursor);
 			string USR = project.cLangManager.getCursorUSRString (referenced);
@@ -44,8 +53,8 @@ namespace CBinding.Refactoring
 					if (!references.Contains (reference)
 					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
 					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
-						&& !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 1)).Equals (':')
-					    && !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 2)).Equals (':')) {
+						&& !doc.Editor.GetCharAt (reference.End.Offset + 1).Equals (':')
+					    && !doc.Editor.GetCharAt (reference.End.Offset + 2).Equals (':')) {
 						references.Add (reference);
 					}			
 				}
@@ -53,6 +62,11 @@ namespace CBinding.Refactoring
 			return CXChildVisitResult.CXChildVisit_Recurse;
 		}
 
+		/// <summary>
+		/// Finds the references.
+		/// </summary>
+		/// <param name="project">Project.</param>
+		/// <param name="cursor">Cursor.</param>
 		public void FindRefs (CProject project, CXCursor cursor)
 		{
 			var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor (true, true);
@@ -62,8 +76,8 @@ namespace CBinding.Refactoring
 					foreach (var reference in references) {
 						var sr = new SearchResult (
 							new FileProvider (reference.FileName),
-							Convert.ToInt32 (reference.Offset),
-							Convert.ToInt32 (reference.Length)
+							reference.Offset,
+							reference.Length
 						);
 						monitor.ReportResult (sr);
 					}
@@ -79,6 +93,10 @@ namespace CBinding.Refactoring
 			});
 		}
 
+		/// <summary>
+		/// Update the specified info.
+		/// </summary>
+		/// <param name="info">Info.</param>
 		public void Update (CommandInfo info)
 		{
 			if (clang.Cursor_isNull (cursorReferenced) == 0) {
@@ -87,6 +105,9 @@ namespace CBinding.Refactoring
 			}
 		}
 
+		/// <summary>
+		/// Run this instance.
+		/// </summary>
 		public void Run ()
 		{
 			FindRefs (project, cursorReferenced);
