@@ -50,6 +50,7 @@ using System.Threading;
 using Mono.Unix.Native;
 using System.Diagnostics;
 using CBinding.Parser;
+using ClangSharp;
 
 namespace CBinding
 {
@@ -442,7 +443,23 @@ namespace CBinding
 				packages.Project = this;
 			}
 		}
-		
+
+		protected override void OnFileAddedToProject (ProjectFileEventArgs args)
+		{
+			base.OnFileAddedToProject (args);
+			foreach (ProjectFileEventInfo e in args) {
+				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
+					e.ProjectFile.BuildAction == BuildAction.Compile) {
+					e.ProjectFile.BuildAction = BuildAction.None;
+				}
+
+				if (e.ProjectFile.BuildAction == BuildAction.Compile)
+					ThreadPool.QueueUserWorkItem (o => {
+						cLangManager.createTranslationUnit (this, e.ProjectFile.Name, new CXUnsavedFile[0]);
+					});
+			}
+		}
+
 		protected override void OnFileRemovedFromProject (ProjectFileEventArgs args)
 		{
 			base.OnFileRemovedFromProject (args);

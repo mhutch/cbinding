@@ -44,6 +44,7 @@ namespace CBinding.Parser
 			isDefinition = clang.isCursorDefinition (cursor) != 0;
 			isConst = clang.isConstQualifiedType (clang.getCursorType (cursor)) != 0;
 			spellingLength = Convert.ToInt32 (end.Offset - begin.Offset);
+			spelling = clang.getCursorSpelling (cursor).ToString ();
 		}
 
 		public CProject Project {

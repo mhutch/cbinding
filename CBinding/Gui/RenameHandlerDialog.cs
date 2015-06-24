@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using MonoDevelop.Ide.Gui;
 using ClangSharp;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using MonoDevelop.Ide;
 using MonoDevelop.Core;
 using MonoDevelop.Components.Commands;
 using MonoDevelop.Core.Text;
+using System.Text;
 
 namespace CBinding
 {
@@ -48,13 +48,14 @@ namespace CBinding
 			if (USRReferenced.Equals (USR)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				Reference reference = new Reference (project, cursor, range);
-				var doc = IdeApp.Workbench.GetDocument (reference.FileName);
-				if (doc != null) {
+				var file = project.Files.GetFile (reference.FileName);
+				if (file != null) {
+					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
 					if (!references.Contains (reference)
 						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
 						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
-						&& !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 1)).Equals (':')
-						&& !doc.Editor.GetCharAt (Convert.ToInt32 (reference.End.Offset + 2)).Equals (':')) {
+						&& !doc.Editor.GetCharAt (reference.End.Offset + 1).Equals (':')
+						&& !doc.Editor.GetCharAt (reference.End.Offset + 2).Equals (':')) {
 						references.Add (reference);
 					}			
 				}
@@ -64,25 +65,34 @@ namespace CBinding
 
 		public void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
-			throw new NotImplementedException();
-
 			try {
 				project.cLangManager.findReferences (this);
 				references.Sort ();
 				int diff = newSpelling.Length - spelling.Length;
 				Dictionary<string, int> offsets = new Dictionary<string, int>();
+				Dictionary<string, StringBuilder> tmp = new Dictionary<string, StringBuilder>();
 				foreach (var reference in references) {
 					try {
-						if(!offsets.ContainsKey (reference.FileName))
+						var doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
+						if(!offsets.ContainsKey (reference.FileName)) {
 							offsets.Add (reference.FileName, 0);
+							tmp.Add(reference.FileName, new StringBuilder(doc.Editor.Text));
+						}
 						int i = offsets[reference.FileName];
-						document.Editor.ReplaceText (
-						new TextSegment (Convert.ToInt32 (reference.Offset) + i*diff, Convert.ToInt32 (reference.Length)),
-							newSpelling);
-						offsets[reference.FileName] = i++;
+						tmp[reference.FileName].Remove (reference.Offset + i*diff, reference.Length);
+						tmp[reference.FileName].Insert (reference.Offset + i*diff, newSpelling);
+						offsets[reference.FileName] = ++i;
 					} catch (Exception){
 					}
 				}
+				foreach(var content in tmp)
+					IdeApp.Workbench.GetDocument (content.Key).Editor.ReplaceText (
+						new TextSegment (
+							0, 
+							IdeApp.Workbench.GetDocument (content.Key).Editor.Text.Length
+						),
+						content.Value.ToString ()
+					);
 			} catch (Exception ex) {
 				LoggingService.LogError ("Error renaming references", ex);
 			} 

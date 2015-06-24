@@ -4,12 +4,8 @@ using MonoDevelop.Ide;
 using MonoDevelop.Core;
 using ClangSharp;
 using System.Collections.Generic;
-using MonoDevelop.Ide.TypeSystem;
-using System.Threading;
 using MonoDevelop.Ide.FindInFiles;
 using MonoDevelop.Ide.Gui;
-using System.Runtime.InteropServices;
-using System.Collections;
 
 namespace CBinding.Refactoring
 {	//Based on code from CSharpBinding
@@ -48,13 +44,14 @@ namespace CBinding.Refactoring
 			if (USRReferenced.Equals (USR)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				Reference reference = new Reference (project, cursor, range);
-				var doc = IdeApp.Workbench.GetDocument (reference.FileName);
-				if (doc != null) {
+				var file = project.Files.GetFile (reference.FileName);
+				if (file != null) {
+					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
 					if (!references.Contains (reference)
-					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
-					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
+						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
+						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
 						&& !doc.Editor.GetCharAt (reference.End.Offset + 1).Equals (':')
-					    && !doc.Editor.GetCharAt (reference.End.Offset + 2).Equals (':')) {
+						&& !doc.Editor.GetCharAt (reference.End.Offset + 2).Equals (':')) {
 						references.Add (reference);
 					}			
 				}
@@ -70,27 +67,25 @@ namespace CBinding.Refactoring
 		public void FindRefs (CProject project, CXCursor cursor)
 		{
 			var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor (true, true);
-			ThreadPool.QueueUserWorkItem ( o => {
-				try {
-					project.cLangManager.findReferences(this);
-					foreach (var reference in references) {
-						var sr = new SearchResult (
-							new FileProvider (reference.FileName),
-							reference.Offset,
-							reference.Length
-						);
-						monitor.ReportResult (sr);
-					}
-				} catch (Exception ex) {
-					if (monitor != null)
-						monitor.ReportError ("Error finding references", ex);
-					else
-						LoggingService.LogError ("Error finding references", ex);
-				} finally {
-					if (monitor != null)
-						monitor.Dispose ();
+			try {
+				project.cLangManager.findReferences(this);
+				foreach (var reference in references) {
+					var sr = new SearchResult (
+						new FileProvider (reference.FileName),
+						reference.Offset,
+						reference.Length
+					);
+					monitor.ReportResult (sr);
 				}
-			});
+			} catch (Exception ex) {
+				if (monitor != null)
+					monitor.ReportError ("Error finding references", ex);
+				else
+					LoggingService.LogError ("Error finding references", ex);
+			} finally {
+				if (monitor != null)
+					monitor.Dispose ();
+			}
 		}
 
 		/// <summary>

@@ -55,7 +55,7 @@ namespace CBinding.Parser
 			this.editor = editor;
 
 			foreach (Function f in functions) {
-				if (f.Spelling == functionName) {
+				if (f.Spelling.Equals (functionName)) {
 					data.Add (new DataWrapper (f));
 				}
 			}
