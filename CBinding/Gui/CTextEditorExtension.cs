@@ -214,6 +214,8 @@ namespace CBinding
 			switch (pressed) {
 			case '.':
 				return true;
+			case '(':
+				return true;
 			case ' ':
 				return true;
 			case '>':
