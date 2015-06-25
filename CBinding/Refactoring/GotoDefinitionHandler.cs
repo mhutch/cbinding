@@ -10,7 +10,7 @@ namespace CBinding.Refactoring
 {
 	public class GotoDefinitionHandler : CommandHandler
 	{
-				protected override void Run ()
+		protected override void Run ()
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;
 			CProject project = doc.Project as CProject;

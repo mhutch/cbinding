@@ -296,5 +296,74 @@ namespace CBinding.Parser
 			}
 			return clang.getNullCursor ();
 		}
+
+		public CXCursor getDeclaration (CXCursor cursor) {
+			try {
+				string USR = project.cLangManager.getCursorUSRString (cursor);
+				foreach (var T in this.Functions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.MemberFunctions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Classes){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplatesPartials){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Structs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.FunctionTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerations){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerators){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Variables){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Typedefs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Unions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Namespaces){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Macros){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Others){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+			} catch (Exception) {
+				return clang.getNullCursor ();
+			}
+			return clang.getNullCursor ();
+		}
 	}	
 }

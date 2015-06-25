@@ -19,6 +19,7 @@ namespace CBinding.Parser
 		protected CXCursor parent;
 		protected CXCursor referenced;
 		protected bool isDefinition;
+		public bool IsDeclaration { get; private set; }
 		protected bool isConst;
 		protected SourceLocation begin;
 		protected SourceLocation end;
@@ -45,6 +46,7 @@ namespace CBinding.Parser
 			isConst = clang.isConstQualifiedType (clang.getCursorType (cursor)) != 0;
 			spellingLength = Convert.ToInt32 (end.Offset - begin.Offset);
 			spelling = clang.getCursorSpelling (cursor).ToString ();
+			IsDeclaration = clang.isDeclaration (cursor.kind) != 0;
 		}
 
 		public CProject Project {

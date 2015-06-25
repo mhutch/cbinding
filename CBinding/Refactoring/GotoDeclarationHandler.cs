@@ -16,6 +16,8 @@ namespace CBinding.Refactoring
 			CProject project = doc.Project as CProject;
 			CXCursor cursor = project.cLangManager.getCursor (doc.FileName, doc.Editor.CaretLocation);
 			CXCursor referredCursor = project.cLangManager.getCursorReferenced (cursor);
+			CXCursor declCursor = project.db.getDeclaration (referredCursor);
+			referredCursor = declCursor;
 			if (clang.Cursor_isNull (referredCursor) == 0) {
 				SourceLocation loc = project.cLangManager.getCursorLocation (referredCursor);
 				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
@@ -28,6 +30,8 @@ namespace CBinding.Refactoring
 			CProject project = doc.Project as CProject;
 			CXCursor cursor = project.cLangManager.getCursor (doc.FileName, doc.Editor.CaretLocation);
 			CXCursor referredCursor = project.cLangManager.getCursorReferenced (cursor);
+			CXCursor declCursor = project.db.getDeclaration (referredCursor);
+			referredCursor = declCursor;
 			info.Visible = (clang.Cursor_isNull (referredCursor) == 0);
 			info.Bypass = !info.Visible;
 		}
