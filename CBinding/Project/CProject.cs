@@ -34,12 +34,9 @@ using System.IO;
 using System.Xml;
 using System.Collections.Generic;
 using System.ComponentModel;
-
 using Mono.Addins;
-
 using MonoDevelop.Core;
 using MonoDevelop.Core.Execution;
-using MonoDevelop.Core.ProgressMonitoring;
 using MonoDevelop.Projects;
 using MonoDevelop.Core.Serialization;
 using MonoDevelop.Deployment;
@@ -47,8 +44,6 @@ using MonoDevelop.Deployment.Linux;
 using MonoDevelop.Ide;
 using System.Threading.Tasks;
 using System.Threading;
-using Mono.Unix.Native;
-using System.Diagnostics;
 using CBinding.Parser;
 using ClangSharp;
 
@@ -97,6 +92,8 @@ namespace CBinding
 		/// Extensions for C/C++ header files
 		/// </summary>
 		public static string[] HeaderExtensions = { ".H", ".HH", ".HPP", ".HXX" };
+
+		public Dictionary<string, bool> BOMPresentInFile = new Dictionary<string, bool>();
 
 		protected override void OnInitialize ()
 		{
@@ -447,6 +444,20 @@ namespace CBinding
 		protected override void OnFileAddedToProject (ProjectFileEventArgs args)
 		{
 			base.OnFileAddedToProject (args);
+			foreach(var f in Files){
+				using (var s = new FileStream (f.Name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+					byte[] BOM = new byte[3];
+					s.Read (BOM, 0, 3);
+					if (!BOMPresentInFile.ContainsKey (f.Name)) {
+						BOMPresentInFile.Add (f.Name, false);
+					}
+					if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
+						BOMPresentInFile[f.Name] = true;
+					} else {
+						BOMPresentInFile[f.Name] = false;
+					}
+				}
+			}
 			foreach (ProjectFileEventInfo e in args) {
 				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
 					e.ProjectFile.BuildAction == BuildAction.Compile) {
@@ -457,6 +468,25 @@ namespace CBinding
 					ThreadPool.QueueUserWorkItem (o => {
 						cLangManager.createTranslationUnit (this, e.ProjectFile.Name, new CXUnsavedFile[0]);
 					});
+			}
+		}
+
+		protected override void OnFileChangedInProject (ProjectFileEventArgs e)
+		{
+			base.OnFileChangedInProject (e);
+			foreach(var f in Files){
+				using (var s = new FileStream (f.Name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+					byte[] BOM = new byte[3];
+					s.Read (BOM, 0, 3);
+					if (!BOMPresentInFile.ContainsKey (f.Name)) {
+						BOMPresentInFile.Add (f.Name, false);
+					}					
+					if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
+						BOMPresentInFile[f.Name] = true;
+					} else {
+						BOMPresentInFile[f.Name] = false;
+					}
+				}
 			}
 		}
 

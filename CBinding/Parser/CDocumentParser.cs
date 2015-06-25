@@ -52,6 +52,10 @@ namespace CBinding.Parser
 					unsavedFile.Filename = openDocument.FileName;
 					unsavedFile.Length = openDocument.Editor.Text.Length;
 					unsavedFile.Contents = openDocument.Editor.Text;
+					if (Project.BOMPresentInFile [openDocument.FileName]) {
+						unsavedFile.Length += 3;
+						unsavedFile.Contents = "   " + unsavedFile.Contents;
+					}
 					unsavedFiles.Add (unsavedFile);
 				}
 			}

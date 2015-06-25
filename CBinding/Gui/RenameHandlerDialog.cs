@@ -8,6 +8,7 @@ using MonoDevelop.Core;
 using MonoDevelop.Components.Commands;
 using MonoDevelop.Core.Text;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CBinding
 {
@@ -37,7 +38,18 @@ namespace CBinding
 		protected void OnButtonOkClicked (object sender, EventArgs e)
 		{
 			newSpelling = renameEntry.Text;
-			FindRefsAndRename (project, cursorReferenced);
+			Regex identifier = new Regex ("^[a-zA-Z_][a-zA-Z0-9_]*$");
+			if(identifier.IsMatch (newSpelling)) {
+				FindRefsAndRename (project, cursorReferenced);
+				this.Destroy ();
+				return;
+			}
+			if(unsafeCheckBox.Active) {
+				FindRefsAndRename (project, cursorReferenced);
+				this.Destroy ();
+				return;
+			}
+			unsafeLabel.Show ();
 		}
 
 		private List<Reference> references = new List<Reference>();
@@ -140,6 +152,11 @@ namespace CBinding
 				return true;
 			}
 			return false;
+		}
+
+		protected void OnButtonCancelClicked (object sender, EventArgs e)
+		{
+			this.Destroy ();
 		}
 	}
 }

@@ -232,6 +232,7 @@ namespace CBinding
 
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
+			CProject project = DocumentContext.Project as CProject;
 			unsavedFiles = new List<CXUnsavedFile> ();
 			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
 				if (openDocument.IsDirty) {
@@ -239,10 +240,13 @@ namespace CBinding
 					unsavedFile.Filename = openDocument.FileName;
 					unsavedFile.Length = openDocument.Editor.Text.Length;
 					unsavedFile.Contents = openDocument.Editor.Text;
+					if (project.BOMPresentInFile [openDocument.FileName]) {
+						unsavedFile.Length += 3;
+						unsavedFile.Contents = "   " + unsavedFile.Contents;
+					}
 					unsavedFiles.Add (unsavedFile);
 				}
 			}
-			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			if (shouldCompleteOn(completionChar)) {
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";

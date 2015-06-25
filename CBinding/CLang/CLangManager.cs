@@ -9,6 +9,7 @@ using MonoDevelop.Ide.Editor;
 using System.Runtime.InteropServices;
 using CBinding.Refactoring;
 using CBinding.Parser;
+using System.IO;
 
 namespace CBinding
 {
@@ -93,6 +94,10 @@ namespace CBinding
 		public void CompilerArgumentsUpdate (object sender, EventArgs args) 
 		{
 			lock (syncroot) {
+				if (project.Loading)
+					//on project load its unnecessary to update this, because creating the TU's are already
+					//done with the first active configuration - also doing so sometimes results in an exception
+					return;
 				ClangCCompiler compiler = new ClangCCompiler ();
 				CProjectConfiguration active_configuration =
 					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
@@ -173,6 +178,27 @@ namespace CBinding
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
 				var fileName = getFileNameString (file);
+				try {
+					if (project.BOMPresentInFile [fileName]) {
+						if(line == 1) //if its in the first line, align column and offset too
+							return new SourceLocation (fileName, line, column - 3, offset - 3);
+						//else column is good as it is, only align offset
+						return new SourceLocation (fileName, line, column, offset - 3);
+					}
+				} catch (KeyNotFoundException) { //if key is not found it means the file is an included, non-project file
+					using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+						byte[] BOM = new byte[3];
+						s.Read (BOM, 0, 3);
+						if (!project.BOMPresentInFile.ContainsKey (fileName)) {
+							project.BOMPresentInFile.Add (fileName, false);
+						}					
+						if (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF) {
+							project.BOMPresentInFile [fileName] = true;
+						} else {
+							project.BOMPresentInFile [fileName] = false;
+						}
+					}
+				}
 				return new SourceLocation (fileName, line, column, offset);
 			}
 		}
@@ -183,6 +209,27 @@ namespace CBinding
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
 				var fileName = getFileNameString (file);
+				try {
+					if (project.BOMPresentInFile [fileName]) {
+						if(line == 1) //if its in the first line, align column and offset too
+							return new SourceLocation (fileName, line, column - 3, offset - 3);
+						//else column is good as it is, only align offset
+						return new SourceLocation (fileName, line, column, offset - 3);
+					}
+				} catch (KeyNotFoundException) { //if key is not found it means the file is an included, non-project file
+					using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+						byte[] BOM = new byte[3];
+						s.Read (BOM, 0, 3);
+						if (!project.BOMPresentInFile.ContainsKey (fileName)) {
+							project.BOMPresentInFile.Add (fileName, false);
+						}					
+						if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
+							project.BOMPresentInFile[fileName] = true;
+						} else {
+							project.BOMPresentInFile[fileName] = false;
+						}
+					}
+				}
 				return new SourceLocation (fileName, line, column, offset);
 			}
 		}

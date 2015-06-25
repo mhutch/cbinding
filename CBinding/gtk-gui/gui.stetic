@@ -2298,7 +2298,7 @@ Example:
       </widget>
     </child>
   </widget>
-  <widget class="Gtk.Dialog" id="CBinding.RenameHandlerDialog" design-size="400 69">
+  <widget class="Gtk.Dialog" id="CBinding.RenameHandlerDialog" design-size="742 108">
     <property name="MemberName" />
     <property name="WindowPosition">CenterOnParent</property>
     <property name="Buttons">2</property>
@@ -2343,6 +2343,36 @@ Example:
             <property name="Fill">False</property>
           </packing>
         </child>
+        <child>
+          <widget class="Gtk.CheckButton" id="unsafeCheckBox">
+            <property name="MemberName" />
+            <property name="CanFocus">True</property>
+            <property name="Label" translatable="yes">Unsafe rename</property>
+            <property name="DrawIndicator">True</property>
+            <property name="HasLabel">True</property>
+            <property name="UseUnderline">True</property>
+          </widget>
+          <packing>
+            <property name="Position">1</property>
+            <property name="AutoSize">True</property>
+            <property name="Expand">False</property>
+            <property name="Fill">False</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="Gtk.Label" id="unsafeLabel">
+            <property name="MemberName" />
+            <property name="Visible">False</property>
+            <property name="LabelProp" translatable="yes">You are trying to rename with a name that is unsafe. To proceed you must check unsafe, and bear with the consequences!</property>
+            <property name="MnemonicWidget">buttonOk</property>
+          </widget>
+          <packing>
+            <property name="Position">2</property>
+            <property name="AutoSize">True</property>
+            <property name="Expand">False</property>
+            <property name="Fill">False</property>
+          </packing>
+        </child>
       </widget>
     </child>
     <child internal-child="ActionArea">
@@ -2361,6 +2391,7 @@ Example:
             <property name="Type">StockItem</property>
             <property name="StockId">gtk-cancel</property>
             <property name="ResponseId">-6</property>
+            <signal name="Clicked" handler="OnButtonCancelClicked" />
             <property name="label">gtk-cancel</property>
           </widget>
           <packing>

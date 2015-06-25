@@ -18,18 +18,8 @@ namespace CBinding.Refactoring
 		public CXSourceRange SourceRange { get; set; }
 		public CXCursor Cursor { get; set; }
 		public int Offset {	get; private set; }
-
-		public int Length{
-			get{
-				return End.Offset - Begin.Offset;
-			}
-		}
-			
-		public string FileName {
-			get{
-				return Begin.FileName;
-			}
-		}
+		public int Length{ get; private set; }
+		public string FileName { get; set; }
 
 		public Reference(CProject proj, CXCursor cursor, CXSourceRange sourceRange) {
 			project = proj;
@@ -38,6 +28,9 @@ namespace CBinding.Refactoring
 			Begin = project.cLangManager.getSourceLocation (clang.getRangeStart (sourceRange));
 			End = project.cLangManager.getSourceLocation (clang.getRangeEnd (sourceRange));
 			Offset = Begin.Offset;
+			FileName = Begin.FileName;
+			Length = End.Offset - Begin.Offset;
+
 		}
 			
 		public override bool Equals (object obj)
