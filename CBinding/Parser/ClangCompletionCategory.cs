@@ -1,6 +1,8 @@
 namespace CBinding.Parser
 {
-
+	/// <summary>
+	/// Completion categories.
+	/// </summary>
 	public class ClangCompletionCategory : MonoDevelop.Ide.CodeCompletion.CompletionCategory
 	{
 		public static string functionCategory = "Function";

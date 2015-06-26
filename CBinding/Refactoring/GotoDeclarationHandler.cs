@@ -8,8 +8,14 @@ using MonoDevelop.Core;
 
 namespace CBinding.Refactoring
 {
+	/// <summary>
+	/// Goto declaration handler.
+	/// </summary>
 	public class GotoDeclarationHandler
 	{
+		/// <summary>
+		/// Run this instance and jump to declaration of the cursor at the caret's position.
+		/// </summary>
 		public void Run ()
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;
@@ -24,6 +30,10 @@ namespace CBinding.Refactoring
 			}
 		}
 
+		/// <summary>
+		/// Update the specified info.
+		/// </summary>
+		/// <param name="info">Info.</param>
 		public void Update (CommandInfo info)
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;

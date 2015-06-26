@@ -62,6 +62,9 @@ namespace CBinding.Parser
 			TU = Manager.createTranslationUnit(proj, fileName, unsavedFiles.ToArray ());
 		}
 
+		/// <summary>
+		/// Reparse the Translation Unit contained by self.
+		/// </summary>
 		public void parse ()
 		{
 			lock (Manager.syncroot) {
@@ -76,6 +79,9 @@ namespace CBinding.Parser
 			}
 		}
 
+		/// <summary>
+		/// Diagnose the parsed Translation Unit contained by self. Error markers are added to the self instance.
+		/// </summary>
 		public void diagnose ()
 		{
 			lock (Manager.syncroot) {

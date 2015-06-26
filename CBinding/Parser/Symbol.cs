@@ -7,7 +7,9 @@ using System.IO;
 
 namespace CBinding.Parser
 {
-
+	/// <summary>
+	/// Represents clang abstract symbols from the built AST
+	/// </summary>
 	public class Symbol
 	{
 		protected CProject project;

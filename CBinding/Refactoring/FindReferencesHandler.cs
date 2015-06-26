@@ -8,7 +8,11 @@ using MonoDevelop.Ide.FindInFiles;
 using MonoDevelop.Ide.Gui;
 
 namespace CBinding.Refactoring
-{	//Based on code from CSharpBinding
+{	
+	//Based on code from CSharpBinding
+	/// <summary>
+	/// Find references handler.
+	/// </summary>
 	public class FindReferencesHandler
 	{
 		CProject project;
@@ -17,6 +21,7 @@ namespace CBinding.Refactoring
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CBinding.Refactoring.FindReferencesHandler"/> class.
+		/// Gets the cursor at the caret's position.
 		/// </summary>
 		/// <param name="proj">Proj.</param>
 		/// <param name="doc">Document.</param>
@@ -32,6 +37,7 @@ namespace CBinding.Refactoring
 		}
 
 		private List<Reference> references = new List<Reference>();
+
 		/// <summary>
 		/// Visit the specified cursor, parent and data.
 		/// </summary>
@@ -60,7 +66,7 @@ namespace CBinding.Refactoring
 		}
 
 		/// <summary>
-		/// Finds the references.
+		/// Finds the references and reports them to the IDE.
 		/// </summary>
 		/// <param name="project">Project.</param>
 		/// <param name="cursor">Cursor.</param>
@@ -108,6 +114,11 @@ namespace CBinding.Refactoring
 			FindRefs (project, cursorReferenced);
 		}
 
+		/// <summary>
+		/// Determines whether the specified cursor is a declaration or reference by its kind.
+		/// </summary>
+		/// <returns><c>true</c> if cursor is reference or declaration; otherwise, <c>false</c>.</returns>
+		/// <param name="cursor">Cursor.</param>
 		private bool IsReferenceOrDeclaration(CXCursor cursor) {
 			switch (cursor.kind) {
 			case CXCursorKind.CXCursor_VarDecl:

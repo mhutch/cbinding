@@ -39,6 +39,9 @@ using MonoDevelop.Core.Serialization;
 
 namespace CBinding
 {
+	/// <summary>
+	/// C/C++ standard version to use in configuration.
+	/// </summary>
 	public enum CVersion
 	{
 		CustomVersionString,
@@ -51,6 +54,9 @@ namespace CBinding
 	}
 
 	// TODO: Warning levels should be compiler specific...
+	/// <summary>
+	/// Warning level.
+	/// </summary>
 	public enum WarningLevel {
 		None,
 		Normal,
@@ -62,12 +68,18 @@ namespace CBinding
 	// as some may require...
 	public class CProjectConfiguration : ProjectConfiguration
 	{
+		/// <summary>
+		/// The output name.
+		/// </summary>
 		[ItemProperty("OutputName")]
 		string output = string.Empty;
-		
+
+		/// <summary>
+		/// The compile target.
+		/// </summary>
 		[ItemProperty("OutputType")]
 		CompileTarget target = CompileTarget.Exe;
-		
+
 		[ItemProperty ("Includes")]
 		[ItemProperty ("Include", Scope = "*", ValueType = typeof(string))]
     	private ArrayList includes = new ArrayList ();
@@ -80,24 +92,45 @@ namespace CBinding
 		[ItemProperty ("Lib", Scope = "*", ValueType = typeof(string))]
     	private ArrayList libs = new ArrayList ();
 
+		/// <summary>
+		/// The C/C++ standard version in use.
+		/// </summary>
 		[ItemProperty ("CVersion")]
 		private CVersion cVersion = CVersion.CustomVersionString;
 
+		/// <summary>
+		/// The custom version string.
+		/// </summary>
 		[ItemProperty ("CustomCVersionString", DefaultValue = "")]
 		private string customVersionString = string.Empty;
 
+		/// <summary>
+		/// The warning level.
+		/// </summary>
 		[ItemProperty ("WarningLevel", DefaultValue=WarningLevel.Normal)]
 		private WarningLevel warning_level = WarningLevel.Normal;
-		
+
+		/// <summary>
+		/// Specifies if warnings should be treated as errors or not.
+		/// </summary>
 		[ItemProperty ("WarningsAsErrors", DefaultValue=false)]
 		private bool warnings_as_errors = false;
-		
+
+		/// <summary>
+		/// The optimization level.
+		/// </summary>
 		[ItemProperty ("OptimizationLevel", DefaultValue=0)]
 		private int optimization = 0;
-		
+
+		/// <summary>
+		/// Extra compiler arguments given by user.
+		/// </summary>
 		[ItemProperty ("ExtraCompilerArguments", DefaultValue="")]
 		private string extra_compiler_args = string.Empty;
-		
+
+		/// <summary>
+		/// Extra linker arguments given by user.
+		/// </summary>
 		[ItemProperty ("ExtraLinkerArguments", DefaultValue="")]
 		private string extra_linker_args = string.Empty;
 		
@@ -124,6 +157,10 @@ namespace CBinding
 		}
 
 		// TODO: This should be revised to use the naming conventions depending on OS & compiler...
+		/// <summary>
+		/// Determines the name of the compiled output.
+		/// </summary>
+		/// <value>The name of the compiled output.</value>
 		public string CompiledOutputName {
 			get {
 				string suffix = string.Empty;
@@ -150,22 +187,38 @@ namespace CBinding
 				return string.Format("{0}{1}{2}", prefix, Output, suffix);
 			}
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the source directory.
+		/// </summary>
+		/// <value>The source directory.</value>
 		public string SourceDirectory {
 			get { return source_directory_path; }
 			set { source_directory_path = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the includes list.
+		/// </summary>
+		/// <value>The includes.</value>
 		public ArrayList Includes {
 			get { return includes; }
 			set { includes = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the library paths.
+		/// </summary>
+		/// <value>The lib paths.</value>
 		public ArrayList LibPaths {
 			get { return libpaths; }
 			set { libpaths = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the libraries.
+		/// </summary>
+		/// <value>The libs.</value>
 		public ArrayList Libs {
 			get { return libs; }
 			set { libs = value; }
@@ -181,11 +234,19 @@ namespace CBinding
 			set { precompileHeaders = value; }
 		}
 
+		/// <summary>
+		/// Gets or sets the C/C++ standard version.
+		/// </summary>
+		/// <value>The C version.</value>
 		public CVersion CVersion {
 			get { return cVersion; }
 			set { cVersion = value; }
 		}
 
+		/// <summary>
+		/// Gets or sets the custom version string.
+		/// </summary>
+		/// <value>The custom version string.</value>
 		public string CustomVersionString {
 			get {
 				return customVersionString;
@@ -195,17 +256,28 @@ namespace CBinding
 			}
 		}
 
-
+		/// <summary>
+		/// Gets or sets the warning level.
+		/// </summary>
+		/// <value>The warning level.</value>
 		public WarningLevel WarningLevel {
 			get { return warning_level; }
 			set { warning_level = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets a value indicating whether this <see cref="CBinding.CProjectConfiguration"/> warnings as errors.
+		/// </summary>
+		/// <value><c>true</c> if warnings as errors; otherwise, <c>false</c>.</value>
 		public bool WarningsAsErrors {
 			get { return warnings_as_errors; }
 			set { warnings_as_errors = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the optimization level.
+		/// </summary>
+		/// <value>The optimization level.</value>
 		public int OptimizationLevel {
 			get { return optimization; }
 			set {
@@ -215,22 +287,34 @@ namespace CBinding
 					optimization = 0;
 			}
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the extra compiler arguments.
+		/// </summary>
+		/// <value>The extra compiler arguments.</value>
 		public string ExtraCompilerArguments {
 			get { return extra_compiler_args; }
 			set { extra_compiler_args = value; }
 		}
-		
+
+		/// <summary>
+		/// Gets or sets the extra linker arguments.
+		/// </summary>
+		/// <value>The extra linker arguments.</value>
 		public string ExtraLinkerArguments {
 			get { return extra_linker_args; }
 			set { extra_linker_args = value; }
 		}
-		
+			
 		public string DefineSymbols {
 			get { return define_symbols; }
 			set { define_symbols = value; }
 		}
-		
+
+		/// <summary>
+		/// "Copy constructor" for CProjectConfiguration
+		/// </summary>
+		/// <param name="configuration">Configuration.</param>
 		public override void CopyFrom (ItemConfiguration configuration)
 		{
 			base.CopyFrom (configuration);

@@ -35,6 +35,11 @@ namespace CBinding
 			document = doc;
 		}
 
+		/// <summary>
+		/// Invoked when OK button is clicked. Runs the rename
+		/// </summary>
+		/// <param name="sender">Sender.</param>
+		/// <param name="e">E.</param>
 		protected void OnButtonOkClicked (object sender, EventArgs e)
 		{
 			newSpelling = renameEntry.Text;
@@ -75,6 +80,11 @@ namespace CBinding
 			return CXChildVisitResult.CXChildVisit_Recurse;
 		}
 
+		/// <summary>
+		/// Finds references and renames them.
+		/// </summary>
+		/// <param name="project">Project.</param>
+		/// <param name="cursor">Cursor.</param>
 		public void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
 			try {
@@ -110,6 +120,10 @@ namespace CBinding
 			} 
 		}
 
+		/// <summary>
+		/// Update the specified info.
+		/// </summary>
+		/// <param name="info">Info.</param>
 		public void Update (CommandInfo info)
 		{
 			if (clang.Cursor_isNull (cursorReferenced) == 0) {
@@ -118,11 +132,19 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Initialize rename widget
+		/// </summary>
 		public void RunRename ()
 		{
 			this.Build ();
 		}
 
+		/// <summary>
+		/// Determines whether the specified cursor is a declaration or reference by its kind.
+		/// </summary>
+		/// <returns><c>true</c> if cursor is reference or declaration; otherwise, <c>false</c>.</returns>
+		/// <param name="cursor">Cursor.</param>
 		private bool IsReferenceOrDeclaration (CXCursor cursor)
 		{
 			switch (cursor.kind) {
@@ -154,6 +176,11 @@ namespace CBinding
 			return false;
 		}
 
+		/// <summary>
+		/// Invoked on clicking Cancel
+		/// </summary>
+		/// <param name="sender">Sender.</param>
+		/// <param name="e">E.</param>
 		protected void OnButtonCancelClicked (object sender, EventArgs e)
 		{
 			this.Destroy ();

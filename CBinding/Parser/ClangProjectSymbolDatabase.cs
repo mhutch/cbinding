@@ -7,6 +7,9 @@ using System.Linq;
 
 namespace CBinding.Parser
 {	
+	/// <summary>
+	/// Symbol database belonging to a project
+	/// </summary>
 	public class ClangProjectSymbolDatabase {
 		protected CProject project;
 		protected Dictionary<string, ClangFileSymbolDatabase> db;
@@ -16,6 +19,11 @@ namespace CBinding.Parser
 			db = new Dictionary<string, ClangFileSymbolDatabase> ();
 		}
 
+		/// <summary>
+		/// Adds the cursor to the database associated with filename
+		/// </summary>
+		/// <param name="file">The filename of the file.</param>
+		/// <param name="cursor">Cursor.</param>
 		public void AddToDatabase (string file, CXCursor cursor)
 		{
 			try {
@@ -26,6 +34,10 @@ namespace CBinding.Parser
 			}
 		}
 
+		/// <summary>
+		/// Reset/empty the database associated with the filename
+		/// </summary>
+		/// <param name="file">Filename</param>
 		public void Reset(string file){
 			if (db.ContainsKey (file))
 				db [file] = new ClangFileSymbolDatabase (project, file);

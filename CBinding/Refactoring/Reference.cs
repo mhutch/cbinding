@@ -10,6 +10,9 @@ using CBinding.Parser;
 namespace CBinding.Refactoring
 {
 	//Based on code from CSharpBinding
+	/// <summary>
+	/// Reference class containing information about a given cursor and its location in the source files.
+	/// </summary>
 	public class Reference : IComparable
 	{
 		CProject project;
@@ -21,6 +24,12 @@ namespace CBinding.Refactoring
 		public int Length{ get; private set; }
 		public string FileName { get; set; }
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CBinding.Refactoring.Reference"/> class.
+		/// </summary>
+		/// <param name="proj">Project.</param>
+		/// <param name="cursor">Cursor referenced.</param>
+		/// <param name="sourceRange">Source location and range.</param>
 		public Reference(CProject proj, CXCursor cursor, CXSourceRange sourceRange) {
 			project = proj;
 			Cursor = cursor;

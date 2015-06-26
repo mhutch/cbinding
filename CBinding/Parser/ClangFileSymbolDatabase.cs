@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace CBinding.Parser
 {	
+	/// <summary>
+	/// Symbol database of a translation unit represented by a file
+	/// </summary>
 	public class ClangFileSymbolDatabase
 	{
 		protected CProject project;
@@ -34,6 +37,10 @@ namespace CBinding.Parser
 			project = proj;
 		}
 
+		/// <summary>
+		/// Adds the given cursor to the database's collection which contains the symbols having the same CXCursorKind
+		/// </summary>
+		/// <param name="cursor">Cursor.</param>
 		public void AddToDatabase (CXCursor cursor)
 		{
 			switch (cursor.kind) {
@@ -82,9 +89,9 @@ namespace CBinding.Parser
 			case CXCursorKind.CXCursor_MacroDefinition:
 				macros.Add (cursor, new Macro (project, file, cursor));
 				break;
-			/*default:
+			default:
 				others.Add (cursor, new Symbol (project, file, cursor));
-				break;*/
+				break;
 			}
 		}
 

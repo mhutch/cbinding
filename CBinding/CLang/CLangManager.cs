@@ -13,6 +13,9 @@ using System.IO;
 
 namespace CBinding
 {
+	/// <summary>
+	/// Class to manage clang Translation units, thread safe
+	/// </summary>
 	public class CLangManager : IDisposable
 	{
 		public readonly object syncroot = new object ();
@@ -28,6 +31,12 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="proj">
+		/// A <see cref="CProject"/> reference: project which the manager manages
+		/// </param>
 		public CLangManager (CProject proj)
 		{
 			project = proj;
@@ -36,29 +45,56 @@ namespace CBinding
 			project.DefaultConfigurationChanged += CompilerArgumentsUpdate;
 		}
 
-		public CXTranslationUnit createTranslationUnit(CProject project, string fileName,CXUnsavedFile[] unsavedFiles) 
+		/// <summary>
+		/// Creates a new or gives back a previously created translation unit
+		/// </summary>
+		/// <param name="proj">
+		/// A <see cref="CProject"/> reference: the project which the TU is associated. Contains the compiler arguments, in its configurations
+		/// </param>
+		/// <param name="fileName">
+		/// A <see cref="string"/>: The filename associated with the translation unit. Basically the source file's name
+		/// </param>
+		/// <param name = "unsavedFiles">
+		/// A <see cref="CXUnsavedFile"/> array: array with the contents of unsaved files in IDE. Safe to be a null sized array - CDocumentParser.Parse reparses the TU with properly initialized unsaved files.
+		/// </param>
+		/// <returns>
+		/// A <see cref="CXTranslationUnit"/>: The Translation unit created
+		/// </returns>
+		public CXTranslationUnit createTranslationUnit(CProject proj, string fileName, CXUnsavedFile[] unsavedFiles) 
 		{
 			lock (syncroot) {
 				if (translationUnits.ContainsKey (fileName)) {
 					return translationUnits [fileName];
 				} else {
-					AddToTranslationUnits (project, fileName, unsavedFiles);
+					AddToTranslationUnits (proj, fileName, unsavedFiles);
 					return translationUnits [fileName];
 				}
 			}
 		}
 
-		public void AddToTranslationUnits (CProject project, string fileName, CXUnsavedFile[] unsavedFiles)
+		/// <summary>
+		/// Does the "real" translation unit creating, adds it to TranslationUnits collection, from which its later available.
+		/// </summary>
+		/// <param name="proj">
+		/// A <see cref="CProject"/> reference: the project which the TU is associated. Contains the compiler arguments, in its configurations
+		/// </param>
+		/// <param name="fileName">
+		/// A <see cref="string"/>: The filename associated with the translation unit. Basically the source file's name
+		/// </param>
+		/// <param name = "unsavedFiles">
+		/// A <see cref="CXUnsavedFile"/> array: array with the contents of unsaved files in IDE. Safe to be a null sized array - CDocumentParser.Parse reparses the TU with properly initialized unsaved files.
+		/// </param>
+		private void AddToTranslationUnits (CProject proj, string fileName, CXUnsavedFile[] unsavedFiles)
 		{
 			lock (syncroot) {
 				ClangCCompiler compiler = new ClangCCompiler ();
 				CProjectConfiguration active_configuration =
-					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
+					(CProjectConfiguration)proj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
 				while (active_configuration == null) {
 					Thread.Sleep (20);
-					active_configuration = (CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
+					active_configuration = (CProjectConfiguration)proj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
 				}
-				string[] args = compiler.GetCompilerFlagsAsArray (project, active_configuration);
+				string[] args = compiler.GetCompilerFlagsAsArray (proj, active_configuration);
 				try {
 					translationUnits.Add (fileName, clang.createTranslationUnitFromSourceFile (
 						index,
@@ -74,16 +110,37 @@ namespace CBinding
 			}
 		}
 
-		public void UpdateDatabase(CProject project, string fileName, CXTranslationUnit TU)
+		/// <summary>
+		/// Updates Symbol database associated with the fileName
+		/// </summary>
+		/// <param name="proj">
+		/// A <see cref="CProject"/> reference: the project which the symbol database is associated.
+		/// </param>
+		/// <param name="fileName">
+		/// A <see cref="string"/>: The filename associated with the symbol database. Basically the source file's name
+		/// </param>
+		/// <param name = "TU">
+		/// A <see cref="CXTranslationUnit"/>: the translation unit which's parsed content fills the symbol database
+		/// </param>
+		public void UpdateDatabase(CProject proj, string fileName, CXTranslationUnit TU)
 		{
 			lock (syncroot) {
-				project.db.Reset (fileName);
-				TranslationUnitParser parser = new TranslationUnitParser (project.db, fileName);
+				proj.db.Reset (fileName);
+				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName);
 				clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr (0)));
 			}
 		}
 
-		public void RemoveTranslationUnit (CProject project, string fileName)
+		/// <summary>
+		/// Removes a translation unit from the collection and disposes its unmanaged resources.
+		/// </summary>
+		/// <param name="proj">
+		/// A <see cref="CProject"/> reference: the project which the TU is associated.
+		/// </param>
+		/// <param name="fileName">
+		/// A <see cref="string"/>: The filename associated with the TU. Basically the source file's name
+		/// </param>
+		public void RemoveTranslationUnit (CProject proj, string fileName)
 		{
 			lock (syncroot) {
 				clang.disposeTranslationUnit (translationUnits [fileName]);
@@ -91,6 +148,9 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Update Translation units with the correct compiler arguments. Subscribe to event: Project.DefaultConfigurationChanged
+		/// </summary>
 		public void CompilerArgumentsUpdate (object sender, EventArgs args) 
 		{
 			lock (syncroot) {
@@ -121,6 +181,18 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Code completion wrapper to expose clang_codeCompleteAt and handle threading locks-issues.
+		/// </summary>
+		/// <param name="documentContext">
+		/// A <see cref="DocumentContext"/> reference: the document context of the code completion request.
+		/// </param>
+		/// <param name="unsavedFiles">
+		/// A <see cref="CXUnsavedFile"/> array: The unsaved files in the IDE. Obligatory to have valid suggestions.
+		/// </param>
+		/// <param name = "editor">
+		/// A <see cref="CTextEditorExtension"/>: the editor, which edits the document. Contains caret positions, etc.
+		/// </param>
 		public IntPtr codeComplete (
 			DocumentContext documentContext,
 			CXUnsavedFile[] unsavedFiles,
@@ -145,6 +217,18 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets a cursor
+		/// </summary>
+		/// <param name="fileName">
+		/// A <see cref="string"/>: the filename which a Translation Unit (probably containing the cursor) is associated with.
+		/// </param>
+		/// <param name="location">
+		/// A <see cref="DocumentLocation"/>: the location in the document (named fileName)
+		/// </param>
+		/// <returns>
+		/// A <see cref="CXCursor"/>: the cursor under the location
+		/// </returns>
 		public CXCursor getCursor (string fileName, MonoDevelop.Ide.Editor.DocumentLocation location) {
 			lock (syncroot) {
 				CXTranslationUnit TU = TranslationUnits [fileName];
@@ -159,18 +243,45 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the cursor refenced by refereeCursor. If the cursor is a declaration/definition, returns itself.
+		/// </summary>
+		/// <param name="refereeCursor">
+		/// A <see cref="CXCursor"/>: a cursor referencing another
+		/// </param>
+		/// <returns>
+		/// A <see cref="CXCursor"/>: the cursor referenced
+		/// </returns>
 		public CXCursor getCursorReferenced (CXCursor refereeCursor) {
 			lock (syncroot) {
 				return clang.getCursorReferenced (refereeCursor);
 			}
 		}
 
+		/// <summary>
+		/// Gets the definition of a cursor
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: a cursor
+		/// </param>
+		/// <returns>
+		/// A <see cref="CXCursor"/>: the defining cursor
+		/// </returns>
 		public CXCursor getCursorDefinition (CXCursor cursor) {
 			lock (syncroot) {
 				return clang.getCursorDefinition (cursor);
 			}
 		}
 
+		/// <summary>
+		/// Gets the location of a cursor. The location points somewhere in a source file (Can be in an unsaved file's contents only present in the editor!).
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: a cursor
+		/// </param>
+		/// <returns>
+		/// A <see cref="SourceLocation"/>: the location of the cursor
+		/// </returns>
 		public SourceLocation getCursorLocation (CXCursor cursor) {
 			lock (syncroot) {
 				CXSourceLocation loc = clang.getCursorLocation (cursor);
@@ -203,6 +314,15 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Translate clang CXSourceLocation to SourceLocation. Contains dealing with UTF-8 Byte order marking.
+		/// </summary>
+		/// <param name="loc">
+		/// A <see cref="CXSourceLocation"/>: a location
+		/// </param>
+		/// <returns>
+		/// A <see cref="SourceLocation"/>: the translated location
+		/// </returns>
 		public SourceLocation getSourceLocation(CXSourceLocation loc) {
 			lock (syncroot) {
 				CXFile file;
@@ -234,6 +354,13 @@ namespace CBinding
 			}
 		}
 
+
+		/// <summary>
+		/// Finds references through the given visitor. Traverses the whole AST in all translation units.
+		/// </summary>
+		/// <param name="visitor">
+		/// A <see cref="FindReferencesHandler"/>: a visitor
+		/// </param>
 		public void findReferences(FindReferencesHandler visitor) {
 			lock (syncroot) {
 				foreach (var T in translationUnits) {
@@ -246,6 +373,12 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Find references and rename them with visitor. Traverses the whole AST in all translation units.
+		/// </summary>
+		/// <param name="visitor">
+		/// A <see cref="RenameHandlerDialog"/>: a visitor
+		/// </param>
 		public void findReferences(RenameHandlerDialog visitor) {
 			lock (syncroot) {
 				foreach (var T in translationUnits) {
@@ -258,6 +391,15 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the spelling of a cursor. E.g.: a functions's spelling: int foo(char) ---> fo
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: a cursor
+		/// </param>
+		/// <returns>
+		/// A <see cref="string"/>: the cursor's spelling
+		/// </returns>
 		public string getCursorSpelling(CXCursor cursor){
 			lock(syncroot){
 				CXString cxstring = clang.getCursorSpelling (cursor);
@@ -267,6 +409,15 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the display name of a cursor. E.g.: a functions's display name its whole signature
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: a cursor
+		/// </param>
+		/// <returns>
+		/// A <see cref="string"/>: the cursor's display name
+		/// </returns>
 		public string getCursorDisplayName(CXCursor cursor){
 			lock(syncroot){
 				CXString cxstring = clang.getCursorDisplayName (cursor);
@@ -276,6 +427,15 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the Unified Symbol Resolution (USR) of a cursor.
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: a cursor
+		/// </param>
+		/// <returns>
+		/// A <see cref="string"/>: the USR string
+		/// </returns>
 		public string getCursorUSRString (CXCursor cursor)
 		{
 			lock (syncroot) {
@@ -286,6 +446,15 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the filename if a given CXFile
+		/// </summary>
+		/// <param name="file">
+		/// A <see cref="CXFile"/>: a CXFile instance
+		/// </param>
+		/// <returns>
+		/// A <see cref="string"/>: the filename
+		/// </returns>
 		public string getFileNameString (CXFile file)
 		{
 			lock (syncroot) {
