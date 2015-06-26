@@ -43,7 +43,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	sealed class DataWrapper : MonoDevelop.Ide.CodeCompletion.ParameterHintingData
 	{

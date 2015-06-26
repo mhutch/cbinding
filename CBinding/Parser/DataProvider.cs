@@ -44,7 +44,7 @@ using MonoDevelop.Ide.Gui.Pads.ClassBrowser;
 using ICSharpCode.NRefactory.CSharp;
 using System.IO;
 
-namespace CBinding
+namespace CBinding.Parser
 {
 	public class ParameterDataProvider : MonoDevelop.Ide.CodeCompletion.ParameterHintingResult
 	{
@@ -55,7 +55,7 @@ namespace CBinding
 			this.editor = editor;
 
 			foreach (Function f in functions) {
-				if (f.SimpleName == functionName) {
+				if (f.Spelling.Equals (functionName)) {
 					data.Add (new DataWrapper (f));
 				}
 			}

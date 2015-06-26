@@ -2,8 +2,12 @@ using System;
 using ClangSharp;
 
 
-namespace CBinding
+namespace CBinding.Parser
 {
+	/// <summary>
+	/// Translation unit parser. Can traverse the translation unit's AST in clang_visitChildren with it's Visit method.
+	/// Builds the symbol database associated with a project.
+	/// </summary>
 	public class TranslationUnitParser{
 		private ClangProjectSymbolDatabase db;
 		private string file;

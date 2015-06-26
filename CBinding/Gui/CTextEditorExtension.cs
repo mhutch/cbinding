@@ -34,7 +34,6 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
-
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.Gui;
@@ -42,54 +41,82 @@ using MonoDevelop.Ide.Gui.Content;
 using MonoDevelop.Ide.CodeCompletion;
 using MonoDevelop.Components;
 using MonoDevelop.Components.Commands;
-
 using MonoDevelop.Ide.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory.Completion;
-using ICSharpCode.NRefactory6.CSharp.Completion;
 using MonoDevelop.Ide.Editor;
-using MonoDevelop.Core.Text;
 using MonoDevelop.Ide.Editor.Extension;
 using System.Threading.Tasks;
 using System.Threading;
 using ClangSharp;
 using System.Runtime.InteropServices;
-using ICSharpCode.NRefactory.MonoCSharp;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Editor.Projection;
+using MonoDevelop.Ide.Commands;
+using CBinding.Refactoring;
+using CBinding.Parser;
+
 
 namespace CBinding
 {
 	public class CTextEditorExtension : CompletionTextEditorExtension, IPathedDocument
 	{
 		private char previous = ' ';
+		private List<CXUnsavedFile> unsavedFiles;
 
-		// Allowed chars to be next to an identifier
+		/// <summary>
+		/// Allowed chars to be next to an identifier
+		/// </summary>
 		private static char[] allowedChars = new char[] {
 			'.', ':', ' ', '\t', '=', '*', '+', '-', '/', '%', ',', '&',
 			'|', '^', '{', '}', '[', ']', '(', ')', '\n', '!', '?', '<', '>'
 		};
 
-
+		/// <summary>
+		/// Gets the completion language.
+		/// </summary>
+		/// <value>The completion language.</value>
 		public override string CompletionLanguage {
 			get {
 				return "C/C++";
 			}
 		}
+
+		/// <summary>
+		/// Determines if an opening brace character is specified by c.
+		/// </summary>
+		/// <returns><c>true</c> if c is an opening brace character; otherwise, <c>false</c>.</returns>
+		/// <param name="c">Character under surveillance.</param>
 		static bool IsOpenBrace (char c)
 		{
 			return c == '(' || c == '{' || c == '<' || c == '[';
 		}
+
+		/// <summary>
+		/// Determines if a closing brace character is specified by c.
+		/// </summary>
+		/// <returns><c>true</c> if c is an closing brace character; otherwise, <c>false</c>.</returns>
+		/// <param name="c">Character under surveillance.</param>
 		static bool IsCloseBrace (char c)
 		{
 			return c == ')' || c == '}' || c == '>' || c == ']';
 		}
-		
+
+		/// <summary>
+		/// Determines if c is a brace character.
+		/// </summary>
+		/// <returns><c>true</c> if c is a brace; otherwise, <c>false</c>.</returns>
+		/// <param name="c">C.</param>
 		static bool IsBrace (char c)
 		{
 			return IsOpenBrace  (c) || IsCloseBrace (c);
 		}
-		
+
+		/// <summary>
+		/// Searchs the matching bracket to the bracket under caret position.
+		/// </summary>
+		/// <returns>The matching bracket.</returns>
+		/// <param name="editor">Editor.</param>
+		/// <param name="offset">Offset in the text.</param>
+		/// <param name="openBracket">Opening bracket character.</param>
+		/// <param name="closingBracket">Closing bracket character.</param>
+		/// <param name="direction">Direction.</param>
 		static int SearchMatchingBracket (IReadonlyTextDocument editor, int offset, char openBracket, char closingBracket, int direction)
 		{
 			bool isInString       = false;
@@ -130,7 +157,14 @@ namespace CBinding
 			}
 			return -1;
 		}
-		
+
+		/// <summary>
+		/// Gets the closing brace for line.
+		/// </summary>
+		/// <returns>The closing brace for line.</returns>
+		/// <param name="editor">Editor.</param>
+		/// <param name="line">Line.</param>
+		/// <param name="openingLine">Opening line.</param>
 		static int GetClosingBraceForLine (IReadonlyTextDocument editor, IDocumentLine line, out int openingLine)
 		{
 			int offset = SearchMatchingBracket (editor, line.Offset, '{', '}', -1);
@@ -142,7 +176,13 @@ namespace CBinding
 			openingLine = editor.OffsetToLineNumber (offset);
 			return offset;
 		}
-		
+
+		/// <summary>
+		/// Return true if the key press should be processed by the editor.
+		///  When a key is pressed, and before the key is processed by the editor, this method will be invoked.
+		/// </summary>
+		/// <returns><c>true</c>, if press was keyed, <c>false</c> otherwise.</returns>
+		/// <param name="descriptor">Descriptor of the key pressed.</param>
 		public override bool KeyPress (KeyDescriptor descriptor)
 		{
 			var line = Editor.GetLine (Editor.CaretLine);
@@ -214,9 +254,16 @@ namespace CBinding
 			return base.KeyPress (descriptor);
 		}
 
+		/// <summary>
+		/// Determine if code completion should be invoked by pressed char's (key's) value.
+		/// </summary>
+		/// <returns><c>true</c>, if complete should be invoked, <c>false</c> otherwise.</returns>
+		/// <param name="pressed">Pressed.</param>
 		private bool shouldCompleteOn(char pressed) {
 			switch (pressed) {
 			case '.':
+				return true;
+			case '(':
 				return true;
 			case ' ':
 				return true;
@@ -234,14 +281,35 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Handles the code completion async. Invoked automatically on every keypress.
+		/// </summary>
+		/// <returns>The code completion async.</returns>
+		/// <param name="completionContext">Completion context.</param>
+		/// <param name="completionChar">Completion char.</param>
+		/// <param name="token">Token.</param>
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
-			CProject project = DocumentContext.Project as CProject;
 			ICompletionDataList list = new CompletionDataList ();
 			if (shouldCompleteOn(completionChar)) {
+				CProject project = DocumentContext.Project as CProject;
+				unsavedFiles = new List<CXUnsavedFile> ();
+				foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
+					if (openDocument.IsDirty) {
+						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+						unsavedFile.Filename = openDocument.FileName;
+						unsavedFile.Length = openDocument.Editor.Text.Length;
+						unsavedFile.Contents = openDocument.Editor.Text;
+						if (project.BOMPresentInFile [openDocument.FileName]) {
+							unsavedFile.Length += 3;
+							unsavedFile.Contents = "   " + unsavedFile.Contents;
+						}
+						unsavedFiles.Add (unsavedFile);
+					}
+				}
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
 				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
-				IntPtr pResults = project.cLangManager.codeComplete (completionContext, this.DocumentContext, this);
+				IntPtr pResults = project.cLangManager.codeComplete (DocumentContext, unsavedFiles.ToArray (), this);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
 					for(int i = 0; i < results.NumResults; i++) {
@@ -279,14 +347,23 @@ namespace CBinding
 			return Task.FromResult (list);
 		}
 
+		/// <summary>
+		/// Code completion command invoked on explicit code completion requests.
+		/// </summary>
+		/// <returns>The completion command.</returns>
+		/// <param name="completionContext">Completion context.</param>
 		public override Task<ICompletionDataList> CodeCompletionCommand (CodeCompletionContext completionContext)
 		{
 			return HandleCodeCompletionAsync (completionContext, ' ');
 		}
 
-
-
-
+		/// <summary>
+		/// Handles the parameter completion async. Invoked automatically on every keypress.
+		/// </summary>
+		/// <returns>The parameter completion async.</returns>
+		/// <param name="completionContext">Completion context.</param>
+		/// <param name="completionChar">Completion char.</param>
+		/// <param name="token">Token.</param>s
 		public override Task<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> HandleParameterCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
 			if (completionChar != '(')
@@ -311,9 +388,17 @@ namespace CBinding
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
 
-			return Task.FromResult ((MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)new ParameterDataProvider (nameStart, Editor, functions, functionName));
+			return Task.FromResult (
+				(MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)
+				new ParameterDataProvider (nameStart, Editor,functions.Values.ToList (), functionName)
+			);
 		}
-		
+
+		/// <summary>
+		/// Determines if the line containts only whitespaces.
+		/// </summary>
+		/// <returns><c>true</c>, if line contains only whitespaces, <c>false</c> otherwise.</returns>
+		/// <param name="lineText">Line text.</param>
 		private bool AllWhiteSpace (string lineText)
 		{
 			// We will almost definately need a faster method than this
@@ -325,6 +410,13 @@ namespace CBinding
 		}
 		
 		// Snatched from DefaultFormattingStrategy
+		/// <summary>
+		/// Gets the indentation of the line.
+		/// </summary>
+		/// <returns>The indent.</returns>
+		/// <param name="d">D.</param>
+		/// <param name="lineNumber">Line number.</param>
+		/// <param name="terminateIndex">Terminate index.</param>
 		private string GetIndent (IReadonlyTextDocument d, int lineNumber, int terminateIndex)
 		{
 			string lineText = d.GetLineText (lineNumber);
@@ -341,7 +433,10 @@ namespace CBinding
 			
 			return whitespaces.ToString ();
 		}
-		
+
+		/// <summary>
+		/// Opens up matching file to cpp/hpp
+		/// </summary>
 		[CommandHandler (MonoDevelop.DesignerSupport.Commands.SwitchBetweenRelatedFiles)]
 		protected void Run ()
 		{
@@ -352,7 +447,11 @@ namespace CBinding
 					MonoDevelop.Ide.IdeApp.Workbench.OpenDocument (match, cp, true);
 			}
 		}
-		
+
+		/// <summary>
+		/// Update the specified info with information about a matching file existing or not.
+		/// </summary>
+		/// <param name="info">Info.</param>
 		[CommandUpdateHandler (MonoDevelop.DesignerSupport.Commands.SwitchBetweenRelatedFiles)]
 		protected void Update (CommandInfo info)
 		{
@@ -407,27 +506,104 @@ namespace CBinding
 			base.Dispose ();
 		}
 
+		/// <summary>
+		/// Command binding
+		/// Invokes Go to declaration handler's Run()
+		/// </summary>
 		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void GotoDeclaration ()
 		{
-			CProject project = DocumentContext.Project as CProject;
-			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
-			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
-			if (!(referencedCursor.Equals (clang.getNullCursor ()))) {
-				SourceLocation loc = project.cLangManager.getCursorLocation (referencedCursor);
-				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
-			}
+			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			gotoDec.Run ();
 		}
 
+		/// <summary>
+		/// Command binding.
+		/// Determines whether go to declaration is possible
+		/// Invoked GotoDeclarationHandler.Update()
+		/// </summary>
+		/// <returns><c>true</c> if can go to declaration of the cursor at caret position; otherwise, <c>false</c>.</returns>
+		/// <param name="item">Item.</param>
 		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void CanGotoDeclaration (CommandInfo item)
 		{
-			CProject project = DocumentContext.Project as CProject;
-			CXCursor refereeCursor = project.cLangManager.getCursor (DocumentContext.Name, Editor.CaretLocation);
-			CXCursor referencedCursor = project.cLangManager.getCursorReferenced (refereeCursor);
-			item.Visible = !(referencedCursor.Equals (clang.getNullCursor ()));
-			item.Bypass = !item.Visible;
+			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			gotoDec.Update (item);
 		}
-	
+			
+		#region copied with modifications from CSharpBinding
+		/// <summary>
+		/// Find references handler update bind.
+		/// </summary>
+		/// <param name="ci">Ci.</param>
+		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.FindReferences)]
+		public void FindReferencesHandler_Update (CommandInfo ci)
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
+				DocumentContext.Project as CProject,
+				doc
+			);
+			findReferencesHandler.Update (ci);
+		}
+
+		/// <summary>
+		/// Finds the references command bind.
+		/// </summary>
+		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.FindReferences)]
+		public void FindReferences ()
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
+				DocumentContext.Project as CProject,
+				doc
+			);
+			findReferencesHandler.Run ();
+		}
+
+		/*readonly FindDerivedSymbolsHandler findDerivedSymbolsHandler = new FindDerivedSymbolsHandler (DocumentContext.Project as CProject);
+		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.FindDerivedClasses)]
+		public void FindDerivedClasses_Update (CommandInfo ci)
+		{
+			findDerivedSymbolsHandler.Update (ci);
+		}
+
+		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.FindDerivedClasses)]
+		public void FindDerivedClasses ()
+		{
+			findDerivedSymbolsHandler.Run (DocumentContext.Project as CProject);
+		}*/
+
+		/// <summary>
+		/// Rename command update and binding.
+		/// </summary>
+		/// <param name="ci">Ci.</param>
+		[CommandUpdateHandler (EditCommands.Rename)]
+		public void RenameCommand_Update (CommandInfo ci)
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
+			renameHandler.Update (ci);
+		}
+
+		/// <summary>
+		/// Rename command run and binding.
+		/// </summary>
+		[CommandHandler (EditCommands.Rename)]
+		public void RenameCommand ()
+		{
+			var doc = IdeApp.Workbench.ActiveDocument;
+			if (doc == null || doc.FileName == FilePath.Null)
+				return;
+			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
+			renameHandler.RunRename ();
+		}
+		#endregion
 	}
 }

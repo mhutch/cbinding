@@ -1,13 +1,16 @@
 using System;
 using ClangSharp;
-using ICSharpCode.NRefactory6.CSharp;
 using System.Collections.Generic;
 using GLib;
 using System.Runtime.InteropServices;
+using System.Linq;
 
-namespace CBinding
+namespace CBinding.Parser
 {	
-	public class ClangProjectSymbolDatabase{
+	/// <summary>
+	/// Symbol database belonging to a project
+	/// </summary>
+	public class ClangProjectSymbolDatabase {
 		protected CProject project;
 		protected Dictionary<string, ClangFileSymbolDatabase> db;
 
@@ -16,139 +19,363 @@ namespace CBinding
 			db = new Dictionary<string, ClangFileSymbolDatabase> ();
 		}
 
+		/// <summary>
+		/// Adds the cursor to the database associated with filename
+		/// </summary>
+		/// <param name="file">The filename of the file.</param>
+		/// <param name="cursor">Cursor.</param>
 		public void AddToDatabase (string file, CXCursor cursor)
 		{
-			if (!db.ContainsKey (file))
-				db.Add (file, new ClangFileSymbolDatabase(file));
-			db [file].AddToDatabase (cursor);
+			try {
+				if (!db.ContainsKey (file))
+					db.Add (file, new ClangFileSymbolDatabase(project, file));
+				db [file].AddToDatabase (cursor);
+			} catch (ArgumentException) {
+			}
 		}
 
+		/// <summary>
+		/// Reset/empty the database associated with the filename
+		/// </summary>
+		/// <param name="file">Filename</param>
 		public void Reset(string file){
 			if (db.ContainsKey (file))
-				db [file] = new ClangFileSymbolDatabase (file);
+				db [file] = new ClangFileSymbolDatabase (project, file);
 			else
-				db.Add (file, new ClangFileSymbolDatabase (file));
+				db.Add (file, new ClangFileSymbolDatabase (project, file));
 		}
 
-		public List<Namespace> Namespaces {
+		public Dictionary<CXCursor, Namespace> Namespaces {
 			get {
-				List<Namespace> ret = new List<Namespace>();
+				Dictionary<CXCursor, Namespace> ret = new Dictionary<CXCursor, Namespace>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Namespaces);
+					iter.Value.Namespaces.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
 				return ret;
 			}
 		}
 
-		public List<Function> Functions {
+		public Dictionary<CXCursor, Function> Functions {
 			get {
-				List<Function> ret = new List<Function>();
+				Dictionary<CXCursor, Function> ret = new Dictionary<CXCursor, Function>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Functions);
-				return ret;			}
+					iter.Value.Functions.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);				
+				return ret;
+			}
 		}
 
-		public List<MemberFunction> MemberFunctions {
+		public Dictionary<CXCursor, MemberFunction> MemberFunctions {
 			get {
-				List<MemberFunction> ret = new List<MemberFunction>();
+				Dictionary<CXCursor, MemberFunction> ret = new Dictionary<CXCursor, MemberFunction>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.MemberFunctions);
-				return ret;			}
+					iter.Value.MemberFunctions.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;			
+			}
 		}
 
-		public List<FunctionTemplate> FunctionTemplates {
+		public Dictionary<CXCursor, FunctionTemplate> FunctionTemplates {
 			get {
-				List<FunctionTemplate> ret = new List<FunctionTemplate>();
+				Dictionary<CXCursor, FunctionTemplate> ret = new Dictionary<CXCursor, FunctionTemplate>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.FunctionTemplates);
-				return ret;			}
+					iter.Value.FunctionTemplates.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Class> Classes {
+		public Dictionary<CXCursor, Class> Classes {
 			get {
-				List<Class> ret = new List<Class>();
+				Dictionary<CXCursor, Class> ret = new Dictionary<CXCursor, Class>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Classes);
-				return ret;			}
+					iter.Value.Classes.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<ClassTemplate> ClassTemplates {
+		public Dictionary<CXCursor, ClassTemplate> ClassTemplates {
 			get {
-				List<ClassTemplate> ret = new List<ClassTemplate>();
+				Dictionary<CXCursor, ClassTemplate> ret = new Dictionary<CXCursor, ClassTemplate>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.ClassTemplates);
-				return ret;			}
+					iter.Value.ClassTemplates.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<ClassTemplatePartial> ClassTemplatesPartials {
+		public Dictionary<CXCursor, ClassTemplatePartial> ClassTemplatesPartials {
 			get {
-				List<ClassTemplatePartial> ret = new List<ClassTemplatePartial>();
+				Dictionary<CXCursor, ClassTemplatePartial> ret = new Dictionary<CXCursor, ClassTemplatePartial>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.ClassTemplatePartials);
-				return ret;			}
+					iter.Value.ClassTemplatePartials.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Struct> Structs {
+		public Dictionary<CXCursor, Struct> Structs {
 			get {
-				List<Struct> ret = new List<Struct>();
+				Dictionary<CXCursor, Struct> ret = new Dictionary<CXCursor, Struct>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Structs);
-				return ret;			}
+					iter.Value.Structs.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Enumeration> Enumerations {
+		public Dictionary<CXCursor, Enumeration> Enumerations {
 			get {
-				List<Enumeration> ret = new List<Enumeration>();
+				Dictionary<CXCursor, Enumeration> ret = new Dictionary<CXCursor, Enumeration>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Enumerations);
-				return ret;			}
+					iter.Value.Enumerations.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Enumerator> Enumerators {
+		public Dictionary<CXCursor, Enumerator> Enumerators {
 			get {
-				List<Enumerator> ret = new List<Enumerator>();
+				Dictionary<CXCursor, Enumerator> ret = new Dictionary<CXCursor, Enumerator>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Enumerators);
-				return ret;			}
+					iter.Value.Enumerators.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Variable> Variables {
+		public Dictionary<CXCursor, Variable> Variables {
 			get {
-				List<Variable> ret = new List<Variable>();
+				Dictionary<CXCursor, Variable> ret = new Dictionary<CXCursor, Variable>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Variables);
-				return ret;			}
+					iter.Value.Variables.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Macro> Macros {
+		public Dictionary<CXCursor, Macro> Macros {
 			get {
-				List<Macro> ret = new List<Macro>();
+				Dictionary<CXCursor, Macro> ret = new Dictionary<CXCursor, Macro>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Macros);
-				return ret;			}
+					iter.Value.Macros.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Union> Unions {
+		public Dictionary<CXCursor, Union> Unions {
 			get {
-				List<Union> ret = new List<Union>();
+				Dictionary<CXCursor, Union> ret = new Dictionary<CXCursor, Union>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Unions);
-				return ret;			}
+					iter.Value.Unions.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Typedef> Typedefs {
+		public Dictionary<CXCursor, Typedef> Typedefs {
 			get {
-				List<Typedef> ret = new List<Typedef>();
+				Dictionary<CXCursor, Typedef> ret = new Dictionary<CXCursor, Typedef>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Typedefs);
-				return ret;			}
+					iter.Value.Typedefs.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 
-		public List<Symbol> Others {
+		public Dictionary<CXCursor, Symbol> Others {
 			get {
-				List<Symbol> ret = new List<Symbol>();
+				Dictionary<CXCursor, Symbol> ret = new Dictionary<CXCursor, Symbol>();
 				foreach (var iter in db)
-					ret.AddRange (iter.Value.Others);
-				return ret;			}
+					iter.Value.Others.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
+		}
+
+		public CXCursor getDefinition (CXCursor cursor) {
+			try {
+				string USR = project.cLangManager.getCursorUSRString (cursor);
+				foreach (var T in this.Functions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.MemberFunctions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Classes){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplatesPartials){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Structs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.FunctionTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerations){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerators){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Variables){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Typedefs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Unions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Namespaces){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Macros){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+				foreach (var T in this.Others){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+						return T.Key;
+				}
+			} catch (Exception) {
+				return clang.getNullCursor ();
+			}
+			return clang.getNullCursor ();
+		}
+
+		public CXCursor getDeclaration (CXCursor cursor) {
+			try {
+				string USR = project.cLangManager.getCursorUSRString (cursor);
+				foreach (var T in this.Functions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.MemberFunctions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Classes){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.ClassTemplatesPartials){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Structs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.FunctionTemplates){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerations){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Enumerators){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Variables){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Typedefs){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Unions){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Namespaces){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Macros){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+				foreach (var T in this.Others){
+					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+						return T.Key;
+				}
+			} catch (Exception) {
+				return clang.getNullCursor ();
+			}
+			return clang.getNullCursor ();
 		}
 	}	
 }

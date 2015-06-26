@@ -26,7 +26,7 @@
 				LinkerArgs = ""/>
 			
 			<Files>
-				<File name = "main.h" AddStandardHeader="True"><![CDATA[#ifndef __MAIN_H__
+				<File name = "main.hpp" AddStandardHeader="True"><![CDATA[#ifndef __MAIN_H__
 #define __MAIN_H__
 
 // Add function prototypes here

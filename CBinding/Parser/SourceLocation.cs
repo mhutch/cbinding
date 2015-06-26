@@ -1,44 +1,22 @@
-namespace CBinding
+using System;
+
+namespace CBinding.Parser
 {
 	public class SourceLocation
 	{
-		string fileName;
-		uint line;
-		uint column;
+		public string FileName { get; private set; }
 
-		public SourceLocation(string fileName, uint line, uint column) {
-			this.fileName = fileName;
-			this.line = line;
-			this.column = column;
+		public int Line { get; }
+
+		public int Column { get; }
+
+		public int Offset { get; }
+
+		public SourceLocation(string fileName, uint line, uint column, uint offset) {
+			FileName = fileName;
+			Line = Convert.ToInt32(line);
+			Column = Convert.ToInt32(column);
+			Offset = Convert.ToInt32(offset);
 		}
-
-		public string FileName {
-			get {
-				return fileName;
-			}
-			set {
-				fileName = value;
-			}
-		}
-
-		public uint Line {
-			get {
-				return line;
-			}
-			set {
-				line = value;
-			}
-		}
-
-		public uint Column {
-			get {
-				return column;
-			}
-			set {
-				column = value;
-			}
-		}
-
 	}
-
 }

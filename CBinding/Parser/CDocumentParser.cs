@@ -25,58 +25,105 @@
 // THE SOFTWARE.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
-using MonoDevelop.Core;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide;
 using MonoDevelop.Ide.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem.Implementation;
-using MonoDevelop.Core.Text;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Editor;
 
 namespace CBinding.Parser
 {
-	/// <summary>
-	/// Ctags-based document parser helper
-	/// </summary>
-	public class CDocumentParser:  TypeSystemParser
-	{
-		public override System.Threading.Tasks.Task<ParsedDocument> Parse (ParseOptions options, System.Threading.CancellationToken cancellationToken)
+	
+	public class CParsedDocument : DefaultParsedDocument {
+		public CXTranslationUnit TU { get; set;}
+		public CLangManager Manager { get; private set;}
+		public CProject Project { get; set;}
+		List<CXUnsavedFile> unsavedFiles;
+
+
+		public CParsedDocument(CProject proj, string fileName) : base(fileName)
 		{
-			var fileName = options.FileName;
-			var project = options.Project as CProject;
-			var doc = new DefaultParsedDocument (fileName);
-			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			ClangSymbolDatabase db = project.db;
-			
-			string content = options.Content.Text;
-			string[] contentLines = content.Split (new string[]{Environment.NewLine}, StringSplitOptions.None);
-			
-			var globals = new DefaultUnresolvedTypeDefinition ("", GettextCatalog.GetString ("(Global Scope)"));
-			lock (db) {
-				// Add containers to type list
-				foreach (Symbol sym in db.Containers ()) {
-					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
-						var tmp = AddLanguageItem (db, globals, sym, contentLines) as IUnresolvedTypeDefinition;
-						if (null != tmp){ /*doc.TopLevelTypeDefinitions.Add (tmp);*/ }
+			Project = proj;
+			Manager = proj.cLangManager;
+			unsavedFiles = new List<CXUnsavedFile> ();
+			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
+				if (openDocument.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Filename = openDocument.FileName;
+					unsavedFile.Length = openDocument.Editor.Text.Length;
+					unsavedFile.Contents = openDocument.Editor.Text;
+					if (Project.BOMPresentInFile [openDocument.FileName]) {
+						unsavedFile.Length += 3;
+						unsavedFile.Contents = "   " + unsavedFile.Contents;
 					}
+					unsavedFiles.Add (unsavedFile);
 				}
-				
-				// Add global category for unscoped symbols
-				foreach (Symbol sym in db.InstanceMembers ()) {
-					if (null == sym.Parent && FilePath.Equals (sym.File, fileName)) {
-						AddLanguageItem (db, globals, sym, contentLines);
+			}
+			TU = Manager.createTranslationUnit(proj, fileName, unsavedFiles.ToArray ());
+		}
+
+		/// <summary>
+		/// Reparse the Translation Unit contained by self.
+		/// </summary>
+		public void parse ()
+		{
+			lock (Manager.syncroot) {
+				var unsavedFilesArray = unsavedFiles.ToArray ();
+				clang.reparseTranslationUnit (
+					TU,
+					Convert.ToUInt32 (unsavedFilesArray.Length),
+					unsavedFilesArray,
+					clang.defaultReparseOptions (TU)
+				);
+				Manager.UpdateDatabase (Project, FileName, TU);
+			}
+		}
+
+		/// <summary>
+		/// Diagnose the parsed Translation Unit contained by self. Error markers are added to the self instance.
+		/// </summary>
+		public void diagnose ()
+		{
+			lock (Manager.syncroot) {
+				uint numDiag = clang.getNumDiagnostics (TU);
+				for (uint i = 0; i < numDiag; i++) {
+					CXDiagnostic diag = clang.getDiagnostic (TU, i);
+					string spelling = diag.ToString ();
+					uint numRanges = clang.getDiagnosticNumRanges (diag);
+					if (numRanges != 0) {
+						for (uint j = 0; j < numRanges; j++) {
+							SourceLocation begin = Manager.getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
+							SourceLocation end = Manager.getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j)));
+							Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (begin.Line, begin.Column, end.Line, end.Column)));
+						}
+					} else {
+						SourceLocation loc = Manager.getSourceLocation (clang.getDiagnosticLocation (diag));
+						Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (loc.Line, loc.Column, loc.Line, loc.Column + 1)));
 					}
 				}
 			}
-			
-			//doc.TopLevelTypeDefinitions.Add (globals);
-			return System.Threading.Tasks.Task.FromResult((ParsedDocument)doc);
 		}
+	}
+
+	/// <summary>
+	/// clang-based document parser helper
+	/// </summary>
+	public class CDocumentParser:  TypeSystemParser
+	{
 		
+		public override System.Threading.Tasks.Task<ParsedDocument> Parse(ParseOptions options, System.Threading.CancellationToken cancellationToken)
+		{
+			var fileName = options.FileName;
+			var project = options.Project as CProject;
+			if (project == null)
+				return System.Threading.Tasks.Task.FromResult (new DefaultParsedDocument (fileName) as ParsedDocument);
+			var doc = new CParsedDocument (project, fileName);
+			doc.Flags |= ParsedDocumentFlags.NonSerializable;
+			doc.parse ();
+			doc.diagnose ();
+			return System.Threading.Tasks.Task.FromResult (doc as ParsedDocument);
+		}
+		/*
 		/// <summary>
 		/// Finds the end of a function's definition by matching braces.
 		/// </summary>
@@ -144,8 +191,8 @@ namespace CBinding.Parser
 		}
 		
 		static readonly Regex paramExpression = new Regex (@"(?<type>[^\s]+)\s+(?<subtype>[*&]*)(?<name>[^\s[]+)(?<array>\[.*)?", RegexOptions.Compiled);
-		
-		static object AddLanguageItem (ClangSymbolDatabase db, DefaultUnresolvedTypeDefinition klass, Symbol sym, string[] contentLines)
+
+		static object AddLanguageItem (ClangProjectSymbolDatabase db, DefaultUnresolvedTypeDefinition klass, Symbol sym, string[] contentLines)
 		{
 			
 			if (sym is Class || sym is Struct || sym is Enumeration) {
@@ -164,7 +211,7 @@ namespace CBinding.Parser
 			klass.Members.Add (field);
 			return field;
 		}
-		
+
 		/// <summary>
 		/// Create an IMember from a Symbol,
 		/// using the source document to locate declaration bounds.
@@ -203,7 +250,7 @@ namespace CBinding.Parser
 			return result;
 		}
 		
-		static IUnresolvedMethod FunctionToIMethod (ClangSymbolDatabase db, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
+		static IUnresolvedMethod FunctionToIMethod (ClangProjectSymbolDatabase db, IUnresolvedTypeDefinition type, Function function, string[] contentLines)
 		{
 			var method = new DefaultUnresolvedMethod (type, function.Name);
 			method.Region = new DomRegion ((int)function.Line, 1, FindFunctionEnd (contentLines, (int)function.Line-1)+2, 1);
@@ -224,8 +271,6 @@ namespace CBinding.Parser
 			if (!abort)
 				parameters.ForEach (p => method.Parameters.Add (p));
 			return method;
-		}
-		
-		
+		}*/
 	}
 }

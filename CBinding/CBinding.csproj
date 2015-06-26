@@ -97,7 +97,6 @@
   <Import Project="..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets')" />
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Parser\CDocumentParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
@@ -109,6 +108,7 @@
     <Folder Include="Navigation\" />
     <Folder Include="Gui\" />
     <Folder Include="ProjectPad\" />
+    <Folder Include="Refactoring\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Mono.Posix" />
@@ -119,14 +119,6 @@
     </Reference>
     <Reference Include="ICSharpCode.NRefactory">
       <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory6.CSharp">
-      <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory6.CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Desktop">
-      <HintPath>..\..\monodevelop\main\build\bin\Microsoft.CodeAnalysis.Desktop.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
@@ -216,14 +208,12 @@
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
     <Compile Include="Gui\CTextEditorExtension.cs" />
-    <Compile Include="Gui\DataProvider.cs" />
     <Compile Include="Gui\GeneralOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.GeneralOptionsPanel.cs" />
     <Compile Include="Gui\PackageDetails.cs" />
     <Compile Include="gtk-gui\CBinding.PackageDetails.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\AddinInfo.cs" />
-    <Compile Include="Gui\DataWrapper.cs" />
     <Compile Include="CLang\CLangManager.cs" />
     <Compile Include="Compiler\ClangCCompiler.cs" />
     <Compile Include="Compiler\ClangCXXCompiler.cs" />
@@ -251,6 +241,17 @@
     <Compile Include="Parser\Field.cs" />
     <Compile Include="Parser\ClassTemplatePartial.cs" />
     <Compile Include="Parser\SourceLocation.cs" />
+    <Compile Include="Refactoring\Reference.cs" />
+    <Compile Include="Refactoring\FindReferencesHandler.cs" />
+    <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
+    <Compile Include="Parser\DataProvider.cs" />
+    <Compile Include="Parser\DataWrapper.cs" />
+    <Compile Include="Refactoring\GotoDefinitionHandler.cs" />
+    <Compile Include="Refactoring\RefactoryCommands.cs" />
+    <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
+    <Compile Include="Parser\CDocumentParser.cs" />
+    <Compile Include="Gui\RenameHandlerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.RenameHandlerDialog.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
