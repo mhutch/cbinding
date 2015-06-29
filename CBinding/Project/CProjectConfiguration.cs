@@ -82,69 +82,69 @@ namespace CBinding
 
 		[ItemProperty ("Includes")]
 		[ItemProperty ("Include", Scope = "*", ValueType = typeof(string))]
-    	private ArrayList includes = new ArrayList ();
+    	ArrayList includes = new ArrayList ();
 		
 		[ItemProperty ("LibPaths")]
 		[ItemProperty ("LibPath", Scope = "*", ValueType = typeof(string))]
-    	private ArrayList libpaths = new ArrayList ();
+    	ArrayList libpaths = new ArrayList ();
 		
 		[ItemProperty ("Libs")]
 		[ItemProperty ("Lib", Scope = "*", ValueType = typeof(string))]
-    	private ArrayList libs = new ArrayList ();
+    	ArrayList libs = new ArrayList ();
 
 		/// <summary>
 		/// The C/C++ standard version in use.
 		/// </summary>
 		[ItemProperty ("CVersion")]
-		private CVersion cVersion = CVersion.CustomVersionString;
+		CVersion cVersion = CVersion.CustomVersionString;
 
 		/// <summary>
 		/// The custom version string.
 		/// </summary>
 		[ItemProperty ("CustomCVersionString", DefaultValue = "")]
-		private string customVersionString = string.Empty;
+		string customVersionString = string.Empty;
 
 		/// <summary>
 		/// The warning level.
 		/// </summary>
 		[ItemProperty ("WarningLevel", DefaultValue=WarningLevel.Normal)]
-		private WarningLevel warning_level = WarningLevel.Normal;
+		WarningLevel warning_level = WarningLevel.Normal;
 
 		/// <summary>
 		/// Specifies if warnings should be treated as errors or not.
 		/// </summary>
 		[ItemProperty ("WarningsAsErrors", DefaultValue=false)]
-		private bool warnings_as_errors = false;
+		bool warnings_as_errors = false;
 
 		/// <summary>
 		/// The optimization level.
 		/// </summary>
 		[ItemProperty ("OptimizationLevel", DefaultValue=0)]
-		private int optimization = 0;
+		int optimization = 0;
 
 		/// <summary>
 		/// Extra compiler arguments given by user.
 		/// </summary>
 		[ItemProperty ("ExtraCompilerArguments", DefaultValue="")]
-		private string extra_compiler_args = string.Empty;
+		string extra_compiler_args = string.Empty;
 
 		/// <summary>
 		/// Extra linker arguments given by user.
 		/// </summary>
 		[ItemProperty ("ExtraLinkerArguments", DefaultValue="")]
-		private string extra_linker_args = string.Empty;
+		string extra_linker_args = string.Empty;
 		
 		[ItemProperty ("DefineSymbols", DefaultValue="")]
-		private string define_symbols = string.Empty;
+		string define_symbols = string.Empty;
 		
 		[ProjectPathItemProperty ("SourceDirectory", DefaultValue=null)]
-		private string source_directory_path;
+		string source_directory_path;
 		
 		[ItemProperty ("UseCcache", DefaultValue=false)]
-		private bool use_ccache = false;
+		bool use_ccache = false;
 		
 		[ItemProperty ("PrecompileHeaders", DefaultValue=true)]
-		private bool precompileHeaders = true;
+		bool precompileHeaders = true;
 		
 		public string Output {
 			get { return output; }

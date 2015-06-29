@@ -57,13 +57,13 @@ namespace CBinding
 {
 	public class CTextEditorExtension : CompletionTextEditorExtension, IPathedDocument
 	{
-		private char previous = ' ';
-		private List<CXUnsavedFile> unsavedFiles;
+		char previous = ' ';
+		List<CXUnsavedFile> unsavedFiles;
 
 		/// <summary>
 		/// Allowed chars to be next to an identifier
 		/// </summary>
-		private static char[] allowedChars = new char[] {
+		static char[] allowedChars = new char[] {
 			'.', ':', ' ', '\t', '=', '*', '+', '-', '/', '%', ',', '&',
 			'|', '^', '{', '}', '[', ']', '(', ')', '\n', '!', '?', '<', '>'
 		};
@@ -259,7 +259,7 @@ namespace CBinding
 		/// </summary>
 		/// <returns><c>true</c>, if complete should be invoked, <c>false</c> otherwise.</returns>
 		/// <param name="pressed">Pressed.</param>
-		private bool shouldCompleteOn(char pressed) {
+		bool shouldCompleteOn(char pressed) {
 			switch (pressed) {
 			case '.':
 				return true;
@@ -399,7 +399,7 @@ namespace CBinding
 		/// </summary>
 		/// <returns><c>true</c>, if line contains only whitespaces, <c>false</c> otherwise.</returns>
 		/// <param name="lineText">Line text.</param>
-		private bool AllWhiteSpace (string lineText)
+		bool AllWhiteSpace (string lineText)
 		{
 			// We will almost definately need a faster method than this
 			foreach (char c in lineText)
@@ -417,7 +417,7 @@ namespace CBinding
 		/// <param name="d">D.</param>
 		/// <param name="lineNumber">Line number.</param>
 		/// <param name="terminateIndex">Terminate index.</param>
-		private string GetIndent (IReadonlyTextDocument d, int lineNumber, int terminateIndex)
+		string GetIndent (IReadonlyTextDocument d, int lineNumber, int terminateIndex)
 		{
 			string lineText = d.GetLineText (lineNumber);
 			if(terminateIndex > 0)

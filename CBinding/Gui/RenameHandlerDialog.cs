@@ -57,7 +57,7 @@ namespace CBinding
 			unsafeLabel.Show ();
 		}
 
-		private List<Reference> references = new List<Reference>();
+		List<Reference> references = new List<Reference>();
 
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
 			CXCursor referenced = project.cLangManager.getCursorReferenced (cursor);
@@ -145,7 +145,7 @@ namespace CBinding
 		/// </summary>
 		/// <returns><c>true</c> if cursor is reference or declaration; otherwise, <c>false</c>.</returns>
 		/// <param name="cursor">Cursor.</param>
-		private bool IsReferenceOrDeclaration (CXCursor cursor)
+		bool IsReferenceOrDeclaration (CXCursor cursor)
 		{
 			switch (cursor.kind) {
 			case CXCursorKind.CXCursor_VarDecl:

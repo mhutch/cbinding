@@ -133,10 +133,6 @@
       <HintPath>..\..\monodevelop\main\build\bin\Mono.TextEditor.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="MonoDevelop.AddinMaker">
-      <HintPath>..\..\MonoDevelop.AddinMaker\bin\Debug\MonoDevelop.AddinMaker.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="MonoDevelop.Core">
       <HintPath>..\..\monodevelop\main\build\bin\MonoDevelop.Core.dll</HintPath>
       <Private>False</Private>

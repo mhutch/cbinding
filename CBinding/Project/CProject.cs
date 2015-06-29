@@ -67,10 +67,10 @@ namespace CBinding
 	public class CProject : Project, IDeployable
 	{
 		[ItemProperty ("Compiler", ValueType = typeof(CCompiler))]
-		private ICompiler compiler_manager;
+		ICompiler compiler_manager;
 		
 		[ItemProperty ("Language")]
-		private Language language;
+		Language language;
 		
 		[ItemProperty ("OutputType")]
 		CompileTarget target = CompileTarget.Exe;
@@ -78,7 +78,7 @@ namespace CBinding
 		public CLangManager cLangManager;
 		public ClangProjectSymbolDatabase db;
 		
-    	private ProjectPackageCollection packages = new ProjectPackageCollection ();
+    	ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
 		public event ProjectPackageEventHandler PackageAddedToProject;
 		public event ProjectPackageEventHandler PackageRemovedFromProject;
@@ -298,7 +298,7 @@ namespace CBinding
 		/// This is the pkg-config package that gets deployed.
 		/// <returns>The pkg-config package's filename</returns>
 		/// </summary>
-		private string WriteDeployablePgkPackage (Project project, CProjectConfiguration config)
+		string WriteDeployablePgkPackage (Project project, CProjectConfiguration config)
 		{
 			// FIXME: This should probably be grabed from somewhere.
 			string prefix = "/usr/local";

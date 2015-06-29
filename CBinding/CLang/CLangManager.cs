@@ -14,18 +14,29 @@ using System.IO;
 namespace CBinding
 {
 	/// <summary>
-	/// Class to manage clang Translation units, thread safe
+	/// Class to manage clang Translation units, thread safe, but the dictionary exposed
+	/// and the translation units itself are not.
+	/// For more information see the field SyncRoot
 	/// </summary>
 	public class CLangManager : IDisposable
 	{
-		public readonly object syncroot = new object ();
-		private CProject project;
-		private CXIndex index;
-		private Dictionary<string, CXTranslationUnit> translationUnits;
+		/// <summary>
+		/// The sync root.
+		/// I couldn't find any information about libclang's internal threading solutions,
+		/// the best i could find were some stackoverflow topic and a short mailing list discussion, where only assumptions were made.
+		/// Lock on this is needed because clangmanager handles getting cursors,
+		/// cursor references, and cursors between files sometimes are a mess and
+		/// can only identified by its USR, and e.g. finding a cursor by its USR
+		/// while reparsing is in progress in an other file could result in a fault.
+		/// </summary>
+		public readonly object SyncRoot = new object ();
+		CProject project;
+		CXIndex index;
+		Dictionary<string, CXTranslationUnit> translationUnits;
 
 		public Dictionary<string, CXTranslationUnit> TranslationUnits {
 			get {				
-				lock (syncroot) {
+				lock (SyncRoot) {
 					return translationUnits;
 				}
 			}
@@ -62,7 +73,7 @@ namespace CBinding
 		/// </returns>
 		public CXTranslationUnit createTranslationUnit(CProject proj, string fileName, CXUnsavedFile[] unsavedFiles) 
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				if (translationUnits.ContainsKey (fileName)) {
 					return translationUnits [fileName];
 				} else {
@@ -84,9 +95,9 @@ namespace CBinding
 		/// <param name = "unsavedFiles">
 		/// A <see cref="CXUnsavedFile"/> array: array with the contents of unsaved files in IDE. Safe to be a null sized array - CDocumentParser.Parse reparses the TU with properly initialized unsaved files.
 		/// </param>
-		private void AddToTranslationUnits (CProject proj, string fileName, CXUnsavedFile[] unsavedFiles)
+		void AddToTranslationUnits (CProject proj, string fileName, CXUnsavedFile[] unsavedFiles)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				ClangCCompiler compiler = new ClangCCompiler ();
 				CProjectConfiguration active_configuration =
 					(CProjectConfiguration)proj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
@@ -124,7 +135,7 @@ namespace CBinding
 		/// </param>
 		public void UpdateDatabase(CProject proj, string fileName, CXTranslationUnit TU)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				proj.db.Reset (fileName);
 				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName);
 				clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr (0)));
@@ -142,7 +153,7 @@ namespace CBinding
 		/// </param>
 		public void RemoveTranslationUnit (CProject proj, string fileName)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				clang.disposeTranslationUnit (translationUnits [fileName]);
 				translationUnits.Remove (fileName);
 			}
@@ -153,7 +164,7 @@ namespace CBinding
 		/// </summary>
 		public void CompilerArgumentsUpdate (object sender, EventArgs args) 
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				if (project.Loading)
 					//on project load its unnecessary to update this, because creating the TU's are already
 					//done with the first active configuration - also doing so sometimes results in an exception
@@ -198,7 +209,7 @@ namespace CBinding
 			CXUnsavedFile[] unsavedFiles,
 			CTextEditorExtension editor)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				string name = documentContext.Name;
 				CXTranslationUnit TU = TranslationUnits [name];
 				string complete_filename = editor.Editor.FileName;
@@ -230,7 +241,7 @@ namespace CBinding
 		/// A <see cref="CXCursor"/>: the cursor under the location
 		/// </returns>
 		public CXCursor getCursor (string fileName, MonoDevelop.Ide.Editor.DocumentLocation location) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				CXTranslationUnit TU = TranslationUnits [fileName];
 				CXFile file = clang.getFile (TU, fileName);
 				CXSourceLocation loc = clang.getLocation (
@@ -253,7 +264,7 @@ namespace CBinding
 		/// A <see cref="CXCursor"/>: the cursor referenced
 		/// </returns>
 		public CXCursor getCursorReferenced (CXCursor refereeCursor) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				return clang.getCursorReferenced (refereeCursor);
 			}
 		}
@@ -268,7 +279,7 @@ namespace CBinding
 		/// A <see cref="CXCursor"/>: the defining cursor
 		/// </returns>
 		public CXCursor getCursorDefinition (CXCursor cursor) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				return clang.getCursorDefinition (cursor);
 			}
 		}
@@ -283,7 +294,7 @@ namespace CBinding
 		/// A <see cref="SourceLocation"/>: the location of the cursor
 		/// </returns>
 		public SourceLocation getCursorLocation (CXCursor cursor) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				CXSourceLocation loc = clang.getCursorLocation (cursor);
 				CXFile file;
 				uint line, column, offset;
@@ -324,7 +335,7 @@ namespace CBinding
 		/// A <see cref="SourceLocation"/>: the translated location
 		/// </returns>
 		public SourceLocation getSourceLocation(CXSourceLocation loc) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				CXFile file;
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
@@ -362,7 +373,7 @@ namespace CBinding
 		/// A <see cref="FindReferencesHandler"/>: a visitor
 		/// </param>
 		public void findReferences(FindReferencesHandler visitor) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
 					clang.visitChildren (
 						clang.getTranslationUnitCursor (T.Value),
@@ -380,7 +391,7 @@ namespace CBinding
 		/// A <see cref="RenameHandlerDialog"/>: a visitor
 		/// </param>
 		public void findReferences(RenameHandlerDialog visitor) {
-			lock (syncroot) {
+			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
 					clang.visitChildren (
 						clang.getTranslationUnitCursor (T.Value),
@@ -401,7 +412,7 @@ namespace CBinding
 		/// A <see cref="string"/>: the cursor's spelling
 		/// </returns>
 		public string getCursorSpelling(CXCursor cursor){
-			lock(syncroot){
+			lock(SyncRoot){
 				CXString cxstring = clang.getCursorSpelling (cursor);
 				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -419,7 +430,7 @@ namespace CBinding
 		/// A <see cref="string"/>: the cursor's display name
 		/// </returns>
 		public string getCursorDisplayName(CXCursor cursor){
-			lock(syncroot){
+			lock(SyncRoot){
 				CXString cxstring = clang.getCursorDisplayName (cursor);
 				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -438,7 +449,7 @@ namespace CBinding
 		/// </returns>
 		public string getCursorUSRString (CXCursor cursor)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				CXString cxstring = clang.getCursorUSR (cursor);
 				string USR = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -457,7 +468,7 @@ namespace CBinding
 		/// </returns>
 		public string getFileNameString (CXFile file)
 		{
-			lock (syncroot) {
+			lock (SyncRoot) {
 				CXString cxstring = clang.getFileName (file);
 				string fileName = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -465,15 +476,29 @@ namespace CBinding
 			}
 		}
 
+		protected virtual void OnDispose(bool disposing)
+		{
+			lock (SyncRoot) {
+				if (disposing) {
+					project.DefaultConfigurationChanged -= CompilerArgumentsUpdate;
+					foreach (CXTranslationUnit unit in translationUnits.Values)
+						clang.disposeTranslationUnit (unit);
+					clang.disposeIndex (index);
+				}
+			}
+		}
+
+		~CLangManager()
+		{
+			OnDispose(false);
+		}
+
 		#region IDisposable implementation
 
 		void IDisposable.Dispose ()
 		{
-			lock (syncroot) {
-				foreach (CXTranslationUnit unit in translationUnits.Values)
-					clang.disposeTranslationUnit (unit);
-				clang.disposeIndex (index);
-			}
+			OnDispose(true); 
+			GC.SuppressFinalize(this);
 		}
 
 		#endregion

@@ -67,7 +67,7 @@ namespace CBinding.Parser
 		/// </summary>
 		public void parse ()
 		{
-			lock (Manager.syncroot) {
+			lock (Manager.SyncRoot) {
 				var unsavedFilesArray = unsavedFiles.ToArray ();
 				clang.reparseTranslationUnit (
 					TU,
@@ -84,7 +84,7 @@ namespace CBinding.Parser
 		/// </summary>
 		public void diagnose ()
 		{
-			lock (Manager.syncroot) {
+			lock (Manager.SyncRoot) {
 				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);
