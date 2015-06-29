@@ -27,11 +27,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 using MonoDevelop.Core;
+using MonoDevelop.Projects;
 
 namespace CBinding {
-	public class CMakeTarget {
+	public class CMakeTarget : SolutionItem {
 		public enum Types {
 			BINARY,
 			SHARED_LIBRARY,
@@ -40,19 +42,20 @@ namespace CBinding {
 			OBJECT_LIBRARY,
 			UNKOWN
 		};
-		public string Name;
 		public Types? Type;
 		public bool IsAliasOrImported = false;
-
+		
+		string name;
 		List<string> ignored = new List<string> () {
 			"WIN32", "MACOSX_BUNDLE", "EXCLUDE_FROM_ALL"
 		};
 		CMakeCommand command;
-		Dictionary<string, CMakeCommand> files = new Dictionary<string, CMakeCommand> ();
+		public Dictionary<string, CMakeCommand> Files = new Dictionary<string, CMakeCommand> ();
 		CMakeFileFormat parent;
 		
 		public CMakeTarget (CMakeCommand command, CMakeFileFormat parent)
 		{
+			Initialize (this);
 			this.command = command;
 			this.parent = parent;
 			if (command.Name.ToLower () == "add_executable")
@@ -60,11 +63,45 @@ namespace CBinding {
 
 			getFiles ();
 		}
+		
+		/* Overrides */
+		
+		protected override string OnGetName()
+		{
+			return this.name;
+		}
+		
+		protected override void OnNameChanged(SolutionItemRenamedEventArgs e)
+		{
+			this.command.EditArgument (e.OldName, e.NewName);
+		}
+		
+		protected override IEnumerable<FilePath> OnGetItemFiles(bool includeReferencedFiles)
+		{
+			List<FilePath> files = new List<FilePath> ();
+			string path = parent.File.ParentDirectory.ToString ();
+			foreach (var file in Files) {
+				files.Add (Path.Combine (path, file.Key));
+			}
+			return files;
+		}
+		
+		public override FilePath FileName
+		{
+			get
+			{
+				return this.command.FileName;
+			}
+		}
 
+		public List<FilePath> GetFiles () {
+			return OnGetItemFiles (false).ToList ();
+		}
+		
 		void parseValue (string value)
 		{
-			if (String.IsNullOrEmpty (Name)) {
-				Name = value;
+			if (String.IsNullOrEmpty (name)) {
+				name = value;
 				return;
 			}
 
@@ -95,8 +132,8 @@ namespace CBinding {
 			if (ignored.Contains (value, StringComparer.OrdinalIgnoreCase))
                return;
 
-			if (!files.ContainsKey (new FilePath (value)))
-				files.Add (new FilePath (value), this.command);
+			if (!Files.ContainsKey (new FilePath (value)))
+				Files.Add (new FilePath (value), this.command);
 		}
 		
 		void getFiles ()
@@ -111,7 +148,7 @@ namespace CBinding {
 					}
 
 					CMakeVariableParser cmvp = new CMakeVariableParser(val, command, parent);
-					files = files.Concat(cmvp.Values).ToDictionary(x=>x.Key, x=>x.Value);
+					Files = Files.Concat(cmvp.Values).ToDictionary(x=>x.Key, x=>x.Value);
 				}
 			}
 		}
@@ -123,24 +160,24 @@ namespace CBinding {
 		
 		public bool RemoveFile (string filename)
 		{
-			if (files [filename].IsEditable)
-				return files [filename].RemoveArgument (filename);
+			if (Files [filename].IsEditable)
+				return Files [filename].RemoveArgument (filename);
 				
 			return false;
 		}
 		
 		public bool RenameFile (string oldName, string newName)
 		{
-			if (files [oldName].IsEditable)
-				return files [oldName].EditArgument (oldName, newName);
+			if (Files [oldName].IsEditable)
+				return Files [oldName].EditArgument (oldName, newName);
 
 			return false;
 		}
 		
 		public void PrintTarget ()
 		{
-			LoggingService.LogDebug (String.Format ("[Target Name : {0}]", Name));
-			foreach (var file in files)
+			LoggingService.LogDebug (String.Format ("[Target Name : {0}]", name));
+			foreach (var file in Files)
 			{
 				LoggingService.LogDebug (file.ToString ());
 			}

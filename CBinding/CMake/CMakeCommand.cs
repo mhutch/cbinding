@@ -45,6 +45,11 @@ namespace CBinding {
 				return command.Index;
 			}
 		}
+		public FilePath FileName {
+			get {
+				return parent.File;
+			}
+		}
 
 		public void AddArgument (string argument)
 		{

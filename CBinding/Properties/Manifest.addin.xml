@@ -226,6 +226,10 @@
 		<DataType class = "CBinding.Package"/>
 	</Extension>
 	
+	<Extension path = "/MonoDevelop/ProjectModel/WorkspaceObjectReaders">
+		<Class class = "CBinding.CMakeWorkspaceObjectReader" />
+	</Extension>
+	
 <!-- Current Autotools AddIn is very .NET specific
 	<Module>
 	    <Runtime>

@@ -242,6 +242,8 @@
     <Compile Include="CMake\CMakeCommand.cs" />
     <Compile Include="CMake\CMakeArgument.cs" />
     <Compile Include="CMake\CMakeVariableParser.cs" />
+    <Compile Include="CMake\CMakeProject.cs" />
+    <Compile Include="CMake\CMakeWorkspaceObjectReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

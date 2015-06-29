@@ -40,13 +40,13 @@ namespace CBinding {
 	{
 		//File path of the current CMakeLists.txt
 		public FilePath File;
-		public Project Project;
+		public CMakeProject Project;
 		public string ProjectName = ""; //Comes from `project (project_name)` cmake command.
 		public Dictionary<string, CMakeCommand> SetCommands = new Dictionary<string, CMakeCommand> ();
 		public Dictionary<string, CMakeTarget> Targets = new Dictionary<string, CMakeTarget> ();
 		public Dictionary<FilePath, CMakeFileFormat> Children = new Dictionary<FilePath, CMakeFileFormat> ();
 		
-		CMakeFileFormat parent;
+		public CMakeFileFormat Parent;
 		Dictionary<string, CMakeCommand> allCommands = new Dictionary<string, CMakeCommand> ();
 		Stack<string> blocks = new Stack<string> ();
 		MonoDevelop.Projects.Text.TextFile contentFile;
@@ -127,14 +127,14 @@ namespace CBinding {
 				}
 				break;
 			case "add_subdirectory":
-				if (parent == null) {
+				if (Parent == null) {
 					FilePath temp = new FilePath (command.Arguments [0].ToString ());
 					if (!Children.ContainsKey (temp))
 						Children.Add (temp, new CMakeFileFormat (temp, Project, this));
 				} else {
 					FilePath temp = new FilePath (command.Arguments [0].ToString ());
-					if (!parent.Children.ContainsKey (temp))
-						Children.Add (temp, new CMakeFileFormat (temp, Project, parent));
+					if (!Parent.Children.ContainsKey (temp))
+						Children.Add (temp, new CMakeFileFormat (temp, Project, Parent));
 				}
 				break;
 			default:
@@ -240,18 +240,27 @@ namespace CBinding {
 			foreach (var file in Children)
 				file.Value.Save ();
 		}
+		
+		public bool Rename (string oldName, string newName)
+		{
+			CMakeCommand c = allCommands.FirstOrDefault ((arg) => arg.Key.ToLower ().StartsWith ("project")).Value;
+			if (c == null)
+				return false;
+			
+			return c.EditArgument (oldName, newName);
+		}
 
-		public CMakeFileFormat (FilePath file, Project project)
+		public CMakeFileFormat (FilePath file, CMakeProject project)
 		{
 			File = file;
 			Project = project;
 		}
 		
-		public CMakeFileFormat (FilePath file, Project project, CMakeFileFormat parent)
+		public CMakeFileFormat (FilePath file, CMakeProject project, CMakeFileFormat parent)
 		{
 			File = file;
 			Project = project;
-			this.parent = parent;
+			this.Parent = parent;
 		}
 	}
 }
