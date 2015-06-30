@@ -309,7 +309,7 @@ namespace CBinding
 				}
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
 				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
-				IntPtr pResults = project.cLangManager.codeComplete (DocumentContext, unsavedFiles.ToArray (), this);
+				IntPtr pResults = project.cLangManager.codeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
 					for(int i = 0; i < results.NumResults; i++) {

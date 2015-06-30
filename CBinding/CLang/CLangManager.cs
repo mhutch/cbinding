@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using CBinding.Refactoring;
 using CBinding.Parser;
 using System.IO;
+using MonoDevelop.Ide.CodeCompletion;
 
 namespace CBinding
 {
@@ -179,14 +180,15 @@ namespace CBinding
 				string[] compilerArgs = compiler.GetCompilerFlagsAsArray (project, active_configuration);
 				foreach (var TU in translationUnits) {
 					clang.disposeTranslationUnit (translationUnits [TU.Key]);
-					translationUnits [TU.Key] = clang.createTranslationUnitFromSourceFile (
+					translationUnits [TU.Key] = clang.parseTranslationUnit (
 						index,
 						TU.Key,
-						compilerArgs.Length,
 						compilerArgs,
+						compilerArgs.Length,
 						//CDocumentParser.Parse will reparse with unsaved files, risky to get them from here
+						null,
 						0,
-						null
+						clang.defaultEditingTranslationUnitOptions ()
 					);
 				}
 			}
@@ -205,16 +207,16 @@ namespace CBinding
 		/// A <see cref="CTextEditorExtension"/>: the editor, which edits the document. Contains caret positions, etc.
 		/// </param>
 		public IntPtr codeComplete (
-			DocumentContext documentContext,
+			CodeCompletionContext completionContext,
 			CXUnsavedFile[] unsavedFiles,
-			CTextEditorExtension editor)
+			string fileName)
 		{
 			lock (SyncRoot) {
-				string name = documentContext.Name;
+				string name = fileName;
 				CXTranslationUnit TU = TranslationUnits [name];
-				string complete_filename = editor.Editor.FileName;
-				uint complete_line = Convert.ToUInt32 (editor.Editor.CaretLine);
-				uint complete_column = Convert.ToUInt32 (editor.Editor.CaretColumn);
+				string complete_filename = fileName;
+				uint complete_line = Convert.ToUInt32 (completionContext.TriggerLine);
+				uint complete_column = Convert.ToUInt32 (completionContext.TriggerLineOffset + 1);
 				uint numUnsavedFiles = Convert.ToUInt32 (unsavedFiles.Length);
 				uint options = (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns | (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns;
 				return clang.codeCompleteAt (

@@ -90,7 +90,9 @@ namespace CBinding.Parser
 				macros.Add (cursor, new Macro (project, file, cursor));
 				break;
 			default:
-				others.Add (cursor, new Symbol (project, file, cursor));
+				//Enabling this doesn't come with any benefits - but comes with a HUGE slowdown.
+				//If something is left out of parsing add its kind to the case statement and make its own Dictionary
+				//others.Add (cursor, new Symbol (project, file, cursor));
 				break;
 			}
 		}

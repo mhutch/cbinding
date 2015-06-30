@@ -30,6 +30,7 @@ using MonoDevelop.Ide.TypeSystem;
 using ClangSharp;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.Editor;
+using System.Diagnostics;
 
 namespace CBinding.Parser
 {
@@ -63,9 +64,11 @@ namespace CBinding.Parser
 		}
 
 		/// <summary>
-		/// Reparse the Translation Unit contained by self.
+		/// Reparse the Translation Unit contained by this instance.
+		/// Updates Symbol Database
+		/// Places error markers on document
 		/// </summary>
-		public void parse ()
+		public void ParseAndDiagnose ()
 		{
 			lock (Manager.SyncRoot) {
 				var unsavedFilesArray = unsavedFiles.ToArray ();
@@ -76,15 +79,6 @@ namespace CBinding.Parser
 					clang.defaultReparseOptions (TU)
 				);
 				Manager.UpdateDatabase (Project, FileName, TU);
-			}
-		}
-
-		/// <summary>
-		/// Diagnose the parsed Translation Unit contained by self. Error markers are added to the self instance.
-		/// </summary>
-		public void diagnose ()
-		{
-			lock (Manager.SyncRoot) {
 				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);
@@ -119,8 +113,7 @@ namespace CBinding.Parser
 				return System.Threading.Tasks.Task.FromResult (new DefaultParsedDocument (fileName) as ParsedDocument);
 			var doc = new CParsedDocument (project, fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			doc.parse ();
-			doc.diagnose ();
+			doc.ParseAndDiagnose ();
 			return System.Threading.Tasks.Task.FromResult (doc as ParsedDocument);
 		}
 		/*

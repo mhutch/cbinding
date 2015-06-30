@@ -243,63 +243,63 @@ namespace CBinding.Parser
 		public CXCursor getDefinition (CXCursor cursor) {
 			try {
 				string USR = project.cLangManager.getCursorUSRString (cursor);
-				foreach (var T in this.Functions){
+				foreach (var T in Functions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.MemberFunctions){
+				foreach (var T in MemberFunctions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Classes){
+				foreach (var T in Classes){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.ClassTemplates){
+				foreach (var T in ClassTemplates){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.ClassTemplatesPartials){
+				foreach (var T in ClassTemplatesPartials){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Structs){
+				foreach (var T in Structs){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.FunctionTemplates){
+				foreach (var T in FunctionTemplates){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Enumerations){
+				foreach (var T in Enumerations){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Enumerators){
+				foreach (var T in Enumerators){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Variables){
+				foreach (var T in Variables){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Typedefs){
+				foreach (var T in Typedefs){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Unions){
+				foreach (var T in Unions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Namespaces){
+				foreach (var T in Namespaces){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Macros){
+				foreach (var T in Macros){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
-				foreach (var T in this.Others){
+				foreach (var T in Others){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
@@ -312,64 +312,64 @@ namespace CBinding.Parser
 		public CXCursor getDeclaration (CXCursor cursor) {
 			try {
 				string USR = project.cLangManager.getCursorUSRString (cursor);
-				foreach (var T in this.Functions){
+				foreach (var T in Functions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.MemberFunctions){
+				foreach (var T in MemberFunctions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Classes){
+				foreach (var T in Classes){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.ClassTemplates){
+				foreach (var T in ClassTemplates){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.ClassTemplatesPartials){
+				foreach (var T in ClassTemplatesPartials){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Structs){
+				foreach (var T in Structs){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.FunctionTemplates){
+				foreach (var T in FunctionTemplates){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Enumerations){
+				foreach (var T in Enumerations){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Enumerators){
+				foreach (var T in Enumerators){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Variables){
+				foreach (var T in Variables){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Typedefs){
+				foreach (var T in Typedefs){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Unions){
+				foreach (var T in Unions){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Namespaces){
+				foreach (var T in Namespaces){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Macros){
+				foreach (var T in Macros){
 					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
-				foreach (var T in this.Others){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+				foreach (var T in Others) {
+					if (T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 			} catch (Exception) {
