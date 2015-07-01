@@ -31,6 +31,7 @@ using ClangSharp;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.Editor;
 using System.Diagnostics;
+using System.Threading;
 
 namespace CBinding.Parser
 {
@@ -68,7 +69,7 @@ namespace CBinding.Parser
 		/// Updates Symbol Database
 		/// Places error markers on document
 		/// </summary>
-		public void ParseAndDiagnose ()
+		public void ParseAndDiagnose (CancellationToken cancellationToken = default(CancellationToken))
 		{
 			lock (Manager.SyncRoot) {
 				var unsavedFilesArray = unsavedFiles.ToArray ();
@@ -78,7 +79,7 @@ namespace CBinding.Parser
 					unsavedFilesArray,
 					clang.defaultReparseOptions (TU)
 				);
-				Manager.UpdateDatabase (Project, FileName, TU);
+				Manager.UpdateDatabase (Project, FileName, TU, cancellationToken);
 				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);
@@ -105,7 +106,7 @@ namespace CBinding.Parser
 	public class CDocumentParser:  TypeSystemParser
 	{
 		
-		public override System.Threading.Tasks.Task<ParsedDocument> Parse(ParseOptions options, System.Threading.CancellationToken cancellationToken)
+		public override System.Threading.Tasks.Task<ParsedDocument> Parse(ParseOptions options, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			var fileName = options.FileName;
 			var project = options.Project as CProject;
@@ -113,7 +114,7 @@ namespace CBinding.Parser
 				return System.Threading.Tasks.Task.FromResult (new DefaultParsedDocument (fileName) as ParsedDocument);
 			var doc = new CParsedDocument (project, fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
-			doc.ParseAndDiagnose ();
+			doc.ParseAndDiagnose (cancellationToken);
 			return System.Threading.Tasks.Task.FromResult (doc as ParsedDocument);
 		}
 		/*
