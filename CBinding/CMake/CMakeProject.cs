@@ -44,7 +44,9 @@ namespace CBinding {
 			MemoryStream stream = new MemoryStream ();
 			StreamWriter streamWriter = new StreamWriter (stream);
 			string path = Path.Combine (file.ParentDirectory.ToString (), workingDir);
-			Runtime.ProcessService.StartProcess (command, args, path, monitor.Log, streamWriter, null);
+			MonoDevelop.Core.Execution.ProcessWrapper p = Runtime.ProcessService.StartProcess (command, args, path, monitor.Log, streamWriter, null);
+			p.WaitForExit ();
+			streamWriter.Flush ();
 			stream.Position = 0;
 			StreamReader streamReader = new StreamReader (stream);
 			return streamReader.ReadToEnd ();
@@ -63,6 +65,7 @@ namespace CBinding {
 		public void LoadFrom (FilePath file)
 		{
 			this.file = file;
+			FileName = file;
 			CMakeFileFormat fileFormat = new CMakeFileFormat (file, this);
 			fileFormat.Parse ();
 			name = fileFormat.ProjectName;
@@ -71,13 +74,15 @@ namespace CBinding {
 		
 		protected override Task OnSave (ProgressMonitor monitor)
 		{
-			return Task.Factory.StartNew (delegate {
+			return Task.Factory.StartNew (() => {
 				fileFormat.SaveAll ();
 			});
 		}
 		
 		protected override IEnumerable<WorkspaceObject> OnGetChildren ()
 		{
+			foreach (CMakeTarget target in fileFormat.Targets.Values)
+				target.ParentObject = this;
 			return fileFormat.Targets.Values.ToList ();
 		}
 		
@@ -122,24 +127,23 @@ namespace CBinding {
 		}
 		//*/
 		
-		protected override void OnNameChanged (SolutionItemRenamedEventArgs e)
-		{
-			fileFormat.Rename (e.OldName, e.NewName);
-		}
-		
 		protected override Task<BuildResult> OnBuild (ProgressMonitor monitor, ConfigurationSelector configuration, OperationContext operationContext)
 		{
-			return Task.Factory.StartNew (delegate {
+			return Task.Factory.StartNew (() => {
 				BuildResult results = new BuildResult ();
 				
 				FileService.CreateDirectory (Path.Combine (file.ParentDirectory.ToString (), "./bin"));
 				
 				monitor.BeginStep ("Generating build files.");
 				string generationResult = executeCommand ("cmake", "../", "./bin", monitor);
+				if (generationResult.Length > 0) results.AddError ("Generating build files failed.");
+				LoggingService.LogDebug (generationResult);
 				monitor.EndStep ();
 				
 				monitor.BeginStep ("Building...");
 				string buildResult = executeCommand ("cmake", "--build ./ --config 'debug'", "./bin", monitor);
+				if (buildResult.Length > 0) results.AddError ("Build failed.");
+				LoggingService.LogDebug (buildResult);
 				monitor.EndStep ();
 				
 				//TODO parse results.
@@ -149,11 +153,12 @@ namespace CBinding {
 		
 		protected override Task<BuildResult> OnClean (ProgressMonitor monitor, ConfigurationSelector configuration, OperationContext buildSession)
 		{
-			return Task.Factory.StartNew (delegate {
+			return Task.Factory.StartNew (() => {
 				BuildResult results = new BuildResult();
 				
 				monitor.BeginStep ("Cleaning...");
 				string buildResult = executeCommand ("cmake", "--build ./ --target 'clean' --config 'debug'", "./bin", monitor);
+				LoggingService.LogDebug (buildResult);
 				monitor.EndStep ();
 				
 				//TODO parse results.

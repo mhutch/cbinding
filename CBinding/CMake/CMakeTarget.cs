@@ -66,6 +66,8 @@ namespace CBinding {
 		
 		/* Overrides */
 		
+		public new WorkspaceObject ParentObject;
+		
 		protected override string OnGetName()
 		{
 			return this.name;
