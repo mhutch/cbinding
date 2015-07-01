@@ -134,11 +134,12 @@ namespace CBinding
 		/// <param name = "TU">
 		/// A <see cref="CXTranslationUnit"/>: the translation unit which's parsed content fills the symbol database
 		/// </param>
-		public void UpdateDatabase(CProject proj, string fileName, CXTranslationUnit TU)
+		/// <param name = "cancellationToken"></param>
+		public void UpdateDatabase(CProject proj, string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			lock (SyncRoot) {
 				proj.db.Reset (fileName);
-				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName);
+				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName, cancellationToken);
 				clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr (0)));
 			}
 		}
