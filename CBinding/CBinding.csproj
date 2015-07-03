@@ -248,6 +248,27 @@
     <Compile Include="Parser\CDocumentParser.cs" />
     <Compile Include="Gui\RenameHandlerDialog.cs" />
     <Compile Include="gtk-gui\CBinding.RenameHandlerDialog.cs" />
+    <Compile Include="Navigation\ClassPadEventArgs.cs" />
+    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
+    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
+    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
+    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroNodeBuilder.cs" />
+    <Compile Include="Navigation\NamespaceNodeBuilder.cs" />
+    <Compile Include="Navigation\ProjectNodeBuilderExtension.cs" />
+    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
+    <Compile Include="Navigation\UnionNodeBuilder.cs" />
+    <Compile Include="Navigation\VariableNodeBuilder.cs" />
+    <Compile Include="Navigation\SymbolEventArgs.cs" />
+    <Compile Include="Navigation\SymbolCommandHandler.cs" />
+    <Compile Include="Navigation\StructNodeBuilder.cs" />
+    <Compile Include="Navigation\FieldNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassTemplateNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
+    <Compile Include="Navigation\MemberFunctionNodeBuilder.cs" />
+    <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

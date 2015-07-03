@@ -30,6 +30,9 @@ namespace CBinding.Parser
 		protected Dictionary<CXCursor,Union> unions = new Dictionary<CXCursor,Union> ();
 		protected Dictionary<CXCursor,Typedef> typedefs = new Dictionary<CXCursor,Typedef> ();
 		protected Dictionary<CXCursor,Symbol> others = new Dictionary<CXCursor,Symbol> ();
+		protected Dictionary<CXCursor,Symbol> globals = new Dictionary<CXCursor,Symbol> ();
+		protected Dictionary<CXCursor,Symbol> canBeInClasses = new Dictionary<CXCursor,Symbol> ();
+		protected Dictionary<CXCursor,Symbol> canBeInNamespaces = new Dictionary<CXCursor,Symbol> ();
 
 		public ClangFileSymbolDatabase (CProject proj, string file)
 		{
@@ -41,62 +44,118 @@ namespace CBinding.Parser
 		/// Adds the given cursor to the database's collection which contains the symbols having the same CXCursorKind
 		/// </summary>
 		/// <param name="cursor">Cursor.</param>
-		public void AddToDatabase (CXCursor cursor)
+		public void AddToDatabase (CXCursor cursor, bool global)
 		{
 			switch (cursor.kind) {
 			case CXCursorKind.CXCursor_Namespace:
-				namespaces.Add (cursor, new Namespace (project, file, cursor));
+				Namespace n = new Namespace (project, file, cursor, global);
+				namespaces.Add (cursor, n);
+				canBeInClasses.Add (cursor, n);
 				break;
 			case CXCursorKind.CXCursor_ClassDecl:
-				classes.Add (cursor, new Class (project, file, cursor));
+				Class c = new Class (project, file, cursor, global);
+				classes.Add (cursor, c);
+				canBeInClasses.Add (cursor, c);
+				canBeInNamespaces.Add (cursor,c);
+				if(global)
+					globals.Add (cursor, c);
 				break;
 			case CXCursorKind.CXCursor_FieldDecl:
-				fields.Add (cursor, new Field (project, file, cursor));
+				Field f = new Field (project, file, cursor, global);
+				canBeInClasses.Add (cursor, f);
+				fields.Add (cursor, f);
 				break;
 			case CXCursorKind.CXCursor_ClassTemplate:
-				classes.Add (cursor, new ClassTemplate (project, file, cursor));
+				ClassTemplate ct = new ClassTemplate (project, file, cursor, global);
+				classes.Add (cursor, ct);
+				canBeInClasses.Add (cursor, ct);
+				canBeInNamespaces.Add (cursor,ct);
+				if(global)
+					globals.Add (cursor, ct);
 				break;
 			case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
-				classTemplatePartials.Add (cursor, new ClassTemplatePartial (project, file, cursor));
+				ClassTemplatePartial ctp = new ClassTemplatePartial (project, file, cursor, global);
+				classTemplatePartials.Add (cursor, ctp);
+				canBeInClasses.Add (cursor, ctp);
+				canBeInNamespaces.Add (cursor,ctp);
+				if(global)
+					globals.Add (cursor, ctp);
 				break;
 			case CXCursorKind.CXCursor_StructDecl:
-				structs.Add (cursor, new Struct (project, file, cursor));
+				Struct s = new Struct (project, file, cursor, global);
+				structs.Add (cursor, s);
+				canBeInClasses.Add (cursor, s);
+				canBeInNamespaces.Add (cursor,s);
+				if(global)
+					globals.Add (cursor, s);
 				break;
 			case CXCursorKind.CXCursor_FunctionDecl:
-				functions.Add (cursor, new Function (project, file, cursor));
+				Function func = new Function (project, file, cursor, global);
+				functions.Add (cursor, func);
+				canBeInClasses.Add (cursor, func);
+				canBeInNamespaces.Add (cursor,func);
+				if(global)
+					globals.Add (cursor, func);
 				break;
 			case CXCursorKind.CXCursor_CXXMethod:
-				memberFunctions.Add (cursor, new MemberFunction (project, file, cursor));
+				MemberFunction m = new MemberFunction (project, file, cursor, global);
+				memberFunctions.Add (cursor, m);
+				canBeInClasses.Add (cursor, m);
 				break;
 			case CXCursorKind.CXCursor_FunctionTemplate:
-				functionTemplates.Add (cursor, new FunctionTemplate (project, file, cursor));
+				FunctionTemplate ft = new FunctionTemplate (project, file, cursor, global);
+				functionTemplates.Add (cursor, ft);
+				canBeInClasses.Add (cursor, ft);
+				canBeInNamespaces.Add (cursor,ft);
+				if(global)
+					globals.Add (cursor, ft);
 				break;
 			case CXCursorKind.CXCursor_EnumDecl:
-				enumerations.Add (cursor, new Enumeration (project, file, cursor));
+				Enumeration en = new Enumeration (project, file, cursor, global);
+				enumerations.Add (cursor, en);
+				canBeInClasses.Add (cursor, en);
+				canBeInNamespaces.Add (cursor,en);
+				if(global)
+					globals.Add (cursor, en);
 				break;
 			case CXCursorKind.CXCursor_EnumConstantDecl:
-				enumerators.Add (cursor, new Enumerator (project, file, cursor));
+				enumerators.Add (cursor, new Enumerator (project, file, cursor, global));
 				break;
 			case CXCursorKind.CXCursor_UnionDecl:
-				unions.Add (cursor, new Union (project, file, cursor));
+				Union u = new Union (project, file, cursor, global);
+				unions.Add (cursor, u);
+				canBeInClasses.Add (cursor, u);
+				canBeInNamespaces.Add (cursor,u);
+				if(global)
+					globals.Add (cursor, u);
 				break;
 			case CXCursorKind.CXCursor_TypedefDecl:
-				typedefs.Add (cursor, new Typedef (project, file, cursor));
+				Typedef t = new Typedef (project, file, cursor, global);
+				typedefs.Add (cursor, t);
+				canBeInClasses.Add (cursor, t);
+				canBeInNamespaces.Add (cursor,t);
+				if(global)
+					globals.Add (cursor, t);
 				break;
 			case CXCursorKind.CXCursor_VarDecl:
-				variables.Add (cursor, new Variable (project, file, cursor));
+				Variable v = new Variable (project, file, cursor, global);
+				variables.Add (cursor, v);
+				canBeInClasses.Add (cursor, v);
+				canBeInNamespaces.Add (cursor,v);
+				if(global)
+					globals.Add (cursor, v);
 				break;
 			case CXCursorKind.CXCursor_MacroDefinition:
-				macros.Add (cursor, new Macro (project, file, cursor));
+				macros.Add (cursor, new Macro (project, file, cursor, global));
 				break;
 			default:
 				//Enabling this doesn't come with any benefits - but comes with a HUGE slowdown.
 				//If something is left out of parsing add its kind to the case statement and make its own Dictionary
-				//others.Add (cursor, new Symbol (project, file, cursor));
+				//others.Add (cursor, new Symbol (project, file, cursor, global));
 				break;
 			}
 		}
-
+			
 		public Dictionary<CXCursor, Namespace> Namespaces {
 			get {
 				return namespaces;
@@ -191,6 +250,28 @@ namespace CBinding.Parser
 			get {
 				return others;
 			}
+		}
+
+		public Dictionary<CXCursor, Symbol> Globals {
+			get {
+				return globals;
+			}
+		}
+			
+		public Dictionary<CXCursor, Symbol> CanBeInClasses { 
+			get {
+				return canBeInClasses;
+			} 
+		}
+
+
+		/// <summary>
+		/// Nested namespaces are handled in the node builder!
+		/// </summary>
+		public Dictionary<CXCursor, Symbol> CanBeInNamespaces { 
+			get {
+				return canBeInNamespaces;
+			} 
 		}
 	}
 }

@@ -87,14 +87,26 @@ namespace CBinding.Parser
 					uint numRanges = clang.getDiagnosticNumRanges (diag);
 					if (numRanges != 0) {
 						for (uint j = 0; j < numRanges; j++) {
-							SourceLocation begin = Manager.getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
-							SourceLocation end = Manager.getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j)));
-							Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (begin.Line, begin.Column, end.Line, end.Column)));
+							try {
+								SourceLocation begin = Manager.getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
+								SourceLocation end = Manager.getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j)));
+								Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (begin.Line, begin.Column, end.Line, end.Column)));
+							} catch {
+								//it seems sometimes "expression result unused" diagnostics appear multiple times
+								//for the same problem, when there is only e.g.
+								//an '1;' line in the code, and not every indicator has a valid filename in their location
+								//this crashes the thread, so we ignore it
+							}
 						}
 					} else {
-						SourceLocation loc = Manager.getSourceLocation (clang.getDiagnosticLocation (diag));
-						Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (loc.Line, loc.Column, loc.Line, loc.Column + 1)));
+						try {
+							SourceLocation loc = Manager.getSourceLocation (clang.getDiagnosticLocation (diag));
+							Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (loc.Line, loc.Column, loc.Line, loc.Column + 1)));
+						} catch {
+							//same goes here
+						}
 					}
+					clang.disposeDiagnostic (diag);
 				}
 			}
 		}

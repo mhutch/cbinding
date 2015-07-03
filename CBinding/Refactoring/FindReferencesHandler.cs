@@ -56,8 +56,11 @@ namespace CBinding.Refactoring
 					if (!references.Contains (reference)
 						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
 						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
+						&& !doc.Editor.GetCharAt (reference.End.Offset).Equals (':')
 						&& !doc.Editor.GetCharAt (reference.End.Offset + 1).Equals (':')
-						&& !doc.Editor.GetCharAt (reference.End.Offset + 2).Equals (':')) {
+						&& !doc.Editor.GetCharAt (reference.End.Offset).Equals ('-')
+						&& !doc.Editor.GetCharAt (reference.End.Offset + 1).Equals ('>')
+						&& !doc.Editor.GetCharAt (reference.End.Offset).Equals ('.')) {
 						references.Add (reference);
 					}			
 				}

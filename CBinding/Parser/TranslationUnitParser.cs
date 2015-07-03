@@ -13,18 +13,24 @@ namespace CBinding.Parser
 		ClangProjectSymbolDatabase db;
 		string file;
 		CancellationToken token;
+		CXCursor TUCursor;
 
-		public TranslationUnitParser(ClangProjectSymbolDatabase db, string file, CancellationToken cancelToken){
+		public TranslationUnitParser(ClangProjectSymbolDatabase db, string file, CancellationToken cancelToken, CXCursor TUcur){
 			this.db = db;
 			this.file = file;
 			token = cancelToken;
+			TUCursor = TUcur;
 		}
 
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
 			if (token.IsCancellationRequested) {
 				return CXChildVisitResult.CXChildVisit_Break;
 			}
-			db.AddToDatabase (file, cursor);
+			if (TUCursor.Equals (parent)) {
+				db.AddToDatabase (file, cursor, true);
+			} else {
+				db.AddToDatabase (file, cursor, false);
+			}
 			return CXChildVisitResult.CXChildVisit_Recurse;
 		}
 
