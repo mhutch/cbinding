@@ -116,6 +116,7 @@ namespace CBinding
 						Convert.ToUInt32 (unsavedFiles.Length),
 						unsavedFiles)
 					);
+					UpdateDatabase (proj, fileName, translationUnits[fileName]);
 				} catch (ArgumentException) {
 					Console.WriteLine (fileName + " is already added, not adding");
 				}
@@ -139,8 +140,9 @@ namespace CBinding
 		{
 			lock (SyncRoot) {
 				proj.db.Reset (fileName);
-				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName, cancellationToken);
-				clang.visitChildren (clang.getTranslationUnitCursor (TU), parser.Visit, new CXClientData (new IntPtr (0)));
+				CXCursor TUcursor = clang.getTranslationUnitCursor (TU);
+				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName, cancellationToken, TUcursor);
+				clang.visitChildren (TUcursor, parser.Visit, new CXClientData (new IntPtr (0)));
 			}
 		}
 

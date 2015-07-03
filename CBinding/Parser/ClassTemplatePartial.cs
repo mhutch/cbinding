@@ -8,7 +8,7 @@ namespace CBinding.Parser
 {
 	public class ClassTemplatePartial : ClassTemplate
 	{
-		public ClassTemplatePartial (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
+		public ClassTemplatePartial (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
 		{
 		}
 	}

@@ -8,7 +8,7 @@ namespace CBinding.Parser
 {
 	public class FunctionTemplate : Function
 	{
-		public FunctionTemplate (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) 
+		public FunctionTemplate (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
 		{
 		}
 	}

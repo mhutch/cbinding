@@ -12,7 +12,7 @@ namespace CBinding.Parser
 		string[] parameters;
 		int parameterCount;
 
-		public Function (CProject proj, string fileN, CXCursor cursor) : base (proj, fileN, cursor) {
+		public Function (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global) {
 			parameterCount = clang.Cursor_getNumArguments (cursor);
 			if (parameterCount != -1) {
 				parameters = new string[ParameterCount];

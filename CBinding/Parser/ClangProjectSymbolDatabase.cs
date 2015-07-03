@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using GLib;
 using System.Runtime.InteropServices;
 using System.Linq;
+using CBinding.Navigation;
 
 namespace CBinding.Parser
 {	
@@ -17,6 +18,8 @@ namespace CBinding.Parser
 		public ClangProjectSymbolDatabase(CProject proj) {
 			project = proj;
 			db = new Dictionary<string, ClangFileSymbolDatabase> ();
+			GlobalDefinitions = new Globals (proj);
+			MacroDefinitions = new MacroDefinitions (proj);
 		}
 
 		/// <summary>
@@ -24,12 +27,14 @@ namespace CBinding.Parser
 		/// </summary>
 		/// <param name="file">The filename of the file.</param>
 		/// <param name="cursor">Cursor.</param>
-		public void AddToDatabase (string file, CXCursor cursor)
+		/// <param name = "global">Is this symbol global?</param>
+		public void AddToDatabase (string file, CXCursor cursor, bool global)
 		{
 			try {
-				if (!db.ContainsKey (file))
+				if (!db.ContainsKey (file)) {
 					db.Add (file, new ClangFileSymbolDatabase(project, file));
-				db [file].AddToDatabase (cursor);
+				}
+				db [file].AddToDatabase (cursor, global);
 			} catch (ArgumentException) {
 			}
 		}
@@ -76,6 +81,21 @@ namespace CBinding.Parser
 				Dictionary<CXCursor, MemberFunction> ret = new Dictionary<CXCursor, MemberFunction>();
 				foreach (var iter in db)
 					iter.Value.MemberFunctions.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;			
+			}
+		}
+
+		public Globals GlobalDefinitions { get; private set; }
+
+		public Dictionary<CXCursor, Field> Fields {
+			get {
+				Dictionary<CXCursor, Field> ret = new Dictionary<CXCursor, Field>();
+				foreach (var iter in db)
+					iter.Value.Fields.ToList().ForEach(
 						x => {
 							ret.Add(x.Key, x.Value);
 						}
@@ -187,6 +207,8 @@ namespace CBinding.Parser
 				return ret;
 			}
 		}
+
+		public MacroDefinitions MacroDefinitions { get; private set; }
 
 		public Dictionary<CXCursor, Macro> Macros {
 			get {
@@ -376,6 +398,45 @@ namespace CBinding.Parser
 				return clang.getNullCursor ();
 			}
 			return clang.getNullCursor ();
+		}
+
+		public Dictionary<CXCursor, Symbol> Globals {
+			get {
+				Dictionary<CXCursor, Symbol> ret = new Dictionary<CXCursor, Symbol>();
+				foreach (var iter in db)
+					iter.Value.Globals.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
+		}
+
+		public Dictionary<CXCursor, Symbol> CanBeInClasses {
+			get {
+				Dictionary<CXCursor, Symbol> ret = new Dictionary<CXCursor, Symbol>();
+				foreach (var iter in db)
+					iter.Value.CanBeInClasses.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
+		}
+
+		public Dictionary<CXCursor, Symbol> CanBeInNamespaces {
+			get {
+				Dictionary<CXCursor, Symbol> ret = new Dictionary<CXCursor, Symbol>();
+				foreach (var iter in db)
+					iter.Value.CanBeInNamespaces.ToList().ForEach(
+						x => {
+							ret.Add(x.Key, x.Value);
+						}
+					);
+				return ret;
+			}
 		}
 	}	
 }

@@ -374,7 +374,11 @@ namespace CBinding
 			if (project == null)
 				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
 
-			var functions = (DocumentContext.Project as CProject).db.Functions;
+			var functions = project.db.Functions.Values.Where (o => o.Ours).ToList ();
+			foreach (var ft in project.db.FunctionTemplates.Values.Where (o => o.Ours))
+				functions.Add (ft);
+			foreach (var mf in project.db.MemberFunctions.Values.Where (o => o.Ours))
+				functions.Add (mf);
 			string lineText = Editor.GetLineText (Editor.CaretLine).TrimEnd ();
 			if (lineText.EndsWith (completionChar.ToString (), StringComparison.Ordinal))
 				lineText = lineText.Remove (lineText.Length - 1).TrimEnd ();
@@ -390,7 +394,7 @@ namespace CBinding
 
 			return Task.FromResult (
 				(MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)
-				new ParameterDataProvider (nameStart, Editor,functions.Values.ToList (), functionName)
+				new ParameterDataProvider (nameStart, Editor, functions, functionName)
 			);
 		}
 

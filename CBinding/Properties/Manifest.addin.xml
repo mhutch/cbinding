@@ -156,10 +156,14 @@
 		<NodeBuilder id = "CBinding.Navigation.ProjectNodeBuilderExtension" class = "CBinding.Navigation.ProjectNodeBuilderExtension"/>
 		<NodeBuilder id = "CBinding.Navigation.NamespaceNodeBuilder" class = "CBinding.Navigation.NamespaceNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.FunctionNodeBuilder" class = "CBinding.Navigation.FunctionNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.FunctionTemplateNodeBuilder" class = "CBinding.Navigation.FunctionTemplateNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.MemberFunctionNodeBuilder" class = "CBinding.Navigation.MemberFunctionNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.GlobalsNodeBuilder" class = "CBinding.Navigation.GlobalsNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.ClassNodeBuilder" class = "CBinding.Navigation.ClassNodeBuilder"/>
-		<NodeBuilder id = "CBinding.Navigation.StructureNodeBuilder" class = "CBinding.Navigation.StructureNodeBuilder"/>
-		<NodeBuilder id = "CBinding.Navigation.MemberNodeBuilder" class = "CBinding.Navigation.MemberNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.ClassTemplateNodeBuilder" class = "CBinding.Navigation.ClassTemplateNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.ClassTemplatePartialNodeBuilder" class = "CBinding.Navigation.ClassTemplatePartialNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.StructNodeBuilder" class = "CBinding.Navigation.StructNodeBuilder"/>
+		<NodeBuilder id = "CBinding.Navigation.FieldNodeBuilder" class = "CBinding.Navigation.FieldNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.VariableNodeBuilder" class = "CBinding.Navigation.VariableNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.MacroDefinitionsNodeBuilder" class = "CBinding.Navigation.MacroDefinitionsNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.MacroNodeBuilder" class = "CBinding.Navigation.MacroNodeBuilder"/>
