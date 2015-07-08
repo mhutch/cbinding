@@ -29,17 +29,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 
 using MonoDevelop.Core;
+using MonoDevelop.Core.Execution;
 using MonoDevelop.Projects;
 
 namespace CBinding {
 	public class CMakeProject : SolutionItem {
 		FilePath file;
 		string name;
+		string outputDirectory = "./bin";
 		CMakeFileFormat fileFormat;
 		
-		string executeCommand (string command, string args, string workingDir, ProgressMonitor monitor)
+		Stream executeCommand (string command, string args, string workingDir, ProgressMonitor monitor)
 		{
 			MemoryStream stream = new MemoryStream ();
 			StreamWriter streamWriter = new StreamWriter (stream);
@@ -48,8 +51,95 @@ namespace CBinding {
 			p.WaitForExit ();
 			streamWriter.Flush ();
 			stream.Position = 0;
-			StreamReader streamReader = new StreamReader (stream);
-			return streamReader.ReadToEnd ();
+			return stream;
+		}
+		
+		Tuple<int, string> getFileAndLine (string line, string separator)
+		{
+			int lineNumber = 0;
+			string fileName = "";
+			string s = line.Split (new String[] {separator}, StringSplitOptions.RemoveEmptyEntries) [1].Trim ();
+			string[] args = s.Split(':');
+			if (args [0].Length > 0) fileName = args [0];
+			if (args.Length > 1 && args [1].Length > 0) {
+				if(args [1].Contains ("("))
+					int.TryParse (args [1].Split ('(') [0], out lineNumber);
+				else
+					int.TryParse (args [1], out lineNumber);
+			}
+			
+			return new Tuple<int, string> (lineNumber, fileName);
+		}
+		
+		
+		BuildResult parseGenerationResult (Stream result, ProgressMonitor monitor)
+		{
+			BuildResult results = new BuildResult();
+			result.Position = 0;
+			StreamReader sr = new StreamReader (result);
+			StringBuilder sb = new StringBuilder ();
+			string line;
+			string fileName = "";
+			int lineNumber = 0;
+			bool isWarning = false;
+			
+			while ((line = sr.ReadLine ()) != null) {
+				//e.g.	CMake Warning in/at CMakeLists.txt:10 (COMMAND):
+				//or:	CMake Warning:
+				if (line.StartsWith ("CMake Warning", StringComparison.OrdinalIgnoreCase)) {
+					//reset everything and add last error or warning.
+					if (sb.Length > 0) {
+						if(isWarning)
+							results.AddWarning (BaseDirectory.Combine(fileName), lineNumber, 0, "", sb.ToString());
+						else
+							results.AddError (BaseDirectory.Combine(fileName), lineNumber, 0, "", sb.ToString());
+					}
+					
+					sb.Clear ();
+					fileName = "";
+					lineNumber = 0;
+					isWarning = true;
+					
+					// in/at CMakeLists.txt:10 (COMMAND):
+					if (line.Contains ("in")) {
+						var t = getFileAndLine (line, "in");
+						lineNumber = t.Item1;
+						fileName = t.Item2;
+					} else if (line.Contains ("at")) {
+						var t = getFileAndLine (line, "at");
+						lineNumber = t.Item1;
+						fileName = t.Item2;
+					}
+				} else if (line.StartsWith ("CMake Error", StringComparison.OrdinalIgnoreCase)) {
+					//reset everything and add last error or warning.
+					if (sb.Length > 0) {
+						if(isWarning)
+							results.AddWarning (BaseDirectory.Combine (fileName), lineNumber, 0, "", sb.ToString ());
+						else
+							results.AddError (BaseDirectory.Combine (fileName), lineNumber, 0, "", sb.ToString ());
+					}
+					
+					sb.Clear ();
+					fileName = "";
+					lineNumber = 0;
+					isWarning = false;
+					
+					// in/at CMakeLists.txt:10 (COMMAND):
+					if (line.Contains ("in")) {
+						var t = getFileAndLine (line, "in");
+						lineNumber = t.Item1;
+						fileName = t.Item2;
+					} else if (line.Contains ("at")) {
+						var t = getFileAndLine (line, "at");
+						lineNumber = t.Item1;
+						fileName = t.Item2;
+					}
+				} else {
+					sb.Append (line);
+				}
+			}
+			
+			return results;
 		}
 		
 		protected override string OnGetBaseDirectory ()
@@ -131,22 +221,18 @@ namespace CBinding {
 		{
 			return Task.Factory.StartNew (() => {
 				BuildResult results = new BuildResult ();
-				
-				FileService.CreateDirectory (Path.Combine (file.ParentDirectory.ToString (), "./bin"));
+				FileService.CreateDirectory (Path.Combine (file.ParentDirectory.ToString (), outputDirectory));
 				
 				monitor.BeginStep ("Generating build files.");
-				string generationResult = executeCommand ("cmake", "../", "./bin", monitor);
-				if (generationResult.Length > 0) results.AddError ("Generating build files failed.");
-				LoggingService.LogDebug (generationResult);
+				Stream generationResult = executeCommand ("cmake", "../", outputDirectory, monitor);
+				results = parseGenerationResult(generationResult, monitor);
 				monitor.EndStep ();
 				
 				monitor.BeginStep ("Building...");
-				string buildResult = executeCommand ("cmake", "--build ./ --config 'debug'", "./bin", monitor);
-				if (buildResult.Length > 0) results.AddError ("Build failed.");
-				LoggingService.LogDebug (buildResult);
+				Stream buildResult = executeCommand ("cmake", "--build ./ --clean-first", outputDirectory, monitor);
+				//TODO: Parse results.
 				monitor.EndStep ();
 				
-				//TODO parse results.
 				return results;
 			});
 		}
@@ -156,13 +242,61 @@ namespace CBinding {
 			return Task.Factory.StartNew (() => {
 				BuildResult results = new BuildResult();
 				
-				monitor.BeginStep ("Cleaning...");
-				string buildResult = executeCommand ("cmake", "--build ./ --target 'clean' --config 'debug'", "./bin", monitor);
-				LoggingService.LogDebug (buildResult);
-				monitor.EndStep ();
+				string path = Path.Combine (BaseDirectory, outputDirectory);
+				if (Directory.Exists (path)) {
+					FileService.DeleteDirectory(path);
+				}
 				
-				//TODO parse results.
 				return results;
+			});
+		}
+		
+		protected override Task OnExecute(ProgressMonitor monitor, ExecutionContext context, ConfigurationSelector configuration)
+		{
+			return Task.Factory.StartNew (async () => {
+				ExternalConsole console = context.ExternalConsoleFactory.CreateConsole (false, monitor.CancellationToken);
+				string targetName = "";
+				foreach (var target in fileFormat.Targets.Values) {
+					if (target.Type == CMakeTarget.Types.BINARY) {
+						targetName = target.Name;
+						break;
+					}
+				}
+				
+				if (String.IsNullOrEmpty (targetName)) {
+					monitor.ReportError ("Can't find an executable target.");
+					return;
+				}
+				
+				string outputFullPath = Path.Combine (BaseDirectory, outputDirectory);
+				FilePath f = new FilePath(outputFullPath);
+				NativeExecutionCommand cmd;
+				if (File.Exists(f.Combine(targetName)))
+					cmd = new NativeExecutionCommand(f.Combine(targetName));
+				else if (File.Exists(f.Combine(String.Format("{0}.{1}", targetName, "exe"))))
+					cmd = new NativeExecutionCommand(f.Combine(String.Format("{0}.{1}", targetName, "exe")));
+				else if (File.Exists(f.Combine("./Debug", targetName)))
+					cmd = new NativeExecutionCommand(f.Combine("./Debug", targetName));
+				else if (File.Exists(f.Combine("./Debug", String.Format("{0}.{1}", targetName, "exe"))))
+					cmd = new NativeExecutionCommand(f.Combine("./Debug", String.Format("{0}.{1}", targetName, "exe")));
+				else {
+					monitor.ReportError ("Can't determine executable path.");
+					return;
+				}
+				
+				try {
+					var handler = Runtime.ProcessService.GetDefaultExecutionHandler(cmd);
+					var op = handler.Execute (cmd, console);
+					
+					using (var t = monitor.CancellationToken.Register (op.Cancel))
+						await op.Task;
+					
+					monitor.Log.WriteLine ("The operation exited with code: {0}", op.ExitCode);
+				} catch (Exception ex) {
+					monitor.ReportError ("Can't execute the target.", ex);
+				} finally {
+					console.Dispose ();
+				}
 			});
 		}
 		
