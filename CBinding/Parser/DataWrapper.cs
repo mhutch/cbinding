@@ -41,7 +41,7 @@ using MonoDevelop.Core;
 using MonoDevelop.Ide.Editor;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CBinding.Parser
 {
@@ -85,7 +85,21 @@ namespace CBinding.Parser
 		public override Task<TooltipInformation> CreateTooltipInformation (TextEditor editor, DocumentContext ctx, int currentParameter, bool smartWrap, CancellationToken ctoken)
 		{
 			var tooltip = new TooltipInformation ();
-			tooltip.SignatureMarkup = f.Signature;
+			string sig = f.Returns + " " + f.Signature;
+			StringBuilder builder = new StringBuilder(sig.Substring (0,sig.IndexOf ("(")));
+			builder.Append ("(" + Environment.NewLine);
+			int i = 0;
+			foreach(string t in f.Parameters) {
+				if(i.Equals (currentParameter)) {
+					builder.Append ("\t<b>" + GLib.Markup.EscapeText (t) + "</b>" + Environment.NewLine);
+				}
+				else {
+					builder.Append ("\t" + GLib.Markup.EscapeText (t) + Environment.NewLine);
+				}
+				i++;
+			}
+			builder.Append (")");
+			tooltip.SignatureMarkup = builder.ToString ();
 			tooltip.SummaryMarkup = "";
 			return Task.FromResult<TooltipInformation> (tooltip);
 		}

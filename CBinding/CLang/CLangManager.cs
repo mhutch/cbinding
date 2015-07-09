@@ -481,6 +481,22 @@ namespace CBinding
 			}
 		}
 
+		/// <summary>
+		/// Gets the type of a cursor. Wraps clang function.
+		/// </summary>
+		/// <param name="cursor">
+		/// A <see cref="CXCursor"/>: cursor to inspect
+		/// </param>
+		/// <returns>
+		/// A <see cref="CXType"/>: the type
+		/// </returns>
+		public CXType getCursorType (CXCursor cursor)
+		{
+			lock (SyncRoot) {
+				return clang.getCursorType (cursor);
+			}
+		}
+
 		protected virtual void OnDispose(bool disposing)
 		{
 			lock (SyncRoot) {

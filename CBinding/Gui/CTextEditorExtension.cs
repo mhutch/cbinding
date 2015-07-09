@@ -358,40 +358,129 @@ namespace CBinding
 		}
 
 		/// <summary>
+		/// Marches position in Editor.Text while the previous char is a non-ws char. Used to remove spaces between identifiers
+		/// </summary>
+		/// <param name="prevChar">Previous char.</param>
+		/// <param name="pos">Position in the editor.</param>
+		void WorkaroundWhitespaces (ref char prevChar, ref int pos)
+		{
+			while (char.IsWhiteSpace (prevChar) && pos > 1) {
+				pos--;
+				prevChar = Editor.GetCharAt (pos - 1);
+			}
+		}
+
+		/// <summary>
+		/// Marches position in Editor.Text while its out of a <***> template specifier/parameter. Used to workaround the fact
+		/// that template specifiers are not in the funtions signature, so parameter hinting them requires this march
+		/// </summary>
+		/// <param name="prevChar">Previous char.</param>
+		/// <param name="pos">Position in the editor.</param>
+		void WorkaroundTemplateSpecifier (ref char prevChar, ref int pos)
+		{
+			if (prevChar.Equals ('>')) {
+				int inTemplateSpecifier = 1;
+				while (inTemplateSpecifier != 0 && pos > 1) {
+					pos--;
+					prevChar = Editor.GetCharAt (pos - 1);
+					switch (prevChar) {
+					case '<':
+						inTemplateSpecifier--;
+						break;
+					case '>':
+						inTemplateSpecifier++;
+						break;
+					}
+				}
+				prevChar = Editor.GetCharAt (--pos - 1);
+			}
+		}
+		/// <summary>
 		/// Handles the parameter completion async. Invoked automatically on every keypress.
+		/// Contains scenarios for veeery perverted codes like: classInstancePointer   	-> 		
+		/// classmethod  ( (	new tempClass<int>{ 1 , 2 , 3 }  ) , (new int[1]{})) , but might be not ready for everything.
 		/// </summary>
 		/// <returns>The parameter completion async.</returns>
 		/// <param name="completionContext">Completion context.</param>
 		/// <param name="completionChar">Completion char.</param>
 		/// <param name="token">Token.</param>s
-		public override Task<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> HandleParameterCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
+		public override Task<ParameterHintingResult> HandleParameterCompletionAsync (
+			CodeCompletionContext completionContext,
+			char completionChar,
+			CancellationToken token = default(CancellationToken))
 		{
-			if (completionChar != '(')
+			if (completionChar != '(' && completionChar != ',')
 				return null;
 
 			CProject project = DocumentContext.Project as CProject;
 
 			if (project == null)
-				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
-
-			var functions = project.db.Functions.Values.Where (o => o.Ours).ToList ();
-			foreach (var ft in project.db.FunctionTemplates.Values.Where (o => o.Ours))
-				functions.Add (ft);
-			foreach (var mf in project.db.MemberFunctions.Values.Where (o => o.Ours))
-				functions.Add (mf);
-			string lineText = Editor.GetLineText (Editor.CaretLine).TrimEnd ();
-			if (lineText.EndsWith (completionChar.ToString (), StringComparison.Ordinal))
-				lineText = lineText.Remove (lineText.Length - 1).TrimEnd ();
-
-			int nameStart = lineText.LastIndexOfAny (allowedChars);
-
-			nameStart++;
-
-			string functionName = lineText.Substring (nameStart).Trim ();
-
+				return Task.FromResult<ParameterHintingResult> (null);
+			
+			
+			int inParenthesis = 0;
+			int nameEnd = completionContext.TriggerOffset - 1;
+			char endChar = Editor.GetCharAt (nameEnd);
+			char prevChar = Editor.GetCharAt (nameEnd - 1);
+			while ( 
+				!(
+				    prevChar != '('//multiple (
+				    && endChar == '(' && inParenthesis <= 0 //last parenthesis
+				)
+				&& nameEnd > 1) {
+				switch (endChar) {
+				case ')':
+					inParenthesis++;
+					break;
+				case '(':
+					inParenthesis--;
+					break;
+				}
+				endChar = Editor.GetCharAt (--nameEnd);
+				prevChar = Editor.GetCharAt (nameEnd - 1);
+			}
+			WorkaroundWhitespaces (ref prevChar, ref nameEnd);
+			WorkaroundTemplateSpecifier (ref prevChar, ref nameEnd);
+			WorkaroundWhitespaces (ref prevChar, ref nameEnd);
+			int nameStart = nameEnd - 1;
+			//the actual name getting, march backwards while not a ., ->, space etc.
+			while (!allowedChars.Contains (prevChar) && nameStart > 1) {
+				nameStart--;
+				prevChar = Editor.GetCharAt (nameStart - 1);			
+			}
+			string functionName = Editor.Text.Substring (nameStart, nameEnd - nameStart);
+			WorkaroundWhitespaces (ref prevChar, ref nameStart);
 			if (string.IsNullOrEmpty (functionName))
-				return Task.FromResult<MonoDevelop.Ide.CodeCompletion.ParameterHintingResult> (null);
-
+				return Task.FromResult<ParameterHintingResult> (null);
+			List<Function> functions = new List<Function> ();
+			bool methodMode = false;
+			if ((Editor.GetCharAt (nameStart - 1) == '.')) {
+				methodMode = true;
+				nameStart--;
+			}
+			if(Editor.GetCharAt (nameStart - 2) == '-' && Editor.GetCharAt (nameStart - 1) == '>') {
+				methodMode = true;
+				nameStart -= 2;
+				}
+			prevChar = Editor.GetCharAt (--nameStart);
+			if(methodMode){
+				foreach (var f in project.db.MemberFunctions.Values) {
+					//this is to ensure no functions is added twice
+					//methods from different classes with the same name are provided too - working on a solution
+					if (functions.All (
+						    o =>(!o.Signature.Equals (f.Signature))
+					)) {
+						functions.Add (f);
+					}
+				}
+			} else {
+				foreach (var f in project.db.Functions.Values)
+					if (functions.All (o => !o.Signature.Equals (f.Signature)))
+						functions.Add (f);
+				foreach (var f in project.db.FunctionTemplates.Values)
+					if (functions.All (o => !o.Signature.Equals (f.Signature)))
+						functions.Add (f);
+			}
 			return Task.FromResult (
 				(MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)
 				new ParameterDataProvider (nameStart, Editor, functions, functionName)
@@ -609,5 +698,81 @@ namespace CBinding
 			renameHandler.RunRename ();
 		}
 		#endregion
+
+		/// <summary>
+		/// Returns the index of the parameter where the cursor is currently positioned.
+		/// </summary>
+		/// <returns>
+		/// -1 means the cursor is outside the method parameter list
+		/// 0 means no parameter entered
+		/// > 0 is the index of the parameter (1-based)
+		/// </returns>
+		public override int GetCurrentParameterIndex (int startOffset)
+		{
+			int cursor = CompletionWidget.CurrentCodeCompletionContext.TriggerOffset;
+			int i = startOffset;
+			if (i < 0 || i >= Editor.Length || Editor.GetCharAt (i) == ')')
+				return -1;
+
+			if (i > cursor)
+				return -1;
+			else if (i == cursor)
+				return 0;
+			//step over the opening parenthesis at function call
+			while (Editor.GetCharAt (i) != '(')
+				i++;
+			int parameterIndex = 1;
+			int inTemplateSpecifier = 0;
+			int inCurvyBracket = 0;
+			int inParentesis = 0;
+			int inBracket = 0;
+			while (i++ < cursor) {
+				if (i >= CompletionWidget.TextLength)
+					break;
+				char ch = CompletionWidget.GetChar (i);
+				switch (ch) {
+				case '<':
+					++inTemplateSpecifier;
+					break;
+				case '>':
+					--inTemplateSpecifier;
+					break;
+				case '(':
+					++inParentesis;
+					break;
+				case ')':
+					--inParentesis;
+					if (inParentesis == 0)
+						return -1;
+					break;
+				case '[':
+					++inBracket;
+					break;
+				case ']':
+					--inBracket;
+					break;
+				case '{':
+					++inCurvyBracket;
+					break;
+				case '}':
+					--inCurvyBracket;
+					break;
+				case ',':
+					if (inTemplateSpecifier == 0 &&
+					    inParentesis == 0 &&
+					    inBracket == 0 &&
+					    inCurvyBracket == 0) {
+						parameterIndex++;
+					}
+					break;
+				}
+			}
+			return parameterIndex;
+		}
+
+		public override Task<ParameterHintingResult> ParameterCompletionCommand (CodeCompletionContext completionContext)
+		{
+			return HandleParameterCompletionAsync (completionContext, '(');
+		}
 	}
 }

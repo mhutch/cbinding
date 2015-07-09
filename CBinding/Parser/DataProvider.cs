@@ -61,38 +61,6 @@ namespace CBinding.Parser
 			}
 		}
 		
-		
-		// Returns the index of the parameter where the cursor is currently positioned.
-		// -1 means the cursor is outside the method parameter list
-		// 0 means no parameter entered
-		// > 0 is the index of the parameter (1-based)
-		internal int GetCurrentParameterIndex (ICompletionWidget widget, CodeCompletionContext ctx)
-		{
-			int cursor = widget.CurrentCodeCompletionContext.TriggerOffset;
-			int i = ctx.TriggerOffset;
-			if (i < 0 || i >= editor.Length || editor.GetCharAt (i) == ')')
-				return -1;
-			
-			if (i > cursor)
-				return -1;
-			else if (i == cursor)
-				return 0;
-			
-			int parameterIndex = 1;
-			
-			while (i++ < cursor) {
-				if (i >= widget.TextLength)
-					break;
-				char ch = widget.GetChar (i);
-				if (ch == ',')
-					parameterIndex++;
-				else if (ch == ')')
-					return -1;
-			}
-			
-			return parameterIndex;
-		}
-		
 		// Returns the markup to use to represent the specified method overload
 		// in the parameter information window.
 		public string GetHeading (int overload, string[] parameterMarkup, int currentParameter)
