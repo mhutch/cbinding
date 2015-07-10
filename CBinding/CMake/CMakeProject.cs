@@ -47,11 +47,22 @@ namespace CBinding {
 			MemoryStream stream = new MemoryStream ();
 			StreamWriter streamWriter = new StreamWriter (stream);
 			string path = Path.Combine (file.ParentDirectory.ToString (), workingDir);
-			MonoDevelop.Core.Execution.ProcessWrapper p = Runtime.ProcessService.StartProcess (command, args, path, monitor.Log, streamWriter, null);
+			ProcessWrapper p = Runtime.ProcessService.StartProcess (command, args, path, monitor.Log, streamWriter, null);
 			p.WaitForExit ();
 			streamWriter.Flush ();
 			stream.Position = 0;
 			return stream;
+		}
+		
+		bool checkCMake ()
+		{
+			try {
+				ProcessWrapper p = Runtime.ProcessService.StartProcess ("cmake", "--version", null, null);
+				p.WaitForOutput ();
+				return true;
+			} catch {
+				return false;
+			}
 		}
 		
 		Tuple<int, string> getFileAndLine (string line, string separator)
@@ -101,14 +112,19 @@ namespace CBinding {
 					isWarning = true;
 					
 					// in/at CMakeLists.txt:10 (COMMAND):
-					if (line.Contains ("in")) {
+					if (line.Contains (" in ")) {
 						var t = getFileAndLine (line, "in");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
-					} else if (line.Contains ("at")) {
+					} else if (line.Contains (" at ")) {
 						var t = getFileAndLine (line, "at");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
+					} else {
+						string[] warning = line.Split (':');
+						if (!String.IsNullOrEmpty (warning.ElementAtOrDefault (1))) {
+							sb.Append (warning [1]);
+						}
 					}
 				} else if (line.StartsWith ("CMake Error", StringComparison.OrdinalIgnoreCase)) {
 					//reset everything and add last error or warning.
@@ -125,14 +141,19 @@ namespace CBinding {
 					isWarning = false;
 					
 					// in/at CMakeLists.txt:10 (COMMAND):
-					if (line.Contains ("in")) {
+					if (line.Contains (" in ")) {
 						var t = getFileAndLine (line, "in");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
-					} else if (line.Contains ("at")) {
+					} else if (line.Contains (" at ")) {
 						var t = getFileAndLine (line, "at");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
+					} else {
+						string[] error = line.Split (':');
+						if (!String.IsNullOrEmpty (error.ElementAtOrDefault (1))) {
+							sb.Append (error [1]);
+						}
 					}
 				} else {
 					sb.Append (line);
@@ -220,7 +241,14 @@ namespace CBinding {
 		protected override Task<BuildResult> OnBuild (ProgressMonitor monitor, ConfigurationSelector configuration, OperationContext operationContext)
 		{
 			return Task.Factory.StartNew (() => {
-				BuildResult results = new BuildResult ();
+				BuildResult results;
+				
+				if (!checkCMake ()) {
+					results = new BuildResult();
+					results.AddError ("CMake cannot be found.");
+					return results;
+				}
+				
 				FileService.CreateDirectory (Path.Combine (file.ParentDirectory.ToString (), outputDirectory));
 				
 				monitor.BeginStep ("Generating build files.");
