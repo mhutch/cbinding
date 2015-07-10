@@ -30,7 +30,6 @@
 //
 
 using System;
-using System.IO;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
@@ -294,7 +293,7 @@ namespace CBinding
 			if (shouldCompleteOn(completionChar)) {
 				CProject project = DocumentContext.Project as CProject;
 				unsavedFiles = new List<CXUnsavedFile> ();
-				foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
+				foreach (Document openDocument in IdeApp.Workbench.Documents) {
 					if (openDocument.IsDirty) {
 						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
 						unsavedFile.Filename = openDocument.FileName;
@@ -417,7 +416,7 @@ namespace CBinding
 			if (project == null)
 				return Task.FromResult<ParameterHintingResult> (null);
 			
-			
+			#region NEEDED_FOR_STARTOFFSET_:(	
 			int inParenthesis = 0;
 			int nameEnd = completionContext.TriggerOffset - 1;
 			char endChar = Editor.GetCharAt (nameEnd);
@@ -449,41 +448,62 @@ namespace CBinding
 				prevChar = Editor.GetCharAt (nameStart - 1);			
 			}
 			string functionName = Editor.Text.Substring (nameStart, nameEnd - nameStart);
-			WorkaroundWhitespaces (ref prevChar, ref nameStart);
+			#endregion
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<ParameterHintingResult> (null);
-			List<Function> functions = new List<Function> ();
-			bool methodMode = false;
-			if ((Editor.GetCharAt (nameStart - 1) == '.')) {
-				methodMode = true;
-				nameStart--;
-			}
-			if(Editor.GetCharAt (nameStart - 2) == '-' && Editor.GetCharAt (nameStart - 1) == '>') {
-				methodMode = true;
-				nameStart -= 2;
+			List<CXUnsavedFile> unsavedFiles = new List<CXUnsavedFile> ();
+			foreach (Document openDocument in IdeApp.Workbench.Documents) {
+				if (openDocument.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Filename = openDocument.FileName;
+					unsavedFile.Length = openDocument.Editor.Text.Length;
+					unsavedFile.Contents = openDocument.Editor.Text;
+					if (project.BOMPresentInFile [openDocument.FileName]) {
+						unsavedFile.Length += 3;
+						unsavedFile.Contents = "   " + unsavedFile.Contents;
+					}
+					unsavedFiles.Add (unsavedFile);
 				}
-			prevChar = Editor.GetCharAt (--nameStart);
-			if(methodMode){
-				foreach (var f in project.db.MemberFunctions.Values) {
-					//this is to ensure no functions is added twice
-					//methods from different classes with the same name are provided too - working on a solution
-					if (functions.All (
-						    o =>(!o.Signature.Equals (f.Signature))
-					)) {
-						functions.Add (f);
+			}
+			IntPtr pResults = project.cLangManager.codeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
+			CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
+			List<OverloadCandidate> parameterInformation = new List<OverloadCandidate> ();
+			if (results.Results.ToInt64 () != 0) {
+				for(int i = 0; i < results.NumResults; i++) {
+					IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
+					CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
+					CXCompletionString completionString = new CXCompletionString(resultItem.CompletionString);
+					uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
+					bool candidate = false;
+					bool needed = false;
+					string ret = new string (' ',1);
+					string nam = new string (' ',1);
+					List<string> parameters = new List<string> ();
+					for (uint j = 0; j < completionchunknum; j++) {
+						if (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_ResultType) {
+							candidate = true;
+							ret = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
+						}
+						if (candidate) {
+							if (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_Text) {
+								needed = true;
+								nam = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
+							}
+							if(needed && (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_CurrentParameter
+								||clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_Placeholder)){
+								parameters.Add (clang.getCompletionChunkText (completionString.Pointer, j).ToString ());
+							}
+						}
+					}
+					if (needed){
+						parameterInformation.Add (new OverloadCandidate(ret, nam, parameters));
 					}
 				}
-			} else {
-				foreach (var f in project.db.Functions.Values)
-					if (functions.All (o => !o.Signature.Equals (f.Signature)))
-						functions.Add (f);
-				foreach (var f in project.db.FunctionTemplates.Values)
-					if (functions.All (o => !o.Signature.Equals (f.Signature)))
-						functions.Add (f);
 			}
-			return Task.FromResult (
-				(MonoDevelop.Ide.CodeCompletion.ParameterHintingResult)
-				new ParameterDataProvider (nameStart, Editor, functions, functionName)
+			clang.disposeCodeCompleteResults (pResults);
+		return Task.FromResult (
+				(ParameterHintingResult)
+				new ParameterDataProvider (nameStart, parameterInformation)
 			);
 		}
 
@@ -537,7 +557,7 @@ namespace CBinding
 			if (cp != null) {
 				string match = cp.MatchingFile (this.DocumentContext.Name);
 				if (match != null)
-					MonoDevelop.Ide.IdeApp.Workbench.OpenDocument (match, cp, true);
+					IdeApp.Workbench.OpenDocument (match, cp, true);
 			}
 		}
 
@@ -767,6 +787,7 @@ namespace CBinding
 					break;
 				}
 			}
+			Console.WriteLine (parameterIndex);
 			return parameterIndex;
 		}
 

@@ -30,44 +30,33 @@
 //
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-
-
-using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.CodeCompletion;
-
-using MonoDevelop.Core;
 using MonoDevelop.Ide.Editor;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
+using System.Collections.Generic;
 
 namespace CBinding.Parser
 {
-	sealed class DataWrapper : MonoDevelop.Ide.CodeCompletion.ParameterHintingData
+	sealed class DataWrapper : ParameterHintingData
 	{
-		readonly Function f;
-
-		public Function Function {
-			get {
-				return f;
-			}
+		OverloadCandidate Overload {
+			get;
 		}
 
-		public DataWrapper (Function f) : base(null)
+		public DataWrapper (OverloadCandidate overload) : base(null)
 		{
-			this.f = f;
+			Overload = overload;
 		}
 
 		public DataWrapper () : base(null)
 		{
-			this.f = null;
 		}
 
 		public override int ParameterCount {
 			get {
-				return f.ParameterCount;
+				return Overload.Parameters.Count;
 			}
 		}
 
@@ -79,17 +68,17 @@ namespace CBinding.Parser
 
 		public override string GetParameterName (int parameter)
 		{
-			return f.Parameters[parameter];
+			return Overload.Parameters[parameter];
 		}
 
 		public override Task<TooltipInformation> CreateTooltipInformation (TextEditor editor, DocumentContext ctx, int currentParameter, bool smartWrap, CancellationToken ctoken)
 		{
 			var tooltip = new TooltipInformation ();
-			string sig = f.Returns + " " + f.Signature;
-			StringBuilder builder = new StringBuilder(sig.Substring (0,sig.IndexOf ("(")));
+			string sig = Overload.Returns + " " + Overload.Name;
+			StringBuilder builder = new StringBuilder(sig);
 			builder.Append ("(" + Environment.NewLine);
 			int i = 0;
-			foreach(string t in f.Parameters) {
+			foreach(string t in Overload.Parameters) {
 				if(i.Equals (currentParameter)) {
 					builder.Append ("\t<b>" + GLib.Markup.EscapeText (t) + "</b>" + Environment.NewLine);
 				}

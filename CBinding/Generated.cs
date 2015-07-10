@@ -462,6 +462,9 @@ namespace ClangSharp
         public IntPtr Pointer;
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate CXVisitorResult CXFieldVisitor(CXCursor @C, IntPtr @client_data);
+
     public enum CXErrorCode : uint
     {
         @CXError_Success = 0,
@@ -734,7 +737,8 @@ namespace ClangSharp
         @CXCursor_OMPParallelForSimdDirective = 251,
         @CXCursor_OMPTargetDirective = 252,
         @CXCursor_OMPTeamsDirective = 253,
-        @CXCursor_LastStmt = 253,
+        @CXCursor_OMPTaskgroupDirective = 254,
+        @CXCursor_LastStmt = 254,
         @CXCursor_TranslationUnit = 300,
         @CXCursor_FirstAttr = 400,
         @CXCursor_UnexposedAttr = 400,
@@ -765,6 +769,7 @@ namespace ClangSharp
         @CXCursor_ModuleImportDecl = 600,
         @CXCursor_FirstExtraDecl = 600,
         @CXCursor_LastExtraDecl = 600,
+        @CXCursor_OverloadCandidate = 700,
     }
 
     public enum CXLinkageKind : uint
@@ -848,7 +853,6 @@ namespace ClangSharp
         @CXCallingConv_X86Pascal = 5,
         @CXCallingConv_AAPCS = 6,
         @CXCallingConv_AAPCS_VFP = 7,
-        @CXCallingConv_PnaclCall = 8,
         @CXCallingConv_IntelOclBicc = 9,
         @CXCallingConv_X86_64Win64 = 10,
         @CXCallingConv_X86_64SysV = 11,
@@ -1148,7 +1152,7 @@ namespace ClangSharp
 
     public static partial class clang
     {
-        private const string libraryPath = "libclang.so";
+        private const string libraryPath = "clang37";
 
         [DllImport(libraryPath, EntryPoint = "clang_getCString", CallingConvention = CallingConvention.Cdecl)]
 		public static extern IntPtr getCString(CXString @string);
@@ -1600,6 +1604,12 @@ namespace ClangSharp
         [DllImport(libraryPath, EntryPoint = "clang_Type_getOffsetOf", CallingConvention = CallingConvention.Cdecl)]
         public static extern long Type_getOffsetOf(CXType @T, [MarshalAs(UnmanagedType.LPStr)] string @S);
 
+        [DllImport(libraryPath, EntryPoint = "clang_Cursor_getOffsetOfField", CallingConvention = CallingConvention.Cdecl)]
+        public static extern long Cursor_getOffsetOfField(CXCursor @C);
+
+        [DllImport(libraryPath, EntryPoint = "clang_Cursor_isAnonymous", CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint Cursor_isAnonymous(CXCursor @C);
+
         [DllImport(libraryPath, EntryPoint = "clang_Type_getNumTemplateArguments", CallingConvention = CallingConvention.Cdecl)]
         public static extern int Type_getNumTemplateArguments(CXType @T);
 
@@ -1935,6 +1945,9 @@ namespace ClangSharp
 
         [DllImport(libraryPath, EntryPoint = "clang_indexLoc_getCXSourceLocation", CallingConvention = CallingConvention.Cdecl)]
         public static extern CXSourceLocation indexLoc_getCXSourceLocation(CXIdxLoc @loc);
+
+        [DllImport(libraryPath, EntryPoint = "clang_Type_visitFields", CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint Type_visitFields(CXType @T, CXFieldVisitor @visitor, CXClientData @client_data);
 
         [DllImport(libraryPath, EntryPoint = "clang_Cursor_getParsedComment", CallingConvention = CallingConvention.Cdecl)]
         public static extern CXComment Cursor_getParsedComment(CXCursor @C);

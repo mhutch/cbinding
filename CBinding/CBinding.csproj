@@ -97,6 +97,7 @@
   <Import Project="..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets')" />
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="libclang37.so" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
@@ -269,6 +270,7 @@
     <Compile Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
     <Compile Include="Navigation\MemberFunctionNodeBuilder.cs" />
     <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
+    <Compile Include="Parser\OverloadCandidate.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
