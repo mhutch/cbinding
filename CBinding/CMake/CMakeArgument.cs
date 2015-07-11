@@ -52,6 +52,18 @@ namespace CBinding
 		{
 			return values.Remove (arg);
 		}
+		
+		public bool Edit (string oldArg, string newArg)
+		{
+			if (value == oldArg) {
+				value = newArg;
+				return true;
+			} else if (values.Contains (oldArg)) {
+				values [values.IndexOf (oldArg)] = newArg;
+				return true;
+			}
+			return false;
+		}
 
 		public List<string> GetValues ()
 		{

@@ -247,7 +247,29 @@ namespace CBinding {
 			if (c == null)
 				return false;
 			
-			return c.EditArgument (oldName, newName);
+			if (c.EditArgument (oldName, newName)) {
+				Save ();
+				return true;
+			}
+			return false;
+		}
+		
+		public void RemoveTarget (string targetName)
+		{
+			var commands = Targets.Where ((arg) => arg.Key.StartsWith(targetName, StringComparison.OrdinalIgnoreCase)).ToList ();
+			foreach (var command in commands) {
+				foreach (var file in command.Value.Files)
+					command.Value.RemoveFile (file.Key);
+				
+				foreach (var c in allCommands) {
+					if (c.Value.Equals (command.Value.Command)) {
+						allCommands.Remove (c.Key);
+						break;
+					}
+				}
+				Targets.Remove (command.Key);
+			}
+			
 		}
 
 		public CMakeFileFormat (FilePath file, CMakeProject project)

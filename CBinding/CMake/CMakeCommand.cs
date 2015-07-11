@@ -73,9 +73,9 @@ namespace CBinding {
 		
 		public bool EditArgument (string oldArgument, string newArgument)
 		{
-			if (RemoveArgument (oldArgument)) {
-				AddArgument (newArgument);
-				return true;
+			foreach (var argument in Arguments) {
+				if (argument.Edit (oldArgument, newArgument))
+					return true;
 			}
 				
 			return false;

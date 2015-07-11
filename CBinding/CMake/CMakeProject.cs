@@ -82,7 +82,6 @@ namespace CBinding {
 			return new Tuple<int, string> (lineNumber, fileName);
 		}
 		
-		
 		BuildResult parseGenerationResult (Stream result, ProgressMonitor monitor)
 		{
 			BuildResult results = new BuildResult();
@@ -113,11 +112,11 @@ namespace CBinding {
 					
 					// in/at CMakeLists.txt:10 (COMMAND):
 					if (line.Contains (" in ")) {
-						var t = getFileAndLine (line, "in");
+						var t = getFileAndLine (line, " in ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else if (line.Contains (" at ")) {
-						var t = getFileAndLine (line, "at");
+						var t = getFileAndLine (line, " at ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else {
@@ -142,11 +141,11 @@ namespace CBinding {
 					
 					// in/at CMakeLists.txt:10 (COMMAND):
 					if (line.Contains (" in ")) {
-						var t = getFileAndLine (line, "in");
+						var t = getFileAndLine (line, " in ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else if (line.Contains (" at ")) {
-						var t = getFileAndLine (line, "at");
+						var t = getFileAndLine (line, " at ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else {
@@ -161,6 +160,11 @@ namespace CBinding {
 			}
 			
 			return results;
+		}
+		
+		public void RemoveTarget (string targetName)
+		{
+			fileFormat.RemoveTarget (targetName);
 		}
 		
 		protected override string OnGetBaseDirectory ()

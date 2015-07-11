@@ -53,6 +53,10 @@ namespace CBinding {
 		public Dictionary<string, CMakeCommand> Files = new Dictionary<string, CMakeCommand> ();
 		CMakeFileFormat parent;
 		
+		public CMakeCommand Command {
+			get { return command; }
+		}
+		
 		public CMakeTarget (CMakeCommand command, CMakeFileFormat parent)
 		{
 			Initialize (this);
@@ -170,10 +174,21 @@ namespace CBinding {
 		
 		public bool RenameFile (string oldName, string newName)
 		{
-			if (Files [oldName].IsEditable)
-				return Files [oldName].EditArgument (oldName, newName);
-
+			return Files [oldName].EditArgument (oldName, newName);
+		}
+		
+		public bool Rename (string newName)
+		{
+			if (command.EditArgument (name, newName)) {
+				name = newName;
+				return true;
+			}
 			return false;
+		}
+		
+		public void Save ()
+		{
+			parent.Save ();
 		}
 		
 		public void PrintTarget ()
