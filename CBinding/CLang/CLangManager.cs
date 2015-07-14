@@ -162,11 +162,6 @@ namespace CBinding
 				var compiler = new ClangCCompiler ();
 				var active_configuration =
 					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-				while (active_configuration == null) {
-					Thread.Sleep (20);
-					Console.WriteLine ("Config is null in update");
-					active_configuration = (CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-				}
 				string[] compilerArgs = compiler.GetCompilerFlagsAsArray (project, active_configuration);
 				foreach (var TU in translationUnits) {
 					clang.disposeTranslationUnit (translationUnits [TU.Key]);
