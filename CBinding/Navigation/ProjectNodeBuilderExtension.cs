@@ -81,13 +81,13 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder builder, object dataObject)
 		{			
-			CProject p = dataObject as CProject;
+			CProject p = (CProject)dataObject;
 			
 			if (p == null) return;
 			
 			bool nestedNamespaces = builder.Options["NestedNamespaces"];
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 
 			// Namespaces
 			foreach (Namespace n in info.Namespaces.Values) {

@@ -87,29 +87,29 @@
 	<Extension path = "/MonoDevelop/ProjectModel/LanguageBindings">
 		<LanguageBinding
 			id = "C"
-		    extensions = ".c,.h"
-		    blockCommentStartTag = "/*"
-		    blockCommentEndTag = "*/" />
+			extensions = ".c,.h"
+			blockCommentStartTag = "/*"
+			blockCommentEndTag = "*/" />
 		<LanguageBinding
 			id = "CPP"
 			extensions = ".cpp,.cxx,.cc,.h,.hpp,.hh,.hxx"
 			singleLineCommentTag = "//"
-		    blockCommentStartTag = "/*"
-		    blockCommentEndTag = "*/" />
+			blockCommentStartTag = "/*"
+			blockCommentEndTag = "*/" />
 		<LanguageBinding
 			id = "Objective C"
-		    extensions = ".m,.h"
+			extensions = ".m,.h"
 			singleLineCommentTag = "//"
-		    blockCommentStartTag = "/*"
-		    blockCommentEndTag = "*/" />
+			blockCommentStartTag = "/*"
+			blockCommentEndTag = "*/" />
 		<LanguageBinding
 			id = "Objective C++"
 			extensions = ".mm,.M"
 			singleLineCommentTag = "//"
-		    blockCommentStartTag = "/*"
-		    blockCommentEndTag = "*/" />
-    </Extension>
-    
+			blockCommentStartTag = "/*"
+			blockCommentEndTag = "*/" />
+	</Extension>
+	
 	<Extension path = "/MonoDevelop/Ide/GlobalOptionsDialog/Projects">
 		<Section
 			id = "CBindingOptions"
@@ -121,17 +121,17 @@
 		<Condition id = "ItemType" value = "CBinding.CProject">
 			<Section
 				id = "CompilerPanel"
-			    _label = "Compiler"
-			    insertafter = "Compile"
-			    class = "CBinding.CompilerPanelBinding"/>
+				_label = "Compiler"
+				insertafter = "Compile"
+				class = "CBinding.CompilerPanelBinding"/>
 			<Section
 				id = "CodeGenerationPanel"
-			    _label = "Code Generation"
-			    class = "CBinding.CodeGenerationPanelBinding"/>
+				_label = "Code Generation"
+				class = "CBinding.CodeGenerationPanelBinding"/>
 			<Section
 				id = "OutputOptionsPanel"
-			    _label = "Output"
-			    class = "CBinding.OutputOptionsPanelBinding"/>
+				_label = "Output"
+				class = "CBinding.OutputOptionsPanelBinding"/>
 		</Condition>
 	</Extension>
 	
@@ -213,10 +213,10 @@
 	
 <!-- Current Autotools AddIn is very .NET specific
 	<Module>
-	    <Runtime>
-	        <Import assembly = "CBinding.Autotools.dll"/>
-	    </Runtime>
-	    
+		<Runtime>
+			<Import assembly = "CBinding.Autotools.dll"/>
+		</Runtime>
+		
 		<Dependencies>
 			<Addin id = "MonoDevelop.Autotools" version = "4.2.3"/>
 		</Dependencies>
@@ -232,9 +232,9 @@
 	</Extension>
 	<Extension path = "/MonoDevelop/Ide/Commands">
 		<Command id = "CBinding.Refactoring.RefactoryCommands.GotoDefinition"
-       		_label = "Go to definition"
-        	_description = "Go to definition of item under cursor"
-        	defaultHandler = "CBinding.Refactoring.GotoDefinitionHandler"/>
+	   		_label = "Go to definition"
+			_description = "Go to definition of item under cursor"
+			defaultHandler = "CBinding.Refactoring.GotoDefinitionHandler"/>
 	</Extension>
 
 	<Extension path="/MonoDevelop/SourceEditor2/ContextMenu/Editor">

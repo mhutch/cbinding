@@ -17,7 +17,7 @@ namespace CBinding.Refactoring
 	{
 		CProject project;
 		CXCursor cursorReferenced;
-		string USRReferenced;
+		string UsrReferenced;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CBinding.Refactoring.FindReferencesHandler"/> class.
@@ -27,16 +27,16 @@ namespace CBinding.Refactoring
 		/// <param name="doc">Document.</param>
 		public FindReferencesHandler (CProject proj, Document doc) {
 			project = proj;
-			cursorReferenced = project.cLangManager.getCursorReferenced(
-				project.cLangManager.getCursor (
+			cursorReferenced = project.ClangManager.GetCursorReferenced(
+				project.ClangManager.GetCursor (
 					doc.FileName,
 					doc.Editor.CaretLocation
 				)
 			);
-			USRReferenced = project.cLangManager.getCursorUSRString (cursorReferenced);
+			UsrReferenced = project.ClangManager.GetCursorUsrString (cursorReferenced);
 		}
 
-		private List<Reference> references = new List<Reference>();
+		List<Reference> references = new List<Reference>();
 
 		/// <summary>
 		/// Visit the specified cursor, parent and data.
@@ -45,12 +45,14 @@ namespace CBinding.Refactoring
 		/// <param name="parent">Parent.</param>
 		/// <param name="data">Data.</param>
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
-			CXCursor referenced = project.cLangManager.getCursorReferenced (cursor);
-			string USR = project.cLangManager.getCursorUSRString (referenced);
-			if (USRReferenced.Equals (USR)) {
+			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
+			string Usr = project.ClangManager.GetCursorUsrString (referenced);
+
+			if (UsrReferenced.Equals (Usr)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				Reference reference = new Reference (project, cursor, range);
 				var file = project.Files.GetFile (reference.FileName);
+
 				if (file != null) {
 					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
 					if (!references.Contains (reference)
@@ -61,7 +63,7 @@ namespace CBinding.Refactoring
 					}			
 				}
 			}
-			return CXChildVisitResult.CXChildVisit_Recurse;
+			return CXChildVisitResult.Recurse;
 		}
 
 		/// <summary>
@@ -73,7 +75,7 @@ namespace CBinding.Refactoring
 		{
 			var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor (true, true);
 			try {
-				project.cLangManager.findReferences(this);
+				project.ClangManager.FindReferences(this);
 				foreach (var reference in references) {
 					var sr = new SearchResult (
 						new FileProvider (reference.FileName),
@@ -118,36 +120,12 @@ namespace CBinding.Refactoring
 		/// </summary>
 		/// <returns><c>true</c> if cursor is reference or declaration; otherwise, <c>false</c>.</returns>
 		/// <param name="cursor">Cursor.</param>
-		private bool IsReferenceOrDeclaration(CXCursor cursor) {
-			switch (cursor.kind) {
-			case CXCursorKind.CXCursor_VarDecl:
-			case CXCursorKind.CXCursor_VariableRef:
-			case CXCursorKind.CXCursor_ClassDecl:
-			case CXCursorKind.CXCursor_ClassTemplate:
-			case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
-			case CXCursorKind.CXCursor_FunctionDecl:
-			case CXCursorKind.CXCursor_FunctionTemplate:
-			case CXCursorKind.CXCursor_FieldDecl:
-			case CXCursorKind.CXCursor_MemberRef:
-			case CXCursorKind.CXCursor_CXXMethod:
-			case CXCursorKind.CXCursor_Namespace:
-			case CXCursorKind.CXCursor_NamespaceRef:
-			case CXCursorKind.CXCursor_NamespaceAlias:
-			case CXCursorKind.CXCursor_EnumDecl:
-			case CXCursorKind.CXCursor_EnumConstantDecl:
-			case CXCursorKind.CXCursor_StructDecl:
-			case CXCursorKind.CXCursor_TypedefDecl:
-			case CXCursorKind.CXCursor_TypeRef:
-			case CXCursorKind.CXCursor_DeclRefExpr:
-			case CXCursorKind.CXCursor_ParmDecl:
-			case CXCursorKind.CXCursor_TemplateTypeParameter:
-			case CXCursorKind.CXCursor_TemplateTemplateParameter:
-			case CXCursorKind.CXCursor_NonTypeTemplateParameter:
-				return true;
-			}
-			return false;
-
+		bool IsReferenceOrDeclaration(CXCursor cursor)
+		{
+			return clang.isReference (cursor.kind) != 0 || clang.isDeclaration (cursor.kind) != 0;
 		}
+
 	}
+
 }
 

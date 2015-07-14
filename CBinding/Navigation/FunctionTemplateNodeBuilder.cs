@@ -53,8 +53,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			FunctionTemplate f = (FunctionTemplate)dataObject;
 				
@@ -62,16 +62,16 @@ namespace CBinding.Navigation
 			
 			switch (f.Access)
 			{
-			case CX_CXXAccessSpecifier.CX_CXXPublic:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Method);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXProtected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedMethod);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXPrivate:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateMethod);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXInvalidAccessSpecifier:
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
 				nodeInfo.Icon = Context.GetIcon (Stock.Method);
 				break;
 			}

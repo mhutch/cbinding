@@ -42,8 +42,7 @@ namespace CBinding
 	/// <summary>
 	/// C/C++ standard version to use in configuration.
 	/// </summary>
-	public enum CVersion
-	{
+	public enum CVersion {
 		CustomVersionString,
 		ISOC,
 		C99,
@@ -71,14 +70,14 @@ namespace CBinding
 		/// <summary>
 		/// The output name.
 		/// </summary>
-		[ItemProperty("OutputName")]
-		string output = string.Empty;
+		[ItemProperty("OutputName", DefaultValue = "")]
+		public string Output { get; set; }
 
 		/// <summary>
 		/// The compile target.
 		/// </summary>
-		[ItemProperty("OutputType")]
-		CompileTarget target = CompileTarget.Exe;
+		[ItemProperty("OutputType", DefaultValue = CompileTarget.Exe)]
+		public CompileTarget CompileTarget { get; set; }
 
 		[ItemProperty ("Includes")]
 		[ItemProperty ("Include", Scope = "*", ValueType = typeof(string))]
@@ -95,65 +94,70 @@ namespace CBinding
 		/// <summary>
 		/// The C/C++ standard version in use.
 		/// </summary>
-		[ItemProperty ("CVersion")]
-		CVersion cVersion = CVersion.CustomVersionString;
+		[ItemProperty ("CVersion", DefaultValue = CVersion.CustomVersionString)]
+		public CVersion CVersion{ get; set; }
 
 		/// <summary>
 		/// The custom version string.
 		/// </summary>
 		[ItemProperty ("CustomCVersionString", DefaultValue = "")]
-		string customVersionString = string.Empty;
+		public string CustomVersionString { get; set; }
 
 		/// <summary>
 		/// The warning level.
 		/// </summary>
-		[ItemProperty ("WarningLevel", DefaultValue=WarningLevel.Normal)]
-		WarningLevel warning_level = WarningLevel.Normal;
+		[ItemProperty ("WarningLevel", DefaultValue = WarningLevel.Normal)]
+		public WarningLevel WarningLevel { get; set; }
 
 		/// <summary>
 		/// Specifies if warnings should be treated as errors or not.
 		/// </summary>
-		[ItemProperty ("WarningsAsErrors", DefaultValue=false)]
-		bool warnings_as_errors = false;
+		[ItemProperty ("WarningsAsErrors", DefaultValue = false)]
+		public bool WarningsAsErrors { get; set; }
 
 		/// <summary>
 		/// The optimization level.
 		/// </summary>
-		[ItemProperty ("OptimizationLevel", DefaultValue=0)]
-		int optimization = 0;
+		[ItemProperty ("OptimizationLevel", DefaultValue = 0)]
+		int optimization;
 
 		/// <summary>
 		/// Extra compiler arguments given by user.
 		/// </summary>
-		[ItemProperty ("ExtraCompilerArguments", DefaultValue="")]
-		string extra_compiler_args = string.Empty;
+		[ItemProperty ("ExtraCompilerArguments", DefaultValue = "")]
+		public string ExtraCompilerArguments { get; set; }
 
 		/// <summary>
 		/// Extra linker arguments given by user.
 		/// </summary>
-		[ItemProperty ("ExtraLinkerArguments", DefaultValue="")]
-		string extra_linker_args = string.Empty;
-		
-		[ItemProperty ("DefineSymbols", DefaultValue="")]
-		string define_symbols = string.Empty;
-		
-		[ProjectPathItemProperty ("SourceDirectory", DefaultValue=null)]
-		string source_directory_path;
-		
-		[ItemProperty ("UseCcache", DefaultValue=false)]
-		bool use_ccache = false;
-		
-		[ItemProperty ("PrecompileHeaders", DefaultValue=true)]
-		bool precompileHeaders = true;
-		
-		public string Output {
-			get { return output; }
-			set { output = value; }
+		[ItemProperty ("ExtraLinkerArguments", DefaultValue = "")]
+		public string ExtraLinkerArguments { get; set; }
+
+		[ItemProperty ("DefineSymbols", DefaultValue = "")]
+		public string DefineSymbols { get; set; }
+
+		[ProjectPathItemProperty ("SourceDirectory", DefaultValue = "")]
+		public string SourceDirectory { get; set; }
+
+		[ItemProperty ("UseCcache", DefaultValue = false)]
+		public bool UseCcache { get; set; }
+
+		[ItemProperty ("PrecompileHeaders", DefaultValue = true)]
+		public bool PrecompileHeaders { get; set; }
+
+		public ArrayList Includes {
+			get { return includes; }
+			set { includes = value; }
 		}
-		
-		public CompileTarget CompileTarget {
-			get { return target; }
-			set { target = value; }
+
+		public ArrayList LibPaths {
+			get { return libpaths; }
+			set { libpaths = value; }
+		}
+			
+		public ArrayList Libs {
+			get { return libs; }
+			set { libs = value; }
 		}
 
 		// TODO: This should be revised to use the naming conventions depending on OS & compiler...
@@ -165,18 +169,18 @@ namespace CBinding
 			get {
 				string suffix = string.Empty;
 				string prefix = string.Empty;
-				
-				switch (target)
-				{
+
+				//TODO Win&Mac naming
+				switch (CompileTarget) {
 				case CompileTarget.Exe:
 					break;
-				case CompileTarget.Library:
+				case CompileTarget.Module:
 					if (!Output.StartsWith ("lib"))
 						prefix = "lib";
 					if (!Output.EndsWith (".a"))
 						suffix = ".a";
 					break;
-				case CompileTarget.Module:
+				case CompileTarget.Library:
 					if (!Output.StartsWith ("lib"))
 						prefix = "lib";
 					if (!Output.EndsWith (".so"))
@@ -188,96 +192,6 @@ namespace CBinding
 			}
 		}
 
-		/// <summary>
-		/// Gets or sets the source directory.
-		/// </summary>
-		/// <value>The source directory.</value>
-		public string SourceDirectory {
-			get { return source_directory_path; }
-			set { source_directory_path = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the includes list.
-		/// </summary>
-		/// <value>The includes.</value>
-		public ArrayList Includes {
-			get { return includes; }
-			set { includes = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the library paths.
-		/// </summary>
-		/// <value>The lib paths.</value>
-		public ArrayList LibPaths {
-			get { return libpaths; }
-			set { libpaths = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the libraries.
-		/// </summary>
-		/// <value>The libs.</value>
-		public ArrayList Libs {
-			get { return libs; }
-			set { libs = value; }
-		}
-		
-		public bool UseCcache {
-			get { return use_ccache; }
-			set { use_ccache = value; }
-		}
-		
-		public bool PrecompileHeaders {
-			get { return precompileHeaders; }
-			set { precompileHeaders = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the C/C++ standard version.
-		/// </summary>
-		/// <value>The C version.</value>
-		public CVersion CVersion {
-			get { return cVersion; }
-			set { cVersion = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the custom version string.
-		/// </summary>
-		/// <value>The custom version string.</value>
-		public string CustomVersionString {
-			get {
-				return customVersionString;
-			}
-			set {
-				customVersionString = value;
-			}
-		}
-
-		/// <summary>
-		/// Gets or sets the warning level.
-		/// </summary>
-		/// <value>The warning level.</value>
-		public WarningLevel WarningLevel {
-			get { return warning_level; }
-			set { warning_level = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="CBinding.CProjectConfiguration"/> warnings as errors.
-		/// </summary>
-		/// <value><c>true</c> if warnings as errors; otherwise, <c>false</c>.</value>
-		public bool WarningsAsErrors {
-			get { return warnings_as_errors; }
-			set { warnings_as_errors = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the optimization level.
-		/// </summary>
-		/// <value>The optimization level.</value>
 		public int OptimizationLevel {
 			get { return optimization; }
 			set {
@@ -287,54 +201,27 @@ namespace CBinding
 					optimization = 0;
 			}
 		}
-
-		/// <summary>
-		/// Gets or sets the extra compiler arguments.
-		/// </summary>
-		/// <value>The extra compiler arguments.</value>
-		public string ExtraCompilerArguments {
-			get { return extra_compiler_args; }
-			set { extra_compiler_args = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the extra linker arguments.
-		/// </summary>
-		/// <value>The extra linker arguments.</value>
-		public string ExtraLinkerArguments {
-			get { return extra_linker_args; }
-			set { extra_linker_args = value; }
-		}
 			
-		public string DefineSymbols {
-			get { return define_symbols; }
-			set { define_symbols = value; }
-		}
-
-		/// <summary>
-		/// "Copy constructor" for CProjectConfiguration
-		/// </summary>
-		/// <param name="configuration">Configuration.</param>
 		public override void CopyFrom (ItemConfiguration configuration)
 		{
 			base.CopyFrom (configuration);
 			CProjectConfiguration conf = (CProjectConfiguration)configuration;
 			
-			output = conf.output;
-			target = conf.target;
-			includes = conf.includes;
-			libpaths = conf.libpaths;
-			libs = conf.libs;
-			source_directory_path = conf.source_directory_path;
-			use_ccache = conf.use_ccache;
-			cVersion = conf.cVersion;
-			customVersionString = conf.customVersionString;
-			warning_level = conf.warning_level;
-			warnings_as_errors = conf.warnings_as_errors;
-			optimization = conf.optimization;
-			extra_compiler_args = conf.extra_compiler_args;
-			extra_linker_args = conf.extra_linker_args;
-			define_symbols = conf.define_symbols;
+			Output = conf.Output;
+			CompileTarget = conf.CompileTarget;
+			Includes = conf.Includes;
+			LibPaths = conf.LibPaths;
+			Libs = conf.Libs;
+			SourceDirectory = conf.SourceDirectory;
+			UseCcache = conf.UseCcache;
+			CVersion = conf.CVersion;
+			CustomVersionString = conf.CustomVersionString;
+			WarningLevel = conf.WarningLevel;
+			WarningsAsErrors = conf.WarningsAsErrors;
+			OptimizationLevel = conf.OptimizationLevel;
+			ExtraCompilerArguments = conf.ExtraCompilerArguments;
+			ExtraLinkerArguments = conf.ExtraLinkerArguments;
+			DefineSymbols = conf.DefineSymbols;
 		}
 	}
 }

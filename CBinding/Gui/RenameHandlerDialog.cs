@@ -16,7 +16,7 @@ namespace CBinding
 	{
 		protected CProject project;
 		protected CXCursor cursorReferenced;
-		protected string USRReferenced;
+		protected string UsrOfReferenced;
 		protected string spelling;
 		protected string newSpelling;
 		protected Document document;
@@ -24,14 +24,14 @@ namespace CBinding
 		public RenameHandlerDialog (CProject proj, Document doc)
 		{
 			project = proj;
-			cursorReferenced = project.cLangManager.getCursorReferenced(
-				project.cLangManager.getCursor (
+			cursorReferenced = project.ClangManager.GetCursorReferenced(
+				project.ClangManager.GetCursor (
 					doc.FileName,
 					doc.Editor.CaretLocation
 				)
 			);
-			USRReferenced = project.cLangManager.getCursorUSRString (cursorReferenced);
-			spelling = project.cLangManager.getCursorSpelling(cursorReferenced);
+			UsrOfReferenced = project.ClangManager.GetCursorUsrString (cursorReferenced);
+			spelling = project.ClangManager.GetCursorSpelling(cursorReferenced);
 			document = doc;
 		}
 
@@ -60,9 +60,9 @@ namespace CBinding
 		List<Reference> references = new List<Reference>();
 
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
-			CXCursor referenced = project.cLangManager.getCursorReferenced (cursor);
-			string USR = project.cLangManager.getCursorUSRString (referenced);
-			if (USRReferenced.Equals (USR)) {
+			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
+			string USR = project.ClangManager.GetCursorUsrString (referenced);
+			if (UsrOfReferenced.Equals (USR)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				Reference reference = new Reference (project, cursor, range);
 				var file = project.Files.GetFile (reference.FileName);
@@ -76,7 +76,7 @@ namespace CBinding
 					}			
 				}
 			}
-			return CXChildVisitResult.CXChildVisit_Recurse;
+			return CXChildVisitResult.Recurse;
 		}
 
 		/// <summary>
@@ -87,7 +87,7 @@ namespace CBinding
 		public void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
 			try {
-				project.cLangManager.findReferences (this);
+				project.ClangManager.FindReferences (this);
 				references.Sort ();
 				int diff = newSpelling.Length - spelling.Length;
 				Dictionary<string, int> offsets = new Dictionary<string, int>();
@@ -136,7 +136,7 @@ namespace CBinding
 		/// </summary>
 		public void RunRename ()
 		{
-			this.Build ();
+			Build ();
 		}
 
 		/// <summary>
@@ -146,33 +146,7 @@ namespace CBinding
 		/// <param name="cursor">Cursor.</param>
 		bool IsReferenceOrDeclaration (CXCursor cursor)
 		{
-			switch (cursor.kind) {
-			case CXCursorKind.CXCursor_VarDecl:
-			case CXCursorKind.CXCursor_VariableRef:
-			case CXCursorKind.CXCursor_ClassDecl:
-			case CXCursorKind.CXCursor_ClassTemplate:
-			case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
-			case CXCursorKind.CXCursor_FunctionDecl:
-			case CXCursorKind.CXCursor_FunctionTemplate:
-			case CXCursorKind.CXCursor_FieldDecl:
-			case CXCursorKind.CXCursor_MemberRef:
-			case CXCursorKind.CXCursor_CXXMethod:
-			case CXCursorKind.CXCursor_Namespace:
-			case CXCursorKind.CXCursor_NamespaceRef:
-			case CXCursorKind.CXCursor_NamespaceAlias:
-			case CXCursorKind.CXCursor_EnumDecl:
-			case CXCursorKind.CXCursor_EnumConstantDecl:
-			case CXCursorKind.CXCursor_StructDecl:
-			case CXCursorKind.CXCursor_TypedefDecl:
-			case CXCursorKind.CXCursor_TypeRef:
-			case CXCursorKind.CXCursor_DeclRefExpr:
-			case CXCursorKind.CXCursor_ParmDecl:
-			case CXCursorKind.CXCursor_TemplateTypeParameter:
-			case CXCursorKind.CXCursor_TemplateTemplateParameter:
-			case CXCursorKind.CXCursor_NonTypeTemplateParameter:
-				return true;
-			}
-			return false;
+			return clang.isReference (cursor.kind) != 0|| clang.isDeclaration (cursor.kind) != 0;
 		}
 
 		/// <summary>
@@ -182,7 +156,7 @@ namespace CBinding
 		/// <param name="e">E.</param>
 		protected void OnButtonCancelClicked (object sender, EventArgs e)
 		{
-			this.Destroy ();
+			Destroy ();
 		}
 	}
 }

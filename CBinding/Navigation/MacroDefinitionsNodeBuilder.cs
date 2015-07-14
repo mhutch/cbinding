@@ -65,8 +65,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			nodeInfo.Label = "Macro Definitions";
 			nodeInfo.Icon = Context.GetIcon (Stock.OpenFolder);
@@ -75,11 +75,11 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 
 			foreach (Macro m in info.Macros.Values) {
 				/*CXSourceLocation loc = clang.getCursorLocation (m.Represented);

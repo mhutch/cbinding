@@ -138,14 +138,6 @@
       <HintPath>..\..\monodevelop\main\build\bin\MonoDevelop.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="MonoDevelop.Deployment">
-      <HintPath>..\..\monodevelop\main\build\AddIns\MonoDevelop.Deployment\MonoDevelop.Deployment.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.Deployment.Linux">
-      <HintPath>..\..\monodevelop\main\build\AddIns\MonoDevelop.Deployment\MonoDevelop.Deployment.Linux.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="MonoDevelop.DesignerSupport">
       <HintPath>..\..\monodevelop\main\build\AddIns\MonoDevelop.DesignerSupport\MonoDevelop.DesignerSupport.dll</HintPath>
       <Private>False</Private>
@@ -271,6 +263,7 @@
     <Compile Include="Navigation\MemberFunctionNodeBuilder.cs" />
     <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
     <Compile Include="Parser\OverloadCandidate.cs" />
+    <Compile Include="Parser\CParsedDocument.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

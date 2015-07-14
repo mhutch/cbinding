@@ -11,6 +11,7 @@ namespace CBinding.Parser
 		public FunctionTemplate (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
 		{
 		}
+
 	}
 		
 }

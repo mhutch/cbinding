@@ -57,8 +57,8 @@ namespace CBinding.Navigation
 		}
 
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Union u = (Union)dataObject;
 				
@@ -69,16 +69,16 @@ namespace CBinding.Navigation
 				u.Name + " declaration";
 			
 			switch (u.Access) {
-			case CX_CXXAccessSpecifier.CX_CXXPublic:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon ("md-union");
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXProtected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon ("md-protected-union");
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXPrivate:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon ("md-private-union");
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXInvalidAccessSpecifier:
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
 				nodeInfo.Icon = Context.GetIcon ("md-union");
 				break;
 			}
@@ -86,18 +86,18 @@ namespace CBinding.Navigation
 
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null)
 				return;
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
 			Union thisUnion = (Union)dataObject;
 
 			foreach (Symbol s in info.CanBeInClasses.Values)
-				if (s.Ours && s.Parent != null && s.Parent.Equals (thisUnion) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.CX_CXXPublic))
+				if (s.Ours && s.Parent != null && s.Parent.Equals (thisUnion) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
 					treeBuilder.AddChild (s);
 		}
 

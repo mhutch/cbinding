@@ -59,8 +59,8 @@ namespace CBinding.ProjectPad
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			nodeInfo.Label = ((Package)dataObject).Name;
 			
@@ -77,7 +77,7 @@ namespace CBinding.ProjectPad
 		{
 			Package package = (Package)CurrentNode.DataItem;
 			CProject project = (CProject)CurrentNode.GetParentDataItem (
-			    typeof(CProject), false);
+				typeof(CProject), false);
 			
 			project.Packages.Remove (package);
 			

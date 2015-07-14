@@ -47,12 +47,12 @@ namespace CBinding.Parser
 		public void AddToDatabase (CXCursor cursor, bool global)
 		{
 			switch (cursor.kind) {
-			case CXCursorKind.CXCursor_Namespace:
+			case CXCursorKind.Namespace:
 				Namespace n = new Namespace (project, file, cursor, global);
 				namespaces.Add (cursor, n);
 				canBeInClasses.Add (cursor, n);
 				break;
-			case CXCursorKind.CXCursor_ClassDecl:
+			case CXCursorKind.ClassDecl:
 				Class c = new Class (project, file, cursor, global);
 				classes.Add (cursor, c);
 				canBeInClasses.Add (cursor, c);
@@ -60,12 +60,12 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, c);
 				break;
-			case CXCursorKind.CXCursor_FieldDecl:
+			case CXCursorKind.FieldDecl:
 				Field f = new Field (project, file, cursor, global);
 				canBeInClasses.Add (cursor, f);
 				fields.Add (cursor, f);
 				break;
-			case CXCursorKind.CXCursor_ClassTemplate:
+			case CXCursorKind.ClassTemplate:
 				ClassTemplate ct = new ClassTemplate (project, file, cursor, global);
 				classes.Add (cursor, ct);
 				canBeInClasses.Add (cursor, ct);
@@ -73,7 +73,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, ct);
 				break;
-			case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
+			case CXCursorKind.ClassTemplatePartialSpecialization:
 				ClassTemplatePartial ctp = new ClassTemplatePartial (project, file, cursor, global);
 				classTemplatePartials.Add (cursor, ctp);
 				canBeInClasses.Add (cursor, ctp);
@@ -81,7 +81,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, ctp);
 				break;
-			case CXCursorKind.CXCursor_StructDecl:
+			case CXCursorKind.StructDecl:
 				Struct s = new Struct (project, file, cursor, global);
 				structs.Add (cursor, s);
 				canBeInClasses.Add (cursor, s);
@@ -89,7 +89,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, s);
 				break;
-			case CXCursorKind.CXCursor_FunctionDecl:
+			case CXCursorKind.FunctionDecl:
 				Function func = new Function (project, file, cursor, global);
 				functions.Add (cursor, func);
 				canBeInClasses.Add (cursor, func);
@@ -97,12 +97,12 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, func);
 				break;
-			case CXCursorKind.CXCursor_CXXMethod:
+			case CXCursorKind.CXXMethod:
 				MemberFunction m = new MemberFunction (project, file, cursor, global);
 				memberFunctions.Add (cursor, m);
 				canBeInClasses.Add (cursor, m);
 				break;
-			case CXCursorKind.CXCursor_FunctionTemplate:
+			case CXCursorKind.FunctionTemplate:
 				FunctionTemplate ft = new FunctionTemplate (project, file, cursor, global);
 				functionTemplates.Add (cursor, ft);
 				canBeInClasses.Add (cursor, ft);
@@ -110,7 +110,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, ft);
 				break;
-			case CXCursorKind.CXCursor_EnumDecl:
+			case CXCursorKind.EnumDecl:
 				Enumeration en = new Enumeration (project, file, cursor, global);
 				enumerations.Add (cursor, en);
 				canBeInClasses.Add (cursor, en);
@@ -118,10 +118,10 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, en);
 				break;
-			case CXCursorKind.CXCursor_EnumConstantDecl:
+			case CXCursorKind.EnumConstantDecl:
 				enumerators.Add (cursor, new Enumerator (project, file, cursor, global));
 				break;
-			case CXCursorKind.CXCursor_UnionDecl:
+			case CXCursorKind.UnionDecl:
 				Union u = new Union (project, file, cursor, global);
 				unions.Add (cursor, u);
 				canBeInClasses.Add (cursor, u);
@@ -129,7 +129,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, u);
 				break;
-			case CXCursorKind.CXCursor_TypedefDecl:
+			case CXCursorKind.TypedefDecl:
 				Typedef t = new Typedef (project, file, cursor, global);
 				typedefs.Add (cursor, t);
 				canBeInClasses.Add (cursor, t);
@@ -137,7 +137,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, t);
 				break;
-			case CXCursorKind.CXCursor_VarDecl:
+			case CXCursorKind.VarDecl:
 				Variable v = new Variable (project, file, cursor, global);
 				variables.Add (cursor, v);
 				canBeInClasses.Add (cursor, v);
@@ -145,7 +145,7 @@ namespace CBinding.Parser
 				if(global)
 					globals.Add (cursor, v);
 				break;
-			case CXCursorKind.CXCursor_MacroDefinition:
+			case CXCursorKind.MacroDefinition:
 				macros.Add (cursor, new Macro (project, file, cursor, global));
 				break;
 			default:
@@ -157,121 +157,82 @@ namespace CBinding.Parser
 		}
 			
 		public Dictionary<CXCursor, Namespace> Namespaces {
-			get {
-				return namespaces;
-			}
+			get { return namespaces; }
 		}
 
 		public Dictionary<CXCursor, Function> Functions {
-			get {
-				return functions;
-			}
+			get { return functions; }
 		}
 
 		public Dictionary<CXCursor, MemberFunction> MemberFunctions {
-			get {
-				return memberFunctions;
-			}
+			get { return memberFunctions; }
 		}
 
 		public Dictionary<CXCursor, FunctionTemplate> FunctionTemplates {
-			get {
-				return functionTemplates;
-			}
+			get { return functionTemplates; }
 		}
 
 		public Dictionary<CXCursor, Class> Classes {
-			get {
-				return classes;
-			}
+			get { return classes; }
 		}
 
 		public Dictionary<CXCursor, Field> Fields {
-			get {
-				return fields;
-			}
+			get { return fields; }
 		}
 
 		public Dictionary<CXCursor, ClassTemplate> ClassTemplates {
-			get {
-				return classTemplates;
-			}
+			get { return classTemplates; }
 		}
 
 		public Dictionary<CXCursor, ClassTemplatePartial> ClassTemplatePartials {
-			get {
-				return classTemplatePartials;
-			}
+			get { return classTemplatePartials; }
 		}
 
 		public Dictionary<CXCursor, Struct> Structs {
-			get {
-				return structs;
-			}
+			get { return structs; }
 		}
 
 		public Dictionary<CXCursor, Enumeration> Enumerations {
-			get {
-				return enumerations;
-			}
+			get { return enumerations; }
 		}
 
 		public Dictionary<CXCursor, Enumerator> Enumerators {
-			get {
-				return enumerators;
-			}
+			get { return enumerators; }
 		}
 
 		public Dictionary<CXCursor, Variable> Variables {
-			get {
-				return variables;
-			}
+			get { return variables; }
 		}
 
 		public Dictionary<CXCursor, Macro> Macros {
-			get {
-				return macros;
-			}
+			get { return macros; }
 		}
 
 		public Dictionary<CXCursor, Union> Unions {
-			get {
-				return unions;
-			}
+			get { return unions; }
 		}
 
 		public Dictionary<CXCursor, Typedef> Typedefs {
-			get {
-				return typedefs;
-			}
+			get { return typedefs; }
 		}
 
 		public Dictionary<CXCursor, Symbol> Others {
-			get {
-				return others;
-			}
+			get { return others; }
 		}
 
 		public Dictionary<CXCursor, Symbol> Globals {
-			get {
-				return globals;
-			}
+			get { return globals; }
 		}
 			
 		public Dictionary<CXCursor, Symbol> CanBeInClasses { 
-			get {
-				return canBeInClasses;
-			} 
+			get { return canBeInClasses; } 
 		}
-
 
 		/// <summary>
 		/// Nested namespaces are handled in the node builder!
 		/// </summary>
 		public Dictionary<CXCursor, Symbol> CanBeInNamespaces { 
-			get {
-				return canBeInNamespaces;
-			} 
+			get { return canBeInNamespaces; } 
 		}
 	}
 }

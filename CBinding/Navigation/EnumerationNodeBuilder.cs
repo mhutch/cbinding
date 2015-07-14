@@ -53,8 +53,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Enumeration e = (Enumeration)dataObject;
 				
@@ -62,16 +62,16 @@ namespace CBinding.Navigation
 			
 			switch (e.Access)
 			{
-			case CX_CXXAccessSpecifier.CX_CXXPublic:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Enum);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXProtected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedEnum);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXPrivate:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateEnum);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXInvalidAccessSpecifier:
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
 				nodeInfo.Icon = Context.GetIcon (Stock.Enum);
 				break;
 			}
@@ -79,11 +79,11 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			Enumeration thisEnumeration = (Enumeration)dataObject;
 			

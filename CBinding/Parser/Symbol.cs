@@ -1,10 +1,5 @@
 using System;
 using ClangSharp;
-using System.Collections.Generic;
-using GLib;
-using System.Runtime.InteropServices;
-using System.IO;
-using Gdk;
 
 namespace CBinding.Parser
 {
@@ -13,192 +8,126 @@ namespace CBinding.Parser
 	/// </summary>
 	public class Symbol
 	{
-		protected CProject project;
-		protected string fileName;
-		protected string signature;
-		protected string spelling;
-		protected CX_CXXAccessSpecifier access;
-		protected CXCursor represented;
-		protected CXCursor parent;
-		protected CXCursor referenced;
-		protected bool isDefinition;
-		public bool IsDeclaration { get; }
-		protected bool isConst;
-		protected SourceLocation begin;
-		protected SourceLocation end;
-		protected int spellingLength;
-		protected string uSR;
-		public bool IsGlobal { get; }
+		
+		public bool IsDeclaration { get; protected set; }
+
+		public bool IsGlobal { get; protected set; }
+
+		public CXCursor Referenced { get; protected set; }
+
+		public bool IsDefinition { get; protected set; }
+
+		public bool IsConst { get; protected set; }
+
+		public SourceLocation Begin { get; protected set; }
+
+		public SourceLocation End { get; protected set; }
+
+		public int SpellingLength { get; protected set; }
+
+		public string Usr { get; protected set; }
+
+		public CProject Project { get; protected set; }
+
+		public string FileName { get; protected set; }
+
+		public string Signature { get; protected set; }
+
+		public string Spelling { get; protected set; }
+
+		public string Name { get; protected set; }
+
+		public CX_CXXAccessSpecifier Access { get; protected set; }
+
+		public CXCursor Represented { get; protected set; }
+
+		public CXCursor ParentCursor { get; protected set; }
+
 		/// <summary>
 		/// Gets a value indicating whether this <see cref="CBinding.Parser.Symbol"/> is ours, meaning its not a cursor from an included file.
 		/// </summary>
 		/// <value><c>true</c> if ours; otherwise, <c>false</c>.</value>
-		public bool Ours { get; private set; }
+		public bool Ours { get; protected set; }
+
 		public Symbol (CProject proj, string fileN, CXCursor cursor, bool global)
 		{
-			project = proj;
-			fileName = fileN;
-			represented = cursor;
-			parent = clang.getCursorSemanticParent (cursor);
-			access = clang.getCXXAccessSpecifier (cursor);
-			referenced = clang.getCursorReferenced (cursor);
-			uSR = project.cLangManager.getCursorUSRString (cursor);
-			signature = project.cLangManager.getCursorDisplayName (cursor);
-			begin = project.cLangManager.getSourceLocation (
+			Project = proj;
+			FileName = fileN;
+			Represented = cursor;
+			ParentCursor = clang.getCursorSemanticParent (cursor);
+			Access = clang.getCXXAccessSpecifier (cursor);
+			Referenced = clang.getCursorReferenced (cursor);
+			Usr = Project.ClangManager.GetCursorUsrString (cursor);
+			Signature = Project.ClangManager.GetCursorDisplayName (cursor);
+			Begin = Project.ClangManager.GetSourceLocation (
 				clang.getRangeStart (clang.Cursor_getSpellingNameRange (cursor,0,0))
 			);
-			end = project.cLangManager.getSourceLocation (
+			End = Project.ClangManager.GetSourceLocation (
 				clang.getRangeEnd (clang.Cursor_getSpellingNameRange (cursor,0,0))
 			);
-			isDefinition = clang.isCursorDefinition (cursor) != 0;
-			isConst = clang.isConstQualifiedType (clang.getCursorType (cursor)) != 0;
-			spellingLength = Convert.ToInt32 (end.Offset - begin.Offset);
-			spelling = clang.getCursorSpelling (cursor).ToString ();
+			IsDefinition = clang.isCursorDefinition (cursor) != 0;
+			IsConst = clang.isConstQualifiedType (clang.getCursorType (cursor)) != 0;
+			SpellingLength = Convert.ToInt32 (End.Offset - Begin.Offset);
+			Spelling = clang.getCursorSpelling (cursor).ToString ();
 			IsDeclaration = clang.isDeclaration (cursor.kind) != 0;
 			IsGlobal = global;
-			Ours = fileN.Equals (begin.FileName);
+			Ours = fileN.Equals (Begin.FileName);
 		}
-
-		public CProject Project {
-			get {
-				return project;
-			}
-		}
-
-		public string FileName {
-			get {
-				return fileName;
-			}
-		}
-
-		public string Signature {
-			get {
-				return signature;
-			}
-		}
-
-		public string Spelling {
-			get {
-				return spelling;
-			}
-		}
-
-		public string Name {
-			get {
-				return spelling;
-			}
-		}
-
-		public CX_CXXAccessSpecifier Access {
-			get {
-				return access;
-			}
-		}
-
-		public CXCursor Represented {
-			get {
-				return represented;
-			}
-		}
-
-		public CXCursor ParentCursor {
-			get {
-				return parent;
-			}
-		}
-
+			
 		public Symbol Parent {
 			get {
 				try 
 				{
-					switch (parent.kind) {
-					case CXCursorKind.CXCursor_TranslationUnit:
+					switch (ParentCursor.kind) {
+					case CXCursorKind.TranslationUnit:
 						return null;
-					case CXCursorKind.CXCursor_Namespace:
-						return new Namespace (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_ClassDecl:
-						return new Class (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_FieldDecl:
-						return new Field (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_ClassTemplate:
-						return new ClassTemplate (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_ClassTemplatePartialSpecialization:
-						return new ClassTemplatePartial (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_StructDecl:
-						return new Struct (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_FunctionDecl:
-						return new Function (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_CXXMethod:
-						return new MemberFunction (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_FunctionTemplate:
-						return new FunctionTemplate (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_EnumDecl:
-						return new Enumeration (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_EnumConstantDecl:
-						return new Enumerator (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_UnionDecl:
-						return new Union (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_TypedefDecl:
-						return new Typedef (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_VarDecl:
-						return new Variable (project, fileName, parent, IsGlobal);
-					case CXCursorKind.CXCursor_MacroDefinition:
-						return new Macro (project, fileName, parent, IsGlobal);
+					case CXCursorKind.Namespace:
+						return new Namespace (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.ClassDecl:
+						return new Class (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.FieldDecl:
+						return new Field (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.ClassTemplate:
+						return new ClassTemplate (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.ClassTemplatePartialSpecialization:
+						return new ClassTemplatePartial (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.StructDecl:
+						return new Struct (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.FunctionDecl:
+						return new Function (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.CXXMethod:
+						return new MemberFunction (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.FunctionTemplate:
+						return new FunctionTemplate (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.EnumDecl:
+						return new Enumeration (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.EnumConstantDecl:
+						return new Enumerator (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.UnionDecl:
+						return new Union (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.TypedefDecl:
+						return new Typedef (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.VarDecl:
+						return new Variable (Project, FileName, ParentCursor, IsGlobal);
+					case CXCursorKind.MacroDefinition:
+						return new Macro (Project, FileName, ParentCursor, IsGlobal);
 					default:
-						return new Symbol (project, fileName, parent, IsGlobal);
+						return new Symbol (Project, FileName, ParentCursor, IsGlobal);
 					}
-				} catch (Exception ex){
+				} catch (Exception ex) {
+					// sometimes, when a cursor is in a "distant" header file symbol initialization can fail (cant open file for read)
+					// this is normally not fatal, trying the requested action in the IDE again fixes the problem (99,99%)
 					return null;
 				}
 			}
 		}
 
-		public CXCursor Referenced {
-			get {
-				return referenced;
-			}
-		}
 
-		public bool IsDefinition {
-			get {
-				return isDefinition;
-			}
-		}
-
-		public bool IsConst {
-			get {
-				return isConst;
-			}
-		}
-
-		public SourceLocation Begin {
-			get {
-				return begin;
-			}
-		}
-
-		public SourceLocation End {
-			get {
-				return end;
-			}
-		}
-
-		public int SpellingLength {
-			get {
-				return spellingLength;
-			}
-		}
-
-		public string USR {
-			get {
-				return uSR;
-			}
-		}
 
 		public override bool Equals (object obj)
 		{
-			Symbol other = obj as Symbol;
-			return represented.Equals (other.represented);
+			Symbol other = (Symbol) obj;
+			return Represented.Equals (other.Represented);
 		}
 	}
 }

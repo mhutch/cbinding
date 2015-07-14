@@ -1,7 +1,5 @@
-﻿using System;
-using MonoDevelop.Components.Commands;
+﻿using MonoDevelop.Components.Commands;
 using ClangSharp;
-using MonoDevelop.Ide.Editor;
 using MonoDevelop.Ide;
 using CBinding.Parser;
 using MonoDevelop.Core;
@@ -19,13 +17,13 @@ namespace CBinding.Refactoring
 		public void Run ()
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;
-			CProject project = doc.Project as CProject;
-			CXCursor cursor = project.cLangManager.getCursor (doc.FileName, doc.Editor.CaretLocation);
-			CXCursor referredCursor = project.cLangManager.getCursorReferenced (cursor);
-			CXCursor declCursor = project.db.getDeclaration (referredCursor);
+			var project = (CProject)doc.Project;
+			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
+			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
+			CXCursor declCursor = project.DB.getDeclaration (referredCursor);
 			referredCursor = declCursor;
 			if (clang.Cursor_isNull (referredCursor) == 0) {
-				SourceLocation loc = project.cLangManager.getCursorLocation (referredCursor);
+				SourceLocation loc = project.ClangManager.GetCursorLocation (referredCursor);
 				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
 			}
 		}
@@ -37,10 +35,10 @@ namespace CBinding.Refactoring
 		public void Update (CommandInfo info)
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;
-			CProject project = doc.Project as CProject;
-			CXCursor cursor = project.cLangManager.getCursor (doc.FileName, doc.Editor.CaretLocation);
-			CXCursor referredCursor = project.cLangManager.getCursorReferenced (cursor);
-			CXCursor declCursor = project.db.getDeclaration (referredCursor);
+			var project = (CProject)doc.Project;
+			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
+			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
+			CXCursor declCursor = project.DB.getDeclaration (referredCursor);
 			referredCursor = declCursor;
 			info.Visible = (clang.Cursor_isNull (referredCursor) == 0);
 			info.Bypass = !info.Visible;

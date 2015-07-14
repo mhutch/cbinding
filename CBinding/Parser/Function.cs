@@ -1,19 +1,19 @@
 using System;
 using ClangSharp;
 using System.Collections.Generic;
-using GLib;
-using System.Runtime.InteropServices;
-using ICSharpCode.NRefactory.MonoCSharp;
 
 namespace CBinding.Parser
 {
 	public class Function : Symbol
 	{
-		string[] parameters;
-		int parameterCount;
-		string returns;
+		public int ParameterCount { get; }
 
-		public Function (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global) {
+		public string [] Parameters { get ; }
+
+		public string Returns { get; }
+
+		public Function (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
+		{
 			//this method is to workaround template function differences, template and template template parameters
 			//ugly as hell but what do? :(
 			string paramlist = (Signature.Substring (Signature.IndexOf ("(") + 1 , Signature.LastIndexOf (")") - (Signature.IndexOf ("(") + 1)));
@@ -24,6 +24,7 @@ namespace CBinding.Parser
 			int lastParamStart = 0;
 			List<string> paramBuilder = new List<string> ();
 			var array = paramlist.ToCharArray ();
+
 			for(int i = 0; i < paramlist.Length; ++i){
 				switch (array[i])
 				{
@@ -65,26 +66,11 @@ namespace CBinding.Parser
 					paramBuilder.Add (paramlist.Substring (lastParamStart, i + 1 - lastParamStart));
 			}
 
-			parameters = paramBuilder.ToArray ();
-			parameterCount = Parameters.Length;
-			returns = clang.getTypeSpelling (clang.getResultType(clang.getCursorType (represented))).ToString ();
-
-		}
-
-		public int ParameterCount {
-			get { return parameterCount; }
+			Parameters = paramBuilder.ToArray ();
+			ParameterCount = Parameters.Length;
+			Returns = clang.getTypeSpelling (clang.getResultType(clang.getCursorType (Represented))).ToString ();
 		}
 			
-		public string[] Parameters{
-			get {
-				return parameters;
-			}
-		}
-
-		public string Returns {
-			get {
-				return returns;
-			}
-		}
 	}
+
 }

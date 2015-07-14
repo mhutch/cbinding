@@ -2,7 +2,7 @@
 // CDocumentParser.cs
 //  
 // Author:
-//       Levi Bard <taktaktaktaktaktaktaktaktaktak@gmail.com>
+//	   Levi Bard <taktaktaktaktaktaktaktaktaktak@gmail.com>
 // 
 // Copyright (c) 2009 Levi Bard
 // 
@@ -25,92 +25,12 @@
 // THE SOFTWARE.
 
 using System;
-using System.Collections.Generic;
 using MonoDevelop.Ide.TypeSystem;
-using ClangSharp;
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Editor;
-using System.Diagnostics;
 using System.Threading;
 
 namespace CBinding.Parser
 {
 	
-	public class CParsedDocument : DefaultParsedDocument {
-		public CXTranslationUnit TU { get; set;}
-		public CLangManager Manager { get; private set;}
-		public CProject Project { get; set;}
-		List<CXUnsavedFile> unsavedFiles;
-
-
-		public CParsedDocument(CProject proj, string fileName) : base(fileName)
-		{
-			Project = proj;
-			Manager = proj.cLangManager;
-			unsavedFiles = new List<CXUnsavedFile> ();
-			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
-				if (openDocument.IsDirty) {
-					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Filename = openDocument.FileName;
-					unsavedFile.Length = openDocument.Editor.Text.Length;
-					unsavedFile.Contents = openDocument.Editor.Text;
-					if (Project.BOMPresentInFile [openDocument.FileName]) {
-						unsavedFile.Length += 3;
-						unsavedFile.Contents = "   " + unsavedFile.Contents;
-					}
-					unsavedFiles.Add (unsavedFile);
-				}
-			}
-			TU = Manager.createTranslationUnit(proj, fileName, unsavedFiles.ToArray ());
-		}
-
-		/// <summary>
-		/// Reparse the Translation Unit contained by this instance.
-		/// Updates Symbol Database
-		/// Places error markers on document
-		/// </summary>
-		public void ParseAndDiagnose (CancellationToken cancellationToken = default(CancellationToken))
-		{
-			lock (Manager.SyncRoot) {
-				var unsavedFilesArray = unsavedFiles.ToArray ();
-				clang.reparseTranslationUnit (
-					TU,
-					Convert.ToUInt32 (unsavedFilesArray.Length),
-					unsavedFilesArray,
-					clang.defaultReparseOptions (TU)
-				);
-				Manager.UpdateDatabase (Project, FileName, TU, cancellationToken);
-				uint numDiag = clang.getNumDiagnostics (TU);
-				for (uint i = 0; i < numDiag; i++) {
-					CXDiagnostic diag = clang.getDiagnostic (TU, i);
-					string spelling = diag.ToString ();
-					uint numRanges = clang.getDiagnosticNumRanges (diag);
-					if (numRanges != 0) {
-						for (uint j = 0; j < numRanges; j++) {
-							try {
-								SourceLocation begin = Manager.getSourceLocation (clang.getRangeStart (clang.getDiagnosticRange (diag, j)));
-								SourceLocation end = Manager.getSourceLocation (clang.getRangeEnd (clang.getDiagnosticRange (diag, j)));
-								Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (begin.Line, begin.Column, end.Line, end.Column)));
-							} catch {
-								//it seems sometimes "expression result unused" diagnostics appear multiple times
-								//for the same problem, when there is only e.g.
-								//an '1;' line in the code, and not every indicator has a valid filename in their location
-								//this crashes the thread, so we ignore it
-							}
-						}
-					} else {
-						try {
-							SourceLocation loc = Manager.getSourceLocation (clang.getDiagnosticLocation (diag));
-							Add (new MonoDevelop.Ide.TypeSystem.Error (MonoDevelop.Ide.TypeSystem.ErrorType.Error, spelling, new DocumentRegion (loc.Line, loc.Column, loc.Line, loc.Column + 1)));
-						} catch {
-							//same goes here
-						}
-					}
-					clang.disposeDiagnostic (diag);
-				}
-			}
-		}
-	}
 
 	/// <summary>
 	/// clang-based document parser helper
@@ -121,13 +41,13 @@ namespace CBinding.Parser
 		public override System.Threading.Tasks.Task<ParsedDocument> Parse(ParseOptions options, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			var fileName = options.FileName;
-			var project = options.Project as CProject;
+			var project = (CProject)options.Project;
 			if (project == null)
-				return System.Threading.Tasks.Task.FromResult (new DefaultParsedDocument (fileName) as ParsedDocument);
+				return System.Threading.Tasks.Task.FromResult ((ParsedDocument)new DefaultParsedDocument (fileName));
 			var doc = new CParsedDocument (project, fileName);
 			doc.Flags |= ParsedDocumentFlags.NonSerializable;
 			doc.ParseAndDiagnose (cancellationToken);
-			return System.Threading.Tasks.Task.FromResult (doc as ParsedDocument);
+			return System.Threading.Tasks.Task.FromResult ((ParsedDocument)doc);
 		}
 		/*
 		/// <summary>

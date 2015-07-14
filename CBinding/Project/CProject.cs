@@ -39,13 +39,12 @@ using MonoDevelop.Core;
 using MonoDevelop.Core.Execution;
 using MonoDevelop.Projects;
 using MonoDevelop.Core.Serialization;
-using MonoDevelop.Deployment;
-using MonoDevelop.Deployment.Linux;
 using MonoDevelop.Ide;
 using System.Threading.Tasks;
 using System.Threading;
 using CBinding.Parser;
 using ClangSharp;
+using MonoDevelop.Ide.TypeSystem;
 
 namespace CBinding
 {
@@ -64,21 +63,22 @@ namespace CBinding
 	}
 
 	[ExportProjectType ("{2857B73E-F847-4B02-9238-064979017E93}", Extension="cproj", Alias="C/C++")]
-	public class CProject : Project, IDeployable
+	public class CProject : Project
 	{
 		[ItemProperty ("Compiler", ValueType = typeof(CCompiler))]
-		ICompiler compiler_manager;
+		public ICompiler CompilerManager { get; set; }
 		
 		[ItemProperty ("Language")]
-		Language language;
+		public Language Language { get; set; }
 		
-		[ItemProperty ("OutputType")]
-		CompileTarget target = CompileTarget.Exe;
+		[ItemProperty ("OutputType", DefaultValue = CompileTarget.Exe)]
+		public CompileTarget target { get; set; }
 
-		public CLangManager cLangManager;
-		public ClangProjectSymbolDatabase db;
-		
-    	ProjectPackageCollection packages = new ProjectPackageCollection ();
+		public CLangManager ClangManager { get; private set; }
+
+		public ClangProjectSymbolDatabase DB { get; private set; }
+
+		ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
 		public event ProjectPackageEventHandler PackageAddedToProject;
 		public event ProjectPackageEventHandler PackageRemovedFromProject;
@@ -93,7 +93,21 @@ namespace CBinding
 		/// </summary>
 		public static string[] HeaderExtensions = { ".H", ".HH", ".HPP", ".HXX" };
 
-		public Dictionary<string, bool> BOMPresentInFile = new Dictionary<string, bool>();
+
+		Dictionary<string, bool> bomPresentInFile = new Dictionary<string, bool> ();
+
+		public bool IsBomPresentInFile (string filename)
+		{
+			return bomPresentInFile [filename];
+		}
+
+		public void BomPresentInFile (string filename, bool value)
+		{
+			if (bomPresentInFile.ContainsKey (filename))
+				bomPresentInFile [filename] = value;
+			else 
+				bomPresentInFile.Add (filename, value);
+		}
 
 		/// <summary>
 		/// Initialize this instance.
@@ -102,8 +116,8 @@ namespace CBinding
 		{
 			base.OnInitialize ();
 			packages.Project = this;
-			cLangManager = new CLangManager (this);
-			db = new ClangProjectSymbolDatabase (this);
+			ClangManager = new CLangManager (this);
+			DB = new ClangProjectSymbolDatabase (this);
 		}
 
 		/// <summary>
@@ -120,7 +134,7 @@ namespace CBinding
 				binPath = projectCreateInfo.BinPath;
 			}
 			Compiler = null; // use default compiler depending on language
-			CProjectConfiguration configuration =
+			var configuration =
 				(CProjectConfiguration)CreateConfiguration ("Debug");
 			configuration.DefineSymbols = "DEBUG MONODEVELOP";		
 			configuration.DebugSymbols = true;
@@ -143,16 +157,16 @@ namespace CBinding
 						string languageName = template.Attributes ["LanguageName"].InnerText;
 						switch (languageName) {
 						case "C":
-							this.language = Language.C;
+							this.Language = Language.C;
 							break;
 						case "CPP":
-							this.language = Language.CPP;
+							this.Language = Language.CPP;
 							break;
 						case "Objective C":
-							this.language = Language.OBJC;
+							this.Language = Language.OBJC;
 							break;
 						case "Objective C++":
-							this.language = Language.OBJCPP;
+							this.Language = Language.OBJCPP;
 							break;
 						}
 					}
@@ -337,14 +351,11 @@ namespace CBinding
 		///  be copied before calling this method.</remarks>
 		protected override Task<BuildResult> DoBuild (ProgressMonitor monitor, ConfigurationSelector configuration)
 		{
-			CProjectConfiguration pc = (CProjectConfiguration) GetConfiguration (configuration);
+			var pc = (CProjectConfiguration) GetConfiguration (configuration);
 			pc.SourceDirectory = BaseDirectory;
 
 			return Task<BuildResult>.Factory.StartNew (delegate {
-				if (pc.CompileTarget != CompileTarget.Exe)
-					WriteMDPkgPackage (configuration);
-
-				return compiler_manager.Compile (this,
+				return CompilerManager.Compile (this,
 					Files, packages,
 					pc,
 					monitor);
@@ -359,7 +370,7 @@ namespace CBinding
 		/// <param name="operationContext">Operation context.</param>
 		protected async override Task<BuildResult> OnClean (ProgressMonitor monitor, ConfigurationSelector configuration, OperationContext operationContext)
 		{
-			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (configuration);
+			var conf = (CProjectConfiguration) GetConfiguration (configuration);
 
 			var res = await base.OnClean (monitor, configuration, operationContext);
 			if (res.HasErrors)
@@ -378,7 +389,7 @@ namespace CBinding
 		protected virtual ExecutionCommand CreateExecutionCommand (CProjectConfiguration conf)
 		{
 			string app = Path.Combine (conf.OutputDirectory, conf.Output);
-			NativeExecutionCommand cmd = new NativeExecutionCommand (app);
+			var cmd = new NativeExecutionCommand (app);
 			cmd.Arguments = conf.CommandLineParameters;
 			cmd.WorkingDirectory = Path.GetFullPath (conf.OutputDirectory);
 			cmd.EnvironmentVariables = conf.EnvironmentVariables;
@@ -392,7 +403,7 @@ namespace CBinding
 		/// <param name="solutionConfiguration">Solution configuration.</param>
 		protected override bool OnGetCanExecute (MonoDevelop.Projects.ExecutionContext context, ConfigurationSelector solutionConfiguration)
 		{
-			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (solutionConfiguration);
+			var conf = (CProjectConfiguration) GetConfiguration (solutionConfiguration);
 			ExecutionCommand cmd = CreateExecutionCommand (conf);
 			return (target == CompileTarget.Exe) && context.ExecutionHandler.CanExecute (cmd);
 		}
@@ -406,7 +417,7 @@ namespace CBinding
 		/// <returns>The execute.</returns>
 		protected async override Task DoExecute (ProgressMonitor monitor, MonoDevelop.Projects.ExecutionContext context, ConfigurationSelector configuration)
 		{
-			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (configuration);
+			var conf = (CProjectConfiguration) GetConfiguration (configuration);
 			bool pause = conf.PauseConsoleOutput;
 			OperationConsole console;
 			
@@ -443,12 +454,11 @@ namespace CBinding
 		}
 
 		/// <summary>
-		/// Returns with output file name.
-		/// </summary>
+		/// Returns with output bomPresentInFile </summary>
 		/// <param name="configuration">Configuration.</param>
 		protected override FilePath OnGetOutputFileName (ConfigurationSelector configuration)
 		{
-			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (configuration);
+			var conf = (CProjectConfiguration) GetConfiguration (configuration);
 			return conf.OutputDirectory.Combine (conf.CompiledOutputName);
 		}
 
@@ -459,7 +469,7 @@ namespace CBinding
 		/// <param name="kind">Kind.</param>
 		protected override SolutionItemConfiguration OnCreateConfiguration (string name, ConfigurationKind kind)
 		{
-			CProjectConfiguration conf = new CProjectConfiguration ();
+			var conf = new CProjectConfiguration ();
 			
 			conf.Name = name;
 			
@@ -476,38 +486,25 @@ namespace CBinding
 			types.Add ("C/C++");
 			types.Add ("Native");
 		}
-
-		/// <summary>
-		/// Gets or sets the language.
-		/// </summary>
-		/// <value>The language.</value>
-		public Language Language {
-			get { return language; }
-			set { language = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the compiler in use.
-		/// </summary>
-		/// <value>The compiler.</value>
+			
 		public ICompiler Compiler {
-			get { return compiler_manager; }
+			get { return CompilerManager; }
 			set {
 				if (value != null) {
-					compiler_manager = value;
+					CompilerManager = value;
 				} else {
 					object[] compilers = AddinManager.GetExtensionObjects ("/CBinding/Compilers");
 					string compiler;
 
 					// TODO: This should depend on platform (eg: windows would be mingw or msvc)
-					if (language == Language.C)
+					if (Language == Language.C)
 						compiler = PropertyService.Get ("CBinding.DefaultCCompiler", new GccCompiler ().Name);
 					else
 						compiler = PropertyService.Get ("CBinding.DefaultCppCompiler", new GppCompiler ().Name);
 					
 					foreach (ICompiler c in compilers) {
 						if (compiler == c.Name) {
-							compiler_manager = c;
+							CompilerManager = c;
 						}
 					}
 				}
@@ -526,36 +523,38 @@ namespace CBinding
 		}
 
 		/// <summary>
+		/// This methods checks if a file has a Byte Order Marker, and sets it accordingly in the project model.
+		/// This is needed to fix cursor misalignations.
+		/// </summary>
+		/// <param name="fileName"></param>
+		public void CheckForBom (string fileName)
+		{
+			using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+				var BOM = new byte[3];
+				s.Read (BOM, 0, 3);
+				bool bomPresent = (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF);
+				BomPresentInFile (fileName, bomPresent);
+			}
+		}
+
+		/// <summary>
 		/// Invoked when a file is added to project. Detects UTF-8 BOM.
 		/// </summary>
 		/// <param name="args">Arguments.</param>
 		protected override void OnFileAddedToProject (ProjectFileEventArgs args)
 		{
 			base.OnFileAddedToProject (args);
-			foreach(var f in Files){
-				using (var s = new FileStream (f.Name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-					byte[] BOM = new byte[3];
-					s.Read (BOM, 0, 3);
-					if (!BOMPresentInFile.ContainsKey (f.Name)) {
-						BOMPresentInFile.Add (f.Name, false);
-					}
-					if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
-						BOMPresentInFile[f.Name] = true;
-					} else {
-						BOMPresentInFile[f.Name] = false;
-					}
-				}
-			}
-			foreach (ProjectFileEventInfo e in args) {
+			foreach (var e in args) {
+
+				CheckForBom (e.ProjectFile.Name);
+
 				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
 					e.ProjectFile.BuildAction == BuildAction.Compile) {
 					e.ProjectFile.BuildAction = BuildAction.None;
 				}
 
-				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					ThreadPool.QueueUserWorkItem (o => {
-						cLangManager.createTranslationUnit (this, e.ProjectFile.Name, new CXUnsavedFile[0]);
-					});
+				if (!Loading && e.ProjectFile.BuildAction == BuildAction.Compile)
+					TypeSystemService.ParseFile (this, e.ProjectFile.Name);
 			}
 		}
 
@@ -563,23 +562,20 @@ namespace CBinding
 		/// Invoked when a file is changed to project. Detects UTF-8 BOM.
 		/// </summary>
 		/// <param name="e">E.</param>
-		protected override void OnFileChangedInProject (ProjectFileEventArgs e)
+		protected override void OnFileChangedInProject (ProjectFileEventArgs args)
 		{
-			base.OnFileChangedInProject (e);
-			foreach(var f in Files){
-				using (var s = new FileStream (f.Name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-					byte[] BOM = new byte[3];
-					s.Read (BOM, 0, 3);
-					if (!BOMPresentInFile.ContainsKey (f.Name)) {
-						BOMPresentInFile.Add (f.Name, false);
-					}					
-					if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
-						BOMPresentInFile[f.Name] = true;
-					} else {
-						BOMPresentInFile[f.Name] = false;
-					}
+			base.OnFileChangedInProject (args);
+			foreach (var e in args) {
+
+				CheckForBom (e.ProjectFile.Name);
+
+				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
+					e.ProjectFile.BuildAction == BuildAction.Compile) {
+					e.ProjectFile.BuildAction = BuildAction.None;
 				}
+			
 			}
+
 		}
 
 		/// <summary>
@@ -591,11 +587,11 @@ namespace CBinding
 			base.OnFileRemovedFromProject (args);
 			foreach (ProjectFileEventInfo e in args) {
 				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-				    e.ProjectFile.BuildAction == BuildAction.Compile) {
+					e.ProjectFile.BuildAction == BuildAction.Compile) {
 					e.ProjectFile.BuildAction = BuildAction.None;
 				}
 				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					cLangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
+					ClangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
 			}
 		}
 
@@ -611,52 +607,6 @@ namespace CBinding
 			PackageAddedToProject (this, new ProjectPackageEventArgs (this, package));
 		}
 
-		public DeployFileCollection GetDeployFiles (ConfigurationSelector configuration)
-		{
-			DeployFileCollection deployFiles = new DeployFileCollection ();
-			
-			CProjectConfiguration conf = (CProjectConfiguration) GetConfiguration (configuration);
-			CompileTarget target = conf.CompileTarget;
-			
-			// Headers and resources
-			foreach (ProjectFile f in Files) {
-				if (f.BuildAction == BuildAction.Content) {
-					string targetDirectory =
-						(IsHeaderFile (f.Name) ? TargetDirectory.Include : TargetDirectory.ProgramFiles);
-					
-					deployFiles.Add (new DeployFile (this, f.FilePath, f.ProjectVirtualPath, targetDirectory));
-				}
-			}
-			
-			// Output
-			string output = GetOutputFileName (configuration);		
-			if (!string.IsNullOrEmpty (output)) {
-				string targetDirectory = string.Empty;
-				
-				switch (target) {
-				case CompileTarget.Exe:
-					targetDirectory = TargetDirectory.ProgramFiles;
-					break;
-				case CompileTarget.Module:
-					targetDirectory = TargetDirectory.ProgramFiles;
-					break;
-				case CompileTarget.Library:
-					targetDirectory = TargetDirectory.ProgramFiles;
-					break;
-				}					
-				
-				deployFiles.Add (new DeployFile (this, output, Path.GetFileName (output), targetDirectory));
-			}
-			
-			// PkgPackage
-			if (target != CompileTarget.Exe) {
-				string pkgfile = WriteDeployablePgkPackage (this, conf);
-				deployFiles.Add (new DeployFile (this, Path.Combine (BaseDirectory, pkgfile), pkgfile, LinuxTargetDirectory.PkgConfig));
-			}
-			
-			return deployFiles;
-		}
-		
 		/// <summary>
 		/// Finds the corresponding source or header file
 		/// </summary>

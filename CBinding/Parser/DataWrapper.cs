@@ -35,35 +35,28 @@ using MonoDevelop.Ide.Editor;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
-using System.Collections.Generic;
 
 namespace CBinding.Parser
 {
 	sealed class DataWrapper : ParameterHintingData
 	{
-		OverloadCandidate Overload {
-			get;
-		}
+		readonly OverloadCandidate Overload;
 
-		public DataWrapper (OverloadCandidate overload) : base(null)
+		public DataWrapper (OverloadCandidate overload) : base (null)
 		{
 			Overload = overload;
 		}
 
-		public DataWrapper () : base(null)
+		public DataWrapper () : base (null)
 		{
 		}
 
 		public override int ParameterCount {
-			get {
-				return Overload.Parameters.Count;
-			}
+			get { return Overload.Parameters.Count; }
 		}
 
 		public override bool IsParameterListAllowed {
-			get {
-				return false; //f.IsParameterListAllowed;
-			}
+			get { return false; }
 		}
 
 		public override string GetParameterName (int parameter)
@@ -76,6 +69,7 @@ namespace CBinding.Parser
 			var tooltip = new TooltipInformation ();
 			string sig = Overload.Returns + " " + Overload.Name;
 			StringBuilder builder = new StringBuilder(sig);
+
 			builder.Append ("(" + Environment.NewLine);
 			int i = 0;
 			foreach(string t in Overload.Parameters) {
@@ -88,8 +82,10 @@ namespace CBinding.Parser
 				i++;
 			}
 			builder.Append (")");
+
 			tooltip.SignatureMarkup = builder.ToString ();
 			tooltip.SummaryMarkup = "";
+
 			return Task.FromResult<TooltipInformation> (tooltip);
 		}
 	}

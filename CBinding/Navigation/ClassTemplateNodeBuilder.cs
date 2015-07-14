@@ -58,8 +58,8 @@ namespace CBinding.Navigation
 		}
 
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			ClassTemplate c = (ClassTemplate)dataObject;
 				
@@ -70,16 +70,16 @@ namespace CBinding.Navigation
 				c.Name + " declaration";
 			
 			switch (c.Access) {
-			case CX_CXXAccessSpecifier.CX_CXXPublic:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXProtected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedClass);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXPrivate:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateClass);
 				break;
-			case CX_CXXAccessSpecifier.CX_CXXInvalidAccessSpecifier:
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
 				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
 			}
@@ -87,18 +87,18 @@ namespace CBinding.Navigation
 
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null)
 				return;
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
 			ClassTemplate thisClass = (ClassTemplate)dataObject;
 			
 			foreach (Symbol s in info.CanBeInClasses.Values)
-				if (s.Ours && s.Parent != null && s.Parent.Equals (thisClass) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.CX_CXXPublic))
+				if (s.Ours && s.Parent != null && s.Parent.Equals (thisClass) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
 					treeBuilder.AddChild (s);
 			
 		}

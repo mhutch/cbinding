@@ -2,10 +2,8 @@
 using CBinding;
 using ClangSharp;
 using MonoDevelop.Ide;
-using MonoDevelop.Projects;
 using System.Collections.Generic;
 using System.Threading;
-using MonoDevelop.Ide.Editor;
 using System.Runtime.InteropServices;
 using CBinding.Refactoring;
 using CBinding.Parser;
@@ -33,15 +31,7 @@ namespace CBinding
 		public readonly object SyncRoot = new object ();
 		CProject project;
 		CXIndex index;
-		Dictionary<string, CXTranslationUnit> translationUnits;
-
-		public Dictionary<string, CXTranslationUnit> TranslationUnits {
-			get {				
-				lock (SyncRoot) {
-					return translationUnits;
-				}
-			}
-		}
+		Dictionary<string, CXTranslationUnit> translationUnits { get; }
 
 		/// <summary>
 		/// Constructor
@@ -72,7 +62,7 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXTranslationUnit"/>: The Translation unit created
 		/// </returns>
-		public CXTranslationUnit createTranslationUnit(CProject proj, string fileName, CXUnsavedFile[] unsavedFiles) 
+		public CXTranslationUnit CreateTranslationUnit (CProject proj, string fileName, CXUnsavedFile[] unsavedFiles) 
 		{
 			lock (SyncRoot) {
 				if (translationUnits.ContainsKey (fileName)) {
@@ -99,13 +89,9 @@ namespace CBinding
 		void AddToTranslationUnits (CProject proj, string fileName, CXUnsavedFile[] unsavedFiles)
 		{
 			lock (SyncRoot) {
-				ClangCCompiler compiler = new ClangCCompiler ();
-				CProjectConfiguration active_configuration =
+				var compiler = new ClangCCompiler ();
+				var active_configuration =
 					(CProjectConfiguration)proj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-				while (active_configuration == null) {
-					Thread.Sleep (20);
-					active_configuration = (CProjectConfiguration)proj.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-				}
 				string[] args = compiler.GetCompilerFlagsAsArray (proj, active_configuration);
 				try {
 					translationUnits.Add (fileName, clang.createTranslationUnitFromSourceFile (
@@ -113,7 +99,7 @@ namespace CBinding
 						fileName,
 						args.Length,
 						args,
-						Convert.ToUInt32 (unsavedFiles.Length),
+						(uint) (unsavedFiles.Length),
 						unsavedFiles)
 					);
 					UpdateDatabase (proj, fileName, translationUnits[fileName]);
@@ -136,12 +122,12 @@ namespace CBinding
 		/// A <see cref="CXTranslationUnit"/>: the translation unit which's parsed content fills the symbol database
 		/// </param>
 		/// <param name = "cancellationToken"></param>
-		public void UpdateDatabase(CProject proj, string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken))
+		public void UpdateDatabase (CProject proj, string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			lock (SyncRoot) {
-				proj.db.Reset (fileName);
+				proj.DB.Reset (fileName);
 				CXCursor TUcursor = clang.getTranslationUnitCursor (TU);
-				TranslationUnitParser parser = new TranslationUnitParser (proj.db, fileName, cancellationToken, TUcursor);
+				var parser = new TranslationUnitParser (proj.DB, fileName, cancellationToken, TUcursor);
 				clang.visitChildren (TUcursor, parser.Visit, new CXClientData (new IntPtr (0)));
 			}
 		}
@@ -173,11 +159,12 @@ namespace CBinding
 					//on project load its unnecessary to update this, because creating the TU's are already
 					//done with the first active configuration - also doing so sometimes results in an exception
 					return;
-				ClangCCompiler compiler = new ClangCCompiler ();
-				CProjectConfiguration active_configuration =
+				var compiler = new ClangCCompiler ();
+				var active_configuration =
 					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
 				while (active_configuration == null) {
 					Thread.Sleep (20);
+					Console.WriteLine ("Config is null in update");
 					active_configuration = (CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
 				}
 				string[] compilerArgs = compiler.GetCompilerFlagsAsArray (project, active_configuration);
@@ -199,37 +186,37 @@ namespace CBinding
 
 		/// <summary>
 		/// Code completion wrapper to expose clang_codeCompleteAt and handle threading locks-issues.
+		/// The caller should dispose the returned IntPtr with clang.disposeCodeCompleteResults ()
 		/// </summary>
-		/// <param name="documentContext">
+		/// <param name="completionContext">
 		/// A <see cref="DocumentContext"/> reference: the document context of the code completion request.
 		/// </param>
 		/// <param name="unsavedFiles">
 		/// A <see cref="CXUnsavedFile"/> array: The unsaved files in the IDE. Obligatory to have valid suggestions.
 		/// </param>
-		/// <param name = "editor">
-		/// A <see cref="CTextEditorExtension"/>: the editor, which edits the document. Contains caret positions, etc.
-		/// </param>
-		public IntPtr codeComplete (
+		/// <param name = "fileName"></param>
+		/// <returns>IntPtr which should be marshalled as CXCodeCompleteResults</returns>
+		public IntPtr CodeComplete (
 			CodeCompletionContext completionContext,
 			CXUnsavedFile[] unsavedFiles,
 			string fileName)
 		{
 			lock (SyncRoot) {
 				string name = fileName;
-				CXTranslationUnit TU = TranslationUnits [name];
+				CXTranslationUnit TU = translationUnits [name];
 				string complete_filename = fileName;
-				uint complete_line = Convert.ToUInt32 (completionContext.TriggerLine);
-				uint complete_column = Convert.ToUInt32 (completionContext.TriggerLineOffset + 1);
-				uint numUnsavedFiles = Convert.ToUInt32 (unsavedFiles.Length);
-				uint options = (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns | (uint)CXCodeComplete_Flags.CXCodeComplete_IncludeCodePatterns;
+				uint complete_line = (uint) (completionContext.TriggerLine);
+				uint complete_column = (uint) (completionContext.TriggerLineOffset + 1);
+				uint numUnsavedFiles = (uint) (unsavedFiles.Length);
+				uint options = (uint) CXCodeComplete_Flags.IncludeCodePatterns | (uint)CXCodeComplete_Flags.IncludeCodePatterns;
 				return clang.codeCompleteAt (
-					                  TU,
-					                  complete_filename, 
-					                  complete_line, 
-					                  complete_column, 
-					                  unsavedFiles, 
+									  TU,
+									  complete_filename, 
+									  complete_line, 
+									  complete_column, 
+									  unsavedFiles, 
 									  numUnsavedFiles, 
-					                  options);
+									  options);
 			}
 		}
 
@@ -245,15 +232,16 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXCursor"/>: the cursor under the location
 		/// </returns>
-		public CXCursor getCursor (string fileName, MonoDevelop.Ide.Editor.DocumentLocation location) {
+		public CXCursor GetCursor (string fileName, MonoDevelop.Ide.Editor.DocumentLocation location)
+		{
 			lock (SyncRoot) {
-				CXTranslationUnit TU = TranslationUnits [fileName];
+				CXTranslationUnit TU = translationUnits [fileName];
 				CXFile file = clang.getFile (TU, fileName);
 				CXSourceLocation loc = clang.getLocation (
 					TU,
 					file,
-					Convert.ToUInt32 (location.Line),
-					Convert.ToUInt32 (location.Column)
+					(uint) (location.Line),
+					(uint) (location.Column)
 				);
 				return clang.getCursor (TU, loc);
 			}
@@ -268,7 +256,8 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXCursor"/>: the cursor referenced
 		/// </returns>
-		public CXCursor getCursorReferenced (CXCursor refereeCursor) {
+		public CXCursor GetCursorReferenced (CXCursor refereeCursor)
+		{
 			lock (SyncRoot) {
 				return clang.getCursorReferenced (refereeCursor);
 			}
@@ -283,7 +272,8 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXCursor"/>: the defining cursor
 		/// </returns>
-		public CXCursor getCursorDefinition (CXCursor cursor) {
+		public CXCursor GetCursorDefinition (CXCursor cursor)
+		{
 			lock (SyncRoot) {
 				return clang.getCursorDefinition (cursor);
 			}
@@ -298,15 +288,16 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="SourceLocation"/>: the location of the cursor
 		/// </returns>
-		public SourceLocation getCursorLocation (CXCursor cursor) {
+		public SourceLocation GetCursorLocation (CXCursor cursor)
+		{
 			lock (SyncRoot) {
 				CXSourceLocation loc = clang.getCursorLocation (cursor);
 				CXFile file;
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
-				var fileName = getFileNameString (file);
+				var fileName = GetFileNameString (file);
 				try {
-					if (project.BOMPresentInFile [fileName]) {
+					if (project.IsBomPresentInFile (fileName)) {
 						if(line == 1) //if its in the first line, align column and offset too
 							return new SourceLocation (fileName, line, column - 3, offset - 3);
 						//else column is good as it is, only align offset
@@ -314,15 +305,15 @@ namespace CBinding
 					}
 				} catch (KeyNotFoundException) { //if key is not found it means the file is an included, non-project file
 					using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-						byte[] BOM = new byte[3];
+						var BOM = new byte[3];
 						s.Read (BOM, 0, 3);
-						if (!project.BOMPresentInFile.ContainsKey (fileName)) {
-							project.BOMPresentInFile.Add (fileName, false);
+						if (!project.IsBomPresentInFile (fileName)) {
+							project.BomPresentInFile (fileName, false);
 						}					
 						if (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF) {
-							project.BOMPresentInFile [fileName] = true;
+							project.BomPresentInFile(fileName, true);
 						} else {
-							project.BOMPresentInFile [fileName] = false;
+							project.BomPresentInFile(fileName, false);
 						}
 					}
 				}
@@ -339,32 +330,19 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="SourceLocation"/>: the translated location
 		/// </returns>
-		public SourceLocation getSourceLocation(CXSourceLocation loc) {
+		public SourceLocation GetSourceLocation (CXSourceLocation loc)
+		{
 			lock (SyncRoot) {
 				CXFile file;
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
-				var fileName = getFileNameString (file);
-				try {
-					if (project.BOMPresentInFile [fileName]) {
-						if(line == 1) //if its in the first line, align column and offset too
-							return new SourceLocation (fileName, line, column - 3, offset - 3);
-						//else column is good as it is, only align offset
-						return new SourceLocation (fileName, line, column, offset - 3);
-					}
-				} catch (KeyNotFoundException) { //if key is not found it means the file is an included, non-project file
-					using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-						byte[] BOM = new byte[3];
-						s.Read (BOM, 0, 3);
-						if (!project.BOMPresentInFile.ContainsKey (fileName)) {
-							project.BOMPresentInFile.Add (fileName, false);
-						}					
-						if(BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF){
-							project.BOMPresentInFile[fileName] = true;
-						} else {
-							project.BOMPresentInFile[fileName] = false;
-						}
-					}
+				var fileName = GetFileNameString (file);
+				project.CheckForBom (fileName);
+				if (project.IsBomPresentInFile (fileName)) {
+					if(line == 1) //if its in the first line, align column and offset too
+						return new SourceLocation (fileName, line, column - 3, offset - 3);
+					//else column is good as it is, only align offset
+					return new SourceLocation (fileName, line, column, offset - 3);
 				}
 				return new SourceLocation (fileName, line, column, offset);
 			}
@@ -377,7 +355,8 @@ namespace CBinding
 		/// <param name="visitor">
 		/// A <see cref="FindReferencesHandler"/>: a visitor
 		/// </param>
-		public void findReferences(FindReferencesHandler visitor) {
+		public void FindReferences (FindReferencesHandler visitor)
+		{
 			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
 					clang.visitChildren (
@@ -395,7 +374,8 @@ namespace CBinding
 		/// <param name="visitor">
 		/// A <see cref="RenameHandlerDialog"/>: a visitor
 		/// </param>
-		public void findReferences(RenameHandlerDialog visitor) {
+		public void FindReferences(RenameHandlerDialog visitor)
+		{
 			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
 					clang.visitChildren (
@@ -416,8 +396,9 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="string"/>: the cursor's spelling
 		/// </returns>
-		public string getCursorSpelling(CXCursor cursor){
-			lock(SyncRoot){
+		public string GetCursorSpelling (CXCursor cursor)
+		{
+			lock(SyncRoot) {
 				CXString cxstring = clang.getCursorSpelling (cursor);
 				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -434,8 +415,9 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="string"/>: the cursor's display name
 		/// </returns>
-		public string getCursorDisplayName(CXCursor cursor){
-			lock(SyncRoot){
+		public string GetCursorDisplayName (CXCursor cursor)
+		{
+			lock(SyncRoot) {
 				CXString cxstring = clang.getCursorDisplayName (cursor);
 				string spelling = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
@@ -452,13 +434,13 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="string"/>: the USR string
 		/// </returns>
-		public string getCursorUSRString (CXCursor cursor)
+		public string GetCursorUsrString (CXCursor cursor)
 		{
 			lock (SyncRoot) {
 				CXString cxstring = clang.getCursorUSR (cursor);
-				string USR = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
+				string usr = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
 				clang.disposeString (cxstring);
-				return USR;
+				return usr;
 			}
 		}
 
@@ -471,7 +453,7 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="string"/>: the filename
 		/// </returns>
-		public string getFileNameString (CXFile file)
+		public string GetFileNameString (CXFile file)
 		{
 			lock (SyncRoot) {
 				CXString cxstring = clang.getFileName (file);
@@ -490,7 +472,7 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXType"/>: the type
 		/// </returns>
-		public CXType getCursorType (CXCursor cursor)
+		public CXType GetCursorType (CXCursor cursor)
 		{
 			lock (SyncRoot) {
 				return clang.getCursorType (cursor);

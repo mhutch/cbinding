@@ -5,38 +5,37 @@ namespace CBinding.Parser
 	/// </summary>
 	public class ClangCompletionCategory : MonoDevelop.Ide.CodeCompletion.CompletionCategory
 	{
-		public static string functionCategory = "Function";
-		public static string namespaceCategory = "Namespace";
-		public static string functionTemplateCategory = "Function template";
-		public static string methodCategory = "Class method";
-		public static string classCategory = "Class";
-		public static string classTemplateCategory = "Class template";
-		public static string classTemplatePartialCategory = "Class template partial specialization";
-		public static string fieldCategory = "Field";
-		public static string structCategory = "Struct";
-		public static string enumerationCategory = "Enumeration";
-		public static string enumeratorCategory = "Enumerator";
-		public static string unionCategory = "Union";
-		public static string typedefCategory = "Typedef";
-		public static string variablesCategory = "Variable";
-		public static string parameterCategory = "Parameter";
-		public static string macroCategory = "Macro";
-		public static string otherCategory = "Other";
+		public static string FunctionCategory = "Function";
+		public static string NamespaceCategory = "Namespace";
+		public static string FunctionTemplateCategory = "Function template";
+		public static string MethodCategory = "Class method";
+		public static string ClassCategory = "Class";
+		public static string ClassTemplateCategory = "Class template";
+		public static string ClassTemplatePartialCategory = "Class template partial specialization";
+		public static string FieldCategory = "Field";
+		public static string StructCategory = "Struct";
+		public static string EnumerationCategory = "Enumeration";
+		public static string EnumeratorCategory = "Enumerator";
+		public static string UnionCategory = "Union";
+		public static string TypedefCategory = "Typedef";
+		public static string VariablesCategory = "Variable";
+		public static string ParameterCategory = "Parameter";
+		public static string MacroCategory = "Macro";
+		public static string OtherCategory = "Other";
 
 
-		public ClangCompletionCategory(){
-			
+		public ClangCompletionCategory ()
+		{
 		}
 
-		public ClangCompletionCategory(string categ) 
-			: base(categ, null)
+		public ClangCompletionCategory (string categ) : base(categ, null)
 		{
 		}
 
 		#region implemented abstract members of CompletionCategory
 		public override int CompareTo (MonoDevelop.Ide.CodeCompletion.CompletionCategory other)
 		{
-			return this.DisplayText.CompareTo(other.DisplayText);
+			return DisplayText.CompareTo(other.DisplayText);
 		}
 		#endregion
 	}

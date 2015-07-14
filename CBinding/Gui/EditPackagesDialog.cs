@@ -150,7 +150,7 @@ namespace CBinding
 				bool inProject = selectedPackages.Contains (p);
 
 				if (!IsPackageInStore (projectPackageListStore, p.Name, version, ProjectPackageNameID, ProjectPackageVersionID)) {
-				    projectPackageListStore.AppendValues (inProject, p.Name, version);
+					projectPackageListStore.AppendValues (inProject, p.Name, version);
 				
 					if (inProject)
 						selectedPackageListStore.AppendValues (p.Name, version);

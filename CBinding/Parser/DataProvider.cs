@@ -40,7 +40,7 @@ namespace CBinding.Parser
 	{
 		List<OverloadCandidate> ParameterInformation { get; }
 
-		public ParameterDataProvider (int startOffset, List<OverloadCandidate> parameterInformation) :base (startOffset)
+		public ParameterDataProvider (int startOffset, List<OverloadCandidate> parameterInformation) : base (startOffset)
 		{
 			ParameterInformation = parameterInformation;
 			foreach (var pi in ParameterInformation) {
@@ -54,63 +54,81 @@ namespace CBinding.Parser
 		IconId image;
 		string text;
 		string description;
-		string completion_string;
+		string completionString;
 		
 		public CompletionData (CXCompletionResult item, string dataString){
-			if (item.CursorKind == CXCursorKind.CXCursor_ClassDecl) {
+			switch (item.CursorKind) {
+			case CXCursorKind.ClassDecl:
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.classCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_ClassTemplate) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassCategory);
+				break;
+			case CXCursorKind.ClassTemplate:
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.classTemplateCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_ClassTemplatePartialSpecialization) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassTemplateCategory);
+				break;
+			case CXCursorKind.ClassTemplatePartialSpecialization:
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.classTemplatePartialCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_StructDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassTemplatePartialCategory);
+				break;
+			case CXCursorKind.StructDecl:
 				image = Stock.Struct;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.structCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_UnionDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.StructCategory);
+				break;
+			case CXCursorKind.UnionDecl:
 				image = "md-union";
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.unionCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_EnumDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.UnionCategory);
+				break;
+			case CXCursorKind.EnumDecl:
 				image = Stock.Enum;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumerationCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_EnumConstantDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.EnumerationCategory);
+				break;
+			case CXCursorKind.EnumConstantDecl:
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumeratorCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_FunctionDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.EnumeratorCategory);
+				break;
+			case CXCursorKind.FunctionDecl:
 				image = Stock.Method;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.functionCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_FunctionTemplate) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FunctionCategory);
+				break;
+			case CXCursorKind.FunctionTemplate:
 				image = Stock.Method;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.functionTemplateCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_Namespace) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FunctionTemplateCategory);
+				break;
+			case CXCursorKind.Namespace:
 				image = Stock.NameSpace;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.namespaceCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_TypedefDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.NamespaceCategory);
+				break;
+			case CXCursorKind.TypedefDecl:
 				image = Stock.Interface;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.typedefCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_CXXMethod) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.TypedefCategory);
+				break;
+			case CXCursorKind.CXXMethod:
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.methodCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_FieldDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.MethodCategory);
+				break;
+			case CXCursorKind.FieldDecl:
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.fieldCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_VarDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FieldCategory);
+				break;
+			case CXCursorKind.VarDecl:
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.variablesCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_MacroDefinition) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.VariablesCategory);
+				break;
+			case CXCursorKind.MacroDefinition:
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.macroCategory);
-}			else if (item.CursorKind == CXCursorKind.CXCursor_ParmDecl) {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.MacroCategory);
+				break;
+			case CXCursorKind.ParmDecl:
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.parameterCategory);
-}			else {
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ParameterCategory);
+				break;
+			default:
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.otherCategory);
-}
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.OtherCategory);
+				break;
+			}
 			text = dataString;
-			completion_string = dataString;
+			completionString = dataString;
 			description = string.Empty;
 		}
 
@@ -118,52 +136,52 @@ namespace CBinding.Parser
 		{
 			if (item is Class) {
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.classCategory);
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassCategory);
 }			else if (item is ClassTemplate) {
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.classTemplateCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplateCategory);
 }			else if (item is ClassTemplatePartial) {
 				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.classTemplatePartialCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplatePartialCategory);
 }			else if (item is Struct) {
 				image = Stock.Struct;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.structCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.StructCategory);
 }			else if (item is Union) {
 				image = "md-union";
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.unionCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.UnionCategory);
 }			else if (item is Enumeration) {
 				image = Stock.Enum;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumerationCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumerationCategory);
 }			else if (item is Enumerator) {
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.enumeratorCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumeratorCategory);
 }			else if (item is Function || item is FunctionTemplate) {
 				image = Stock.Method;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.functionTemplateCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FunctionTemplateCategory);
 }			else if (item is Namespace) {
 				image = Stock.NameSpace;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.namespaceCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.NamespaceCategory);
 }			else if (item is Typedef) {
 				image = Stock.Interface;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.typedefCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.TypedefCategory);
 }			else if (item is MemberFunction) {
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.methodCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MethodCategory);
 }			else if (item is Variable) {
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.variablesCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.VariablesCategory);
 }			else if (item is Field) {
 				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.fieldCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FieldCategory);
 }			else if (item is Macro) {
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.macroCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MacroCategory);
 }			else {
 				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.otherCategory);
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.OtherCategory);
 }			
 			text = item.Signature;
-			completion_string = item.Signature;
+			completionString = item.Signature;
 			description = string.Empty;
 		}
 		
@@ -180,7 +198,7 @@ namespace CBinding.Parser
 		}
 		
 		public override string CompletionText {
-			get { return completion_string; }
+			get { return completionString; }
 		}
 	}
 }

@@ -1,10 +1,5 @@
 using System;
-using MonoDevelop.Components.Commands;
-using MonoDevelop.Ide;
-using MonoDevelop.Core;
 using ClangSharp;
-using System.Collections.Generic;
-using MonoDevelop.Ide.Editor;
 using CBinding.Parser;
 
 namespace CBinding.Refactoring
@@ -34,8 +29,8 @@ namespace CBinding.Refactoring
 			project = proj;
 			Cursor = cursor;
 			SourceRange = sourceRange;
-			Begin = project.cLangManager.getSourceLocation (clang.getRangeStart (sourceRange));
-			End = project.cLangManager.getSourceLocation (clang.getRangeEnd (sourceRange));
+			Begin = project.ClangManager.GetSourceLocation (clang.getRangeStart (sourceRange));
+			End = project.ClangManager.GetSourceLocation (clang.getRangeEnd (sourceRange));
 			Offset = Begin.Offset;
 			FileName = Begin.FileName;
 			Length = End.Offset - Begin.Offset;
@@ -44,7 +39,7 @@ namespace CBinding.Refactoring
 			
 		public override bool Equals (object obj)
 		{
-			Reference other = obj as Reference;
+			Reference other = (Reference) obj;
 			return 
 				other.Begin.FileName.Equals (Begin.FileName) 
 				&& other.Offset.Equals (Offset) 
@@ -55,7 +50,7 @@ namespace CBinding.Refactoring
 
 		public int CompareTo (object obj)
 		{	
-			Reference other = obj as Reference;
+			Reference other = (Reference)obj;
 			return FileName.Equals (other.FileName) ?
 				Offset.CompareTo (other.Offset) 
 					:

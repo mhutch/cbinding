@@ -54,8 +54,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			if (!treeBuilder.Options["NestedNamespaces"] && ((Namespace)dataObject).Parent != null)
 				nodeInfo.Label = ((Namespace)dataObject).ParentCursor.ToString () + "::" + ((Namespace)dataObject).Name;
@@ -66,11 +66,11 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.db;
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			Namespace thisNamespace = ((Namespace)dataObject);
 			

@@ -4,7 +4,7 @@ namespace CBinding.Parser
 {
 	public class SourceLocation
 	{
-		public string FileName { get; private set; }
+		public string FileName { get; }
 
 		public int Line { get; }
 

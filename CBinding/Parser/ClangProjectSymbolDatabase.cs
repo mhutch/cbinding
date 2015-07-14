@@ -1,8 +1,6 @@
 using System;
 using ClangSharp;
 using System.Collections.Generic;
-using GLib;
-using System.Runtime.InteropServices;
 using System.Linq;
 using CBinding.Navigation;
 
@@ -11,11 +9,13 @@ namespace CBinding.Parser
 	/// <summary>
 	/// Symbol database belonging to a project
 	/// </summary>
-	public class ClangProjectSymbolDatabase {
+	public class ClangProjectSymbolDatabase
+	{
 		protected CProject project;
 		protected Dictionary<string, ClangFileSymbolDatabase> db;
 
-		public ClangProjectSymbolDatabase(CProject proj) {
+		public ClangProjectSymbolDatabase (CProject proj)
+		{
 			project = proj;
 			db = new Dictionary<string, ClangFileSymbolDatabase> ();
 			GlobalDefinitions = new Globals (proj);
@@ -35,7 +35,10 @@ namespace CBinding.Parser
 					db.Add (file, new ClangFileSymbolDatabase(project, file));
 				}
 				db [file].AddToDatabase (cursor, global);
-			} catch (ArgumentException) {
+			} catch (ArgumentException e) {
+				// this is suppressed because many "internal" cursors in clang/gcc e.g: __SSE2_MATH__, __GCC_ATOMIC_CHAR32_T_LOCK_FREE
+				// does not have a valid filename and crash our db build
+				// Console.WriteLine (cursor + e.Message);
 			}
 		}
 
@@ -43,7 +46,8 @@ namespace CBinding.Parser
 		/// Reset/empty the database associated with the filename
 		/// </summary>
 		/// <param name="file">Filename</param>
-		public void Reset(string file){
+		public void Reset (string file)
+		{
 			if (db.ContainsKey (file))
 				db [file] = new ClangFileSymbolDatabase (project, file);
 			else
@@ -264,65 +268,65 @@ namespace CBinding.Parser
 
 		public CXCursor getDefinition (CXCursor cursor) {
 			try {
-				string USR = project.cLangManager.getCursorUSRString (cursor);
+				string USR = project.ClangManager.GetCursorUsrString (cursor);
 				foreach (var T in Functions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in MemberFunctions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Classes){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in ClassTemplates){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in ClassTemplatesPartials){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Structs){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in FunctionTemplates){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Enumerations){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Enumerators){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Variables){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Typedefs){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Unions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Namespaces){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Macros){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 				foreach (var T in Others){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDefinition)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDefinition)
 						return T.Key;
 				}
 			} catch (Exception) {
@@ -333,65 +337,65 @@ namespace CBinding.Parser
 
 		public CXCursor getDeclaration (CXCursor cursor) {
 			try {
-				string USR = project.cLangManager.getCursorUSRString (cursor);
+				string USR = project.ClangManager.GetCursorUsrString (cursor);
 				foreach (var T in Functions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in MemberFunctions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Classes){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in ClassTemplates){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in ClassTemplatesPartials){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Structs){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in FunctionTemplates){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Enumerations){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Enumerators){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Variables){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Typedefs){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Unions){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Namespaces){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Macros){
-					if(T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if(T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 				foreach (var T in Others) {
-					if (T.Value.USR.Equals (USR) && T.Value.IsDeclaration)
+					if (T.Value.Usr.Equals (USR) && T.Value.IsDeclaration)
 						return T.Key;
 				}
 			} catch (Exception) {

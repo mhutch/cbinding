@@ -50,6 +50,7 @@ using System.Runtime.InteropServices;
 using MonoDevelop.Ide.Commands;
 using CBinding.Refactoring;
 using CBinding.Parser;
+using System.Text.RegularExpressions;
 
 
 namespace CBinding
@@ -72,9 +73,7 @@ namespace CBinding
 		/// </summary>
 		/// <value>The completion language.</value>
 		public override string CompletionLanguage {
-			get {
-				return "C/C++";
-			}
+			get { return "C/C++"; }
 		}
 
 		/// <summary>
@@ -118,8 +117,8 @@ namespace CBinding
 		/// <param name="direction">Direction.</param>
 		static int SearchMatchingBracket (IReadonlyTextDocument editor, int offset, char openBracket, char closingBracket, int direction)
 		{
-			bool isInString       = false;
-			bool isInChar         = false;	
+			bool isInString	   = false;
+			bool isInChar		 = false;	
 			bool isInBlockComment = false;
 			int depth = -1;
 			while (offset >= 0 && offset < editor.Length) {
@@ -258,7 +257,8 @@ namespace CBinding
 		/// </summary>
 		/// <returns><c>true</c>, if complete should be invoked, <c>false</c> otherwise.</returns>
 		/// <param name="pressed">Pressed.</param>
-		bool shouldCompleteOn(char pressed) {
+		bool ShouldCompleteOn (char pressed)
+		{
 			switch (pressed) {
 			case '.':
 				return true;
@@ -290,53 +290,27 @@ namespace CBinding
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
 			ICompletionDataList list = new CompletionDataList ();
-			if (shouldCompleteOn(completionChar)) {
-				CProject project = DocumentContext.Project as CProject;
+			if (ShouldCompleteOn(completionChar)) {
+				var project = (CProject)DocumentContext.Project;
 				unsavedFiles = new List<CXUnsavedFile> ();
 				foreach (Document openDocument in IdeApp.Workbench.Documents) {
 					if (openDocument.IsDirty) {
-						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Filename = openDocument.FileName;
-						unsavedFile.Length = openDocument.Editor.Text.Length;
-						unsavedFile.Contents = openDocument.Editor.Text;
-						if (project.BOMPresentInFile [openDocument.FileName]) {
-							unsavedFile.Length += 3;
-							unsavedFile.Contents = "   " + unsavedFile.Contents;
-						}
+						var unsavedFile = new CXUnsavedFile ();
+						unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
 						unsavedFiles.Add (unsavedFile);
 					}
 				}
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
+				var operatorFilter = new Regex (operatorPattern, RegexOptions.Compiled);
 				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
-				IntPtr pResults = project.cLangManager.codeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
+				IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
 				if (results.Results.ToInt64 () != 0) {
 					for(int i = 0; i < results.NumResults; i++) {
 						IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
 						CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
-						CXCompletionString completionString = new CXCompletionString(resultItem.CompletionString);
-						uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
-						for (uint j = 0; j < completionchunknum; j++) {
-							if (clang.getCompletionChunkKind(completionString.Pointer, j) != CXCompletionChunkKind.CXCompletionChunk_TypedText)
-								continue;
-							uint priority = clang.getCompletionPriority (completionString.Pointer);
-							CXString cxstring = clang.getCompletionChunkText(completionString.Pointer, j);
-							string realstring = Marshal.PtrToStringAnsi (clang.getCString(cxstring));
-							clang.disposeString (cxstring);
-							if (resultItem.CursorKind == CXCursorKind.CXCursor_Destructor
-								|| resultItem.CursorKind == CXCursorKind.CXCursor_UnaryOperator
-								|| resultItem.CursorKind == CXCursorKind.CXCursor_BinaryOperator
-								|| resultItem.CursorKind == CXCursorKind.CXCursor_CompoundAssignOperator
-								|| System.Text.RegularExpressions.Regex.IsMatch (realstring, operatorPattern)
-								|| (fieldOrMethodMode
-									&& (resultItem.CursorKind == CXCursorKind.CXCursor_ClassDecl 
-									|| resultItem.CursorKind == CXCursorKind.CXCursor_StructDecl)
-								)){
-								continue;
-							}
-							ClangCompletionUnit item = new ClangCompletionUnit (resultItem, realstring, priority);
-							list.Add (item);
-						}
+						foreach (var cd in GetCompletionUnits(resultItem, operatorFilter, fieldOrMethodMode))
+							list.Add (cd);
 					}
 				}
 				clang.disposeCodeCompleteResults (pResults);
@@ -344,6 +318,35 @@ namespace CBinding
 			previous = completionChar;
 			list.Sort ((x, y) => x.CompareTo (y));
 			return Task.FromResult (list);
+		}
+
+		// modified code of Michael Hutchinson from https://github.com/mhutch/cbinding/pull/1#discussion_r34485216
+		IEnumerable<ClangCompletionUnit> GetCompletionUnits (CXCompletionResult resultItem, Regex operatorFilter, bool fieldOrMethodMode)
+		{
+			var completionString = new CXCompletionString (resultItem.CompletionString);
+			uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
+			for (uint j = 0; j < completionchunknum; j++) {
+				if (clang.getCompletionChunkKind (completionString.Pointer, j) != CXCompletionChunkKind.TypedText)
+					continue;
+				switch (resultItem.CursorKind) { 
+				case CXCursorKind.Destructor:
+				case CXCursorKind.UnaryOperator:
+				case CXCursorKind.BinaryOperator:
+				case CXCursorKind.CompoundAssignOperator:
+					continue;
+				}
+				if (fieldOrMethodMode)
+					switch (resultItem.CursorKind) {
+					case CXCursorKind.ClassDecl:
+					case CXCursorKind.StructDecl:
+						continue;
+					}
+				string realstring = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
+				if (operatorFilter.IsMatch (realstring))
+					continue;
+				uint priority = clang.getCompletionPriority (completionString.Pointer);
+				yield return new ClangCompletionUnit (resultItem, realstring, priority);
+			}
 		}
 
 		/// <summary>
@@ -411,21 +414,18 @@ namespace CBinding
 			if (completionChar != '(' && completionChar != ',')
 				return null;
 
-			CProject project = DocumentContext.Project as CProject;
+			var project = (CProject) DocumentContext.Project;
 
 			if (project == null)
 				return Task.FromResult<ParameterHintingResult> (null);
 			
-			#region NEEDED_FOR_STARTOFFSET_:(	
+			#region NEEDED_FOR_STARTOFFSET_:(
+
 			int inParenthesis = 0;
 			int nameEnd = completionContext.TriggerOffset - 1;
 			char endChar = Editor.GetCharAt (nameEnd);
 			char prevChar = Editor.GetCharAt (nameEnd - 1);
-			while ( 
-				!(
-				    prevChar != '('//multiple (
-				    && endChar == '(' && inParenthesis <= 0 //last parenthesis
-				)
+			while (!(prevChar != '(' && endChar == '(' && inParenthesis <= 0) //multiple '('
 				&& nameEnd > 1) {
 				switch (endChar) {
 				case ')':
@@ -438,9 +438,11 @@ namespace CBinding
 				endChar = Editor.GetCharAt (--nameEnd);
 				prevChar = Editor.GetCharAt (nameEnd - 1);
 			}
+
 			WorkaroundWhitespaces (ref prevChar, ref nameEnd);
 			WorkaroundTemplateSpecifier (ref prevChar, ref nameEnd);
 			WorkaroundWhitespaces (ref prevChar, ref nameEnd);
+
 			int nameStart = nameEnd - 1;
 			//the actual name getting, march backwards while not a ., ->, space etc.
 			while (!allowedChars.Contains (prevChar) && nameStart > 1) {
@@ -448,63 +450,66 @@ namespace CBinding
 				prevChar = Editor.GetCharAt (nameStart - 1);			
 			}
 			string functionName = Editor.Text.Substring (nameStart, nameEnd - nameStart);
+
 			#endregion
+
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<ParameterHintingResult> (null);
-			List<CXUnsavedFile> unsavedFiles = new List<CXUnsavedFile> ();
+			var unsavedFiles = new List<CXUnsavedFile> ();
 			foreach (Document openDocument in IdeApp.Workbench.Documents) {
 				if (openDocument.IsDirty) {
-					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Filename = openDocument.FileName;
-					unsavedFile.Length = openDocument.Editor.Text.Length;
-					unsavedFile.Contents = openDocument.Editor.Text;
-					if (project.BOMPresentInFile [openDocument.FileName]) {
-						unsavedFile.Length += 3;
-						unsavedFile.Contents = "   " + unsavedFile.Contents;
-					}
+					var unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
 					unsavedFiles.Add (unsavedFile);
 				}
 			}
-			IntPtr pResults = project.cLangManager.codeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
+
+			IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 			CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
-			List<OverloadCandidate> parameterInformation = new List<OverloadCandidate> ();
+
 			if (results.Results.ToInt64 () != 0) {
+				var parameterInformation = new List<OverloadCandidate> ();
 				for(int i = 0; i < results.NumResults; i++) {
 					IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult>();
 					CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
-					CXCompletionString completionString = new CXCompletionString(resultItem.CompletionString);
-					uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
-					bool candidate = false;
-					bool needed = false;
-					string ret = new string (' ',1);
-					string nam = new string (' ',1);
-					List<string> parameters = new List<string> ();
-					for (uint j = 0; j < completionchunknum; j++) {
-						if (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_ResultType) {
-							candidate = true;
-							ret = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
-						}
-						if (candidate) {
-							if (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_Text) {
-								needed = true;
-								nam = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
-							}
-							if(needed && (clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_CurrentParameter
-								||clang.getCompletionChunkKind (completionString.Pointer, j) == CXCompletionChunkKind.CXCompletionChunk_Placeholder)){
-								parameters.Add (clang.getCompletionChunkText (completionString.Pointer, j).ToString ());
-							}
-						}
-					}
-					if (needed){
-						parameterInformation.Add (new OverloadCandidate(ret, nam, parameters));
-					}
+
+					if (resultItem.CursorKind == CXCursorKind.@OverloadCandidate)
+						parameterInformation.Add (GetOverloadCandidate (resultItem));
+				}
+				clang.disposeCodeCompleteResults (pResults);
+				return Task.FromResult ((ParameterHintingResult) new ParameterDataProvider (nameStart, parameterInformation));
+			}
+			return Task.FromResult<ParameterHintingResult> (null);
+		}
+
+		/// <summary>
+		/// Builds an overload candidate for parameter hinting.
+		/// </summary>
+		/// <returns>Overload candidate which contains return type, function name.</returns>
+		/// <param name="resultItem">Result item. resultItem.CursorKind must be CXCursorKind.OverloadCandidate. </param>
+		OverloadCandidate GetOverloadCandidate (CXCompletionResult resultItem)
+		{
+			var completionString = new CXCompletionString(resultItem.CompletionString);
+			uint completionchunknum = clang.getNumCompletionChunks (completionString.Pointer);
+
+			string ret = String.Empty;
+			string nam = String.Empty;
+			var parameters = new List<string> ();
+			for (uint j = 0; j < completionchunknum; j++) {
+				switch (clang.getCompletionChunkKind (completionString.Pointer, j)) {
+				case CXCompletionChunkKind.ResultType:
+					ret = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
+					break;
+				case CXCompletionChunkKind.Text:
+					nam = clang.getCompletionChunkText (completionString.Pointer, j).ToString ();
+					break;
+				case CXCompletionChunkKind.CurrentParameter:
+				case CXCompletionChunkKind.Placeholder:
+					parameters.Add (clang.getCompletionChunkText (completionString.Pointer, j).ToString ());
+					break;
 				}
 			}
-			clang.disposeCodeCompleteResults (pResults);
-		return Task.FromResult (
-				(ParameterHintingResult)
-				new ParameterDataProvider (nameStart, parameterInformation)
-			);
+			return new OverloadCandidate (ret, nam, parameters);
 		}
 
 		/// <summary>
@@ -536,7 +541,7 @@ namespace CBinding
 			if(terminateIndex > 0)
 				lineText = terminateIndex < lineText.Length ? lineText.Substring(0, terminateIndex) : lineText;
 			
-			StringBuilder whitespaces = new StringBuilder ();
+			var whitespaces = new StringBuilder ();
 			
 			foreach (char ch in lineText) {
 				if (!char.IsWhiteSpace (ch))
@@ -553,7 +558,7 @@ namespace CBinding
 		[CommandHandler (MonoDevelop.DesignerSupport.Commands.SwitchBetweenRelatedFiles)]
 		protected void Run ()
 		{
-			var cp = this.DocumentContext.Project as CProject;
+			var cp = (CProject)DocumentContext.Project;
 			if (cp != null) {
 				string match = cp.MatchingFile (this.DocumentContext.Name);
 				if (match != null)
@@ -568,7 +573,7 @@ namespace CBinding
 		[CommandUpdateHandler (MonoDevelop.DesignerSupport.Commands.SwitchBetweenRelatedFiles)]
 		protected void Update (CommandInfo info)
 		{
-			var cp = this.DocumentContext.Project as CProject;
+			var cp = (CProject)DocumentContext.Project;
 			info.Visible = info.Visible = cp != null && cp.MatchingFile (this.DocumentContext.Name) != null;
 		}
 		
@@ -583,7 +588,7 @@ namespace CBinding
 				return null;
 			}
 			
-			object tag = path[index].Tag;
+			object tag = path [index].Tag;
 			DropDownBoxListWindow.IListDataProvider provider = null;
 			if (tag is ParsedDocument) {
 			} else {
@@ -591,12 +596,12 @@ namespace CBinding
 				//provider = new DataProvider (Editor, DocumentContext, tag, new NetAmbience ());
 			}
 			
-			DropDownBoxListWindow window = new DropDownBoxListWindow (provider);
+			var window = new DropDownBoxListWindow (provider);
 			window.SelectItem (tag);
 			return window;
 		}
 
-		public PathEntry[] CurrentPath {
+		public PathEntry [] CurrentPath {
 			get;
 			private set;
 		}
@@ -608,16 +613,6 @@ namespace CBinding
 		}
 		
 		#endregion
-		
-		protected override void Initialize ()
-		{
-			base.Initialize ();
-		}
-			
-		public override void Dispose ()
-		{
-			base.Dispose ();
-		}
 
 		/// <summary>
 		/// Command binding
@@ -626,7 +621,7 @@ namespace CBinding
 		[CommandHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void GotoDeclaration ()
 		{
-			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			var gotoDec = new GotoDeclarationHandler();
 			gotoDec.Run ();
 		}
 
@@ -640,11 +635,12 @@ namespace CBinding
 		[CommandUpdateHandler (MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration)]
 		public void CanGotoDeclaration (CommandInfo item)
 		{
-			GotoDeclarationHandler gotoDec = new GotoDeclarationHandler();
+			var gotoDec = new GotoDeclarationHandler();
 			gotoDec.Update (item);
 		}
 			
 		#region copied with modifications from CSharpBinding
+
 		/// <summary>
 		/// Find references handler update bind.
 		/// </summary>
@@ -655,8 +651,8 @@ namespace CBinding
 			var doc = IdeApp.Workbench.ActiveDocument;
 			if (doc == null || doc.FileName == FilePath.Null)
 				return;
-			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
-				DocumentContext.Project as CProject,
+			var findReferencesHandler = new FindReferencesHandler (
+				(CProject)DocumentContext.Project,
 				doc
 			);
 			findReferencesHandler.Update (ci);
@@ -671,8 +667,8 @@ namespace CBinding
 			var doc = IdeApp.Workbench.ActiveDocument;
 			if (doc == null || doc.FileName == FilePath.Null)
 				return;
-			FindReferencesHandler findReferencesHandler = new FindReferencesHandler (
-				DocumentContext.Project as CProject,
+			var findReferencesHandler = new FindReferencesHandler (
+				(CProject)DocumentContext.Project,
 				doc
 			);
 			findReferencesHandler.Run ();
@@ -701,7 +697,7 @@ namespace CBinding
 			var doc = IdeApp.Workbench.ActiveDocument;
 			if (doc == null || doc.FileName == FilePath.Null)
 				return;
-			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
+			var renameHandler = new RenameHandlerDialog ((CProject)DocumentContext.Project, doc);
 			renameHandler.Update (ci);
 		}
 
@@ -714,9 +710,10 @@ namespace CBinding
 			var doc = IdeApp.Workbench.ActiveDocument;
 			if (doc == null || doc.FileName == FilePath.Null)
 				return;
-			RenameHandlerDialog renameHandler = new RenameHandlerDialog (DocumentContext.Project as CProject, doc);
+			var renameHandler = new RenameHandlerDialog ((CProject)DocumentContext.Project, doc);
 			renameHandler.RunRename ();
 		}
+
 		#endregion
 
 		/// <summary>
@@ -731,16 +728,22 @@ namespace CBinding
 		{
 			int cursor = CompletionWidget.CurrentCodeCompletionContext.TriggerOffset;
 			int i = startOffset;
-			if (i < 0 || i >= Editor.Length || Editor.GetCharAt (i) == ')')
+			if (i < 0 || i >= Editor.Length)
 				return -1;
 
 			if (i > cursor)
 				return -1;
 			else if (i == cursor)
 				return 0;
-			//step over the opening parenthesis at function call
-			while (Editor.GetCharAt (i) != '(')
-				i++;
+			// step over to the opening parenthesis at function call
+			// if this fails, that means the paranthesis has been removed after invoking parameter hinting
+			// and its safe to return -1 (and destroy the PH widget)
+			try {
+				while (Editor.GetCharAt (i) != '(')
+					i++;
+			} catch {
+				return -1;
+			}
 			int parameterIndex = 1;
 			int inTemplateSpecifier = 0;
 			int inCurvyBracket = 0;
@@ -779,15 +782,14 @@ namespace CBinding
 					break;
 				case ',':
 					if (inTemplateSpecifier == 0 &&
-					    inParentesis == 0 &&
-					    inBracket == 0 &&
-					    inCurvyBracket == 0) {
+						inParentesis == 0 &&
+						inBracket == 0 &&
+						inCurvyBracket == 0) {
 						parameterIndex++;
 					}
 					break;
 				}
 			}
-			Console.WriteLine (parameterIndex);
 			return parameterIndex;
 		}
 
