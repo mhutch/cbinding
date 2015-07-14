@@ -99,9 +99,9 @@ namespace CBinding
 		protected override IEnumerable<FilePath> OnGetItemFiles (bool includeReferencedFiles)
 		{
 			var files = new List<FilePath> ();
-			string path = parent.File.ParentDirectory.ToString ();
+			FilePath path = parent.File.ParentDirectory;
 			foreach (var file in Files) {
-				files.Add (Path.Combine (path, file.Key));
+				files.Add (path.Combine (file.Key));
 			}
 			return files;
 		}

@@ -27,6 +27,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
+using MonoDevelop.Core;
+
 namespace CBinding
 {
 	//Parses variables to files and file lists.
@@ -37,7 +39,7 @@ namespace CBinding
 		}
 		Dictionary<string, CMakeCommand> values = new Dictionary<string, CMakeCommand> ();
 
-		readonly Dictionary<string, string> builtInVariables = new Dictionary<string, string> ();
+		readonly Dictionary<string, FilePath> builtInVariables = new Dictionary<string, FilePath> ();
 		readonly CMakeFileFormat parent;
 		readonly CMakeCommand command;
 		static readonly List<string> toIgnore = new List<string> () {
@@ -46,20 +48,20 @@ namespace CBinding
 
 		void InitializeBuiltInVaiables ()
 		{
-			builtInVariables.Add ("CMAKE_SOURCE_DIR", parent.Project.BaseDirectory);
-			builtInVariables.Add ("CMAKE_CURRENT_SOURCE_DIR", parent.File.ParentDirectory);
+			builtInVariables.Add ("CMAKE_SOURCE_DIR", new FilePath (parent.Project.BaseDirectory));
+			builtInVariables.Add ("CMAKE_CURRENT_SOURCE_DIR", new FilePath (parent.Project.BaseDirectory));
 			builtInVariables.Add ("PROJECT_SOURCE_DIR",
 								  (string.IsNullOrEmpty (parent.ProjectName) && parent.Parent != null) ?
-								  parent.Parent.Project.BaseDirectory : parent.Project.BaseDirectory);
+								  new FilePath (parent.Parent.Project.BaseDirectory) : new FilePath (parent.Project.BaseDirectory));
 			builtInVariables.Add (string.Format ("{0}{1}", parent.ProjectName, "_SOURCE_DIR"),
-								  parent.File.ParentDirectory);
+								  new FilePath (parent.File.ParentDirectory));
 		}
 
 		void GetFromSets (string variable)
 		{
 			IEnumerable<KeyValuePair<string, CMakeCommand>> commands =
 					parent.SetCommands.Where ((KeyValuePair<string, CMakeCommand> arg) =>
-												arg.Key.StartsWith (variable, StringComparison.OrdinalIgnoreCase));
+											  arg.Key.StartsWith (variable, StringComparison.OrdinalIgnoreCase));
 
 			foreach (var command in commands) {
 				bool isFirst = true;
@@ -109,11 +111,11 @@ namespace CBinding
 				return;
 			} else {
 				string variableName = vals [0].Substring (2, vals [0].Length - 2);
-				string file;
+				FilePath file;
 
 				if (builtInVariables.ContainsKey (variableName)) {
 					if (!vals [1].StartsWith ("${", StringComparison.Ordinal)) {
-						file = Path.Combine (builtInVariables [variableName], vals [1]);
+						file = builtInVariables [variableName].Combine (vals [1]);
 						Values.Add (file, command);
 					}
 				}

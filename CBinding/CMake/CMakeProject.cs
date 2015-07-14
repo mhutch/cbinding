@@ -55,7 +55,7 @@ namespace CBinding
 		{
 			var stream = new MemoryStream ();
 			var streamWriter = new StreamWriter (stream);
-			string path = Path.Combine (file.ParentDirectory.ToString (), workingDir);
+			FilePath path = file.ParentDirectory.Combine (workingDir);
 			ProcessWrapper p = Runtime.ProcessService.StartProcess (command, args, path, monitor.Log, streamWriter, null);
 			p.WaitForExit ();
 			streamWriter.Flush ();
@@ -150,11 +150,11 @@ namespace CBinding
 
 					// in/at CMakeLists.txt:10 (COMMAND):
 					if (line.Contains (" in ")) {
-						var t = GetFileAndLine (line, " in ");
+						Tuple<int, string> t = GetFileAndLine (line, " in ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else if (line.Contains (" at ")) {
-						var t = GetFileAndLine (line, " at ");
+						Tuple<int, string> t = GetFileAndLine (line, " at ");
 						lineNumber = t.Item1;
 						fileName = t.Item2;
 					} else {
@@ -284,7 +284,7 @@ namespace CBinding
 			return Task.Factory.StartNew (() => {
 				var results = new BuildResult ();
 
-				string path = Path.Combine (BaseDirectory, outputDirectory);
+				FilePath path = BaseDirectory.Combine (outputDirectory);
 				if (Directory.Exists (path)) {
 					FileService.DeleteDirectory (path);
 				}
@@ -310,8 +310,7 @@ namespace CBinding
 					return;
 				}
 
-				string outputFullPath = Path.Combine (BaseDirectory, outputDirectory);
-				var f = new FilePath (outputFullPath);
+				FilePath f = BaseDirectory.Combine (outputDirectory);
 				NativeExecutionCommand cmd;
 				if (File.Exists (f.Combine (targetName)))
 					cmd = new NativeExecutionCommand (f.Combine (targetName));
