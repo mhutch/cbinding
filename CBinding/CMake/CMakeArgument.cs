@@ -4,8 +4,6 @@
 // Author:
 //       Elsayed Awdallah <comando4ever@gmail.com>
 //
-// Copyright (c) 2015 Xamarin Inc. (http://xamarin.com)
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -24,7 +22,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -34,31 +31,36 @@ namespace CBinding
 	{
 		public CMakeArgument (string value)
 		{
-			if (value.StartsWith ("\"")) {
+			if (value.StartsWith ("\"", System.StringComparison.Ordinal)) {
 				value = value.Substring (1, value.Length - 2);
 				values.InsertRange (0, Regex.Split (value, @"(?<!\\);"));
-				IsString = true;
+				isString = true;
 			} else {
 				this.value = value;
 			}
 		}
 
-		List<string> values = new List<string> ();
+		readonly List<string> values = new List<string> ();
 		string value;
-		
-		public bool IsString;
+
+		public bool IsString {
+			get { return isString; }
+		}
+		bool isString;
 
 		public bool Remove (string arg)
 		{
 			return values.Remove (arg);
 		}
-		
+
 		public bool Edit (string oldArg, string newArg)
 		{
 			if (value == oldArg) {
 				value = newArg;
 				return true;
-			} else if (values.Contains (oldArg)) {
+			}
+
+			if (values.Contains (oldArg)) {
 				values [values.IndexOf (oldArg)] = newArg;
 				return true;
 			}
@@ -75,15 +77,14 @@ namespace CBinding
 				return list;
 			}
 		}
-		
+
 		public override string ToString ()
 		{
 			if (IsString) {
-				return String.Format ("\"{0}\"", String.Join (";", values));
+				return string.Format ("\"{0}\"", string.Join (";", values));
 			} else {
 				return value;
 			}
 		}
 	}
 }
-

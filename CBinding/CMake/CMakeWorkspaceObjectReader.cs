@@ -4,8 +4,6 @@
 // Author:
 //       Elsayed Awdallah <comando4ever@gmail.com>
 //
-// Copyright (c) 2015 Xamarin Inc. (http://xamarin.com)
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -27,30 +25,28 @@
 using System;
 using System.Threading.Tasks;
 
-using MonoDevelop.Projects;
 using MonoDevelop.Core;
+using MonoDevelop.Projects;
+using MonoDevelop.Projects.Formats.MSBuild;
 
 namespace CBinding
 {
 	public class CMakeWorkspaceObjectReader : WorkspaceObjectReader
 	{
-		public CMakeWorkspaceObjectReader()
+		public override bool CanRead (FilePath file, Type expectedType)
 		{
+			return expectedType.IsAssignableFrom (typeof (CMakeProject)) && file.FileName.ToLower () == "cmakelists.txt";
 		}
-		
-		public override bool CanRead(FilePath file, Type expectedType)
+
+		public override Task<SolutionItem> LoadSolutionItem (ProgressMonitor monitor, SolutionLoadContext ctx,
+															 string fileName, MSBuildFileFormat expectedFormat,
+															 string typeGuid, string itemGuid)
 		{
-			return expectedType.IsAssignableFrom(typeof (CMakeProject)) && file.FileName.ToLower() == "cmakelists.txt";
-		}
-		
-		public override Task<SolutionItem> LoadSolutionItem(ProgressMonitor monitor, SolutionLoadContext ctx, string fileName, MonoDevelop.Projects.Formats.MSBuild.MSBuildFileFormat expectedFormat, string typeGuid, string itemGuid)
-		{
-			return Task<SolutionItem>.Factory.StartNew(delegate {
-				CMakeProject p = new CMakeProject();
-				p.LoadFrom(fileName);
+			return Task<SolutionItem>.Factory.StartNew (delegate {
+				CMakeProject p = new CMakeProject ();
+				p.LoadFrom (fileName);
 				return p;
 			});
 		}
 	}
 }
-

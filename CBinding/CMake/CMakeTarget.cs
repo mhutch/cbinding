@@ -4,8 +4,6 @@
 // Author:
 //       Elsayed Awdallah <comando4ever@gmail.com>
 //
-// Copyright (c) 2015 Xamarin Inc. (http://xamarin.com)
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -32,81 +30,96 @@ using System.IO;
 using MonoDevelop.Core;
 using MonoDevelop.Projects;
 
-namespace CBinding {
-	public class CMakeTarget : SolutionItem {
-		public enum Types {
-			BINARY,
-			SHARED_LIBRARY,
-			STATIC_LIBRARY,
-			MODULE_LIBRARY,
-			OBJECT_LIBRARY,
-			UNKOWN
+namespace CBinding
+{
+	public class CMakeTarget : SolutionItem
+	{
+		public enum Types
+		{
+			Binary,
+			SharedLibrary,
+			StaticLibrary,
+			Module,
+			ObjectLibrary,
+			Unknown
 		};
-		public Types? Type;
-		public bool IsAliasOrImported = false;
-		
+
+		public Types? Type {
+			get { return type; }
+		}
+		Types? type;
+
+		public bool IsAliasOrImported {
+			get { return isAliasOrImported; }
+		}
+		bool isAliasOrImported = false;
+
+
+		public Dictionary<string, CMakeCommand> Files {
+			get { return files; }
+		}
+		Dictionary<string, CMakeCommand> files = new Dictionary<string, CMakeCommand> ();
+
 		string name;
 		List<string> ignored = new List<string> () {
 			"WIN32", "MACOSX_BUNDLE", "EXCLUDE_FROM_ALL"
 		};
-		CMakeCommand command;
-		public Dictionary<string, CMakeCommand> Files = new Dictionary<string, CMakeCommand> ();
 		CMakeFileFormat parent;
-		
+
 		public CMakeCommand Command {
 			get { return command; }
 		}
-		
+		CMakeCommand command;
+
 		public CMakeTarget (CMakeCommand command, CMakeFileFormat parent)
 		{
 			Initialize (this);
 			this.command = command;
 			this.parent = parent;
 			if (command.Name.ToLower () == "add_executable")
-				Type = Types.BINARY;
+				type = Types.Binary;
 
-			getFiles ();
+			PopulateFiles ();
 		}
-		
+
 		/* Overrides */
-		
+
 		public new WorkspaceObject ParentObject;
-		
-		protected override string OnGetName()
+
+		protected override string OnGetName ()
 		{
-			return this.name;
+			return name;
 		}
-		
-		protected override void OnNameChanged(SolutionItemRenamedEventArgs e)
+
+		protected override void OnNameChanged (SolutionItemRenamedEventArgs e)
 		{
-			this.command.EditArgument (e.OldName, e.NewName);
+			command.EditArgument (e.OldName, e.NewName);
 		}
-		
-		protected override IEnumerable<FilePath> OnGetItemFiles(bool includeReferencedFiles)
+
+		protected override IEnumerable<FilePath> OnGetItemFiles (bool includeReferencedFiles)
 		{
-			List<FilePath> files = new List<FilePath> ();
+			var files = new List<FilePath> ();
 			string path = parent.File.ParentDirectory.ToString ();
 			foreach (var file in Files) {
 				files.Add (Path.Combine (path, file.Key));
 			}
 			return files;
 		}
-		
-		public override FilePath FileName
-		{
-			get
-			{
-				return this.command.FileName;
+
+		public override FilePath FileName {
+			get {
+				return command.FileName;
 			}
 		}
 
-		public List<FilePath> GetFiles () {
+		public List<FilePath> GetFiles ()
+		{
 			return OnGetItemFiles (false).ToList ();
 		}
-		
+
 		void parseValue (string value)
 		{
-			if (String.IsNullOrEmpty (name)) {
+			if (string.IsNullOrEmpty (name)) {
 				name = value;
 				return;
 			}
@@ -114,69 +127,67 @@ namespace CBinding {
 			if (Type == null) {
 				switch (value.ToLower ()) {
 				case "shared":
-					Type = Types.SHARED_LIBRARY;	
+					type = Types.SharedLibrary;
 					return;
 				case "static":
-					Type = Types.SHARED_LIBRARY;
+					type = Types.SharedLibrary;
 					return;
 				case "module":
-					Type = Types.MODULE_LIBRARY;
+					type = Types.Module;
 					return;
 				case "unknown":
-					Type = Types.UNKOWN;
+					type = Types.Unknown;
 					return;
-				default:
-					break;
 				}
 			}
 
 			if (value.ToLower () == "alias" || value.ToLower () == "imported") {
-				IsAliasOrImported = true;
+				isAliasOrImported = true;
 				return;
 			}
 
 			if (ignored.Contains (value, StringComparer.OrdinalIgnoreCase))
-               return;
+				return;
 
 			if (!Files.ContainsKey (new FilePath (value)))
-				Files.Add (new FilePath (value), this.command);
+				Files.Add (new FilePath (value), command);
 		}
-		
-		void getFiles ()
+
+		void PopulateFiles ()
 		{
-			List<CMakeArgument> args = this.command.Arguments;
+			List<CMakeArgument> args = command.Arguments;
 			foreach (var arg in args) {
-				if (IsAliasOrImported) return;
+				if (isAliasOrImported) return;
 				foreach (string val in arg.GetValues ()) {
-					if (!val.StartsWith("${")) {
+					if (!val.StartsWith ("${", StringComparison.Ordinal)) {
 						parseValue (val);
 						continue;
 					}
 
-					CMakeVariableParser cmvp = new CMakeVariableParser(val, command, parent);
-					Files = Files.Concat(cmvp.Values).ToDictionary(x=>x.Key, x=>x.Value);
+					var cmvp = new CMakeVariableParser (val, command, parent);
+					files = Files.Concat (cmvp.Values).ToDictionary (x => x.Key, x => x.Value);
 				}
 			}
 		}
-		
+
 		public void AddFile (string filename)
 		{
 			command.AddArgument (filename);
 		}
-		
+
 		public bool RemoveFile (string filename)
 		{
 			if (Files [filename].IsEditable)
 				return Files [filename].RemoveArgument (filename);
-				
+
 			return false;
 		}
-		
+
 		public bool RenameFile (string oldName, string newName)
 		{
 			return Files [oldName].EditArgument (oldName, newName);
 		}
-		
+
 		public bool Rename (string newName)
 		{
 			if (command.EditArgument (name, newName)) {
@@ -185,21 +196,19 @@ namespace CBinding {
 			}
 			return false;
 		}
-		
+
 		public void Save ()
 		{
 			parent.Save ();
 		}
-		
+
 		public void PrintTarget ()
 		{
-			LoggingService.LogDebug (String.Format ("[Target Name : {0}]", name));
-			foreach (var file in Files)
-			{
+			LoggingService.LogDebug (string.Format ("[Target Name : {0}]", name));
+			foreach (var file in Files) {
 				LoggingService.LogDebug (file.ToString ());
 			}
 			LoggingService.LogDebug ("[End Target]");
 		}
 	}
 }
-

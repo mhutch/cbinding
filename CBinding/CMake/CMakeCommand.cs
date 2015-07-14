@@ -4,8 +4,6 @@
 // Author:
 //       Elsayed Awdallah <comando4ever@gmail.com>
 //
-// Copyright (c) 2015 Xamarin Inc. (http://xamarin.com)
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -25,21 +23,36 @@
 // THE SOFTWARE.
 
 using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 using MonoDevelop.Core;
 
-namespace CBinding {
-	public class CMakeCommand {
-		Match command;
+namespace CBinding
+{
+	public class CMakeCommand
+	{
+		readonly Match command;
 		string argumentsText;
-		CMakeFileFormat parent;
-	
-		public string Name;
-		public List<CMakeArgument> Arguments = new List<CMakeArgument> ();
-		public bool IsEditable;
+		readonly CMakeFileFormat parent;
+
+		public string Name {
+			get { return name; }
+		}
+
+		readonly string name;
+
+		public List<CMakeArgument> Arguments {
+			get { return arguments; }
+		}
+		List<CMakeArgument> arguments = new List<CMakeArgument> ();
+
+		public bool IsEditable {
+			get { return isEditable; }
+			set { isEditable = value; }
+		}
+		bool isEditable;
+
 		public int Offset {
 			get {
 				return command.Index;
@@ -70,42 +83,42 @@ namespace CBinding {
 			}
 			return false;
 		}
-		
+
 		public bool EditArgument (string oldArgument, string newArgument)
 		{
 			foreach (var argument in Arguments) {
 				if (argument.Edit (oldArgument, newArgument))
 					return true;
 			}
-				
+
 			return false;
 		}
 
-		void parseArguments ()
-		{	
+		void ParseArguments ()
+		{
 			argumentsText = Regex.Replace (command.Value, @"^[A-Za-z_][A-Za-z0-9_]*\s*\(", "").TrimEnd (')').Trim ();
-			
+
 			if (argumentsText.Length == 0)
 				return;
 
 			foreach (Match m in Regex.Matches (argumentsText, @"\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|[^\s\""\[]+"))
 				Arguments.Add (new CMakeArgument (m.Value));
 		}
-		
+
 		public override string ToString ()
 		{
 			if (Arguments.Count > 3)
-				return string.Format ("{0} ({1})", Name, string.Join(Environment.NewLine+"\t\t", Arguments));
-				
+				return string.Format ("{0} ({1})", Name, string.Join (Environment.NewLine + "\t\t", Arguments));
+
 			return string.Format ("{0} ({1})", Name, string.Join (" ", Arguments));
 		}
-		
+
 		public CMakeCommand (string name, Match command, CMakeFileFormat parent)
 		{
-			Name = name;
+			this.name = name;
 			this.command = command;
 			this.parent = parent;
-			parseArguments ();
+			ParseArguments ();
 		}
 	}
 }

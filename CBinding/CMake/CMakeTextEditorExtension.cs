@@ -4,8 +4,6 @@
 // Author:
 //       Elsayed Awdallah <comando4ever@gmail.com>
 //
-// Copyright (c) 2015 Xamarin Inc. (http://xamarin.com)
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -24,45 +22,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 using MonoDevelop.Ide.CodeCompletion;
-
 using MonoDevelop.Ide.Editor;
 using MonoDevelop.Ide.Editor.Extension;
-using System.Threading.Tasks;
-using System.Threading;
 
-namespace CBinding {
-	class CMakeTextEditorExtension : CompletionTextEditorExtension {
-		private bool isComment(CodeCompletionContext context)
+namespace CBinding
+{
+	class CMakeTextEditorExtension : CompletionTextEditorExtension
+	{
+		bool IsComment (CodeCompletionContext context)
 		{
-			string text = Editor.GetTextBetween(0, Editor.CaretOffset);
+			string text = Editor.GetTextBetween (0, Editor.CaretOffset);
 
 			if (text.Length == 0)
 				return false;
 
-			if (text.LastIndexOf('#') > text.LastIndexOf('\n'))
+			if (text.LastIndexOf ('#') > text.LastIndexOf ('\n'))
 				return true;
 
-			if (text.LastIndexOf("#[[") > text.LastIndexOf("]]"))
+			if (text.LastIndexOf ("#[[", System.StringComparison.Ordinal) >
+				text.LastIndexOf ("]]", System.StringComparison.Ordinal))
 				return true;
 
 			return false;
 		}
 
-		private bool isCommand(CodeCompletionContext context)
+		bool IsCommand (CodeCompletionContext context)
 		{
-			string text = Editor.GetTextBetween(0, Editor.CaretOffset);
+			string text = Editor.GetTextBetween (0, Editor.CaretOffset);
 
-			text = Regex.Replace(text, @"#\[\[.*\]\]", "", RegexOptions.Singleline);
-			text = Regex.Replace(text, @"#.*\n", "\n", RegexOptions.Singleline);
+			text = Regex.Replace (text, @"#\[\[.*\]\]", "", RegexOptions.Singleline);
+			text = Regex.Replace (text, @"#.*\n", "\n", RegexOptions.Singleline);
 
-			int openParents = text.Count((char arg) => arg=='(');
-			int closeParents = text.Count((char arg) => arg==')');
+			int openParents = text.Count ((char arg) => arg == '(');
+			int closeParents = text.Count ((char arg) => arg == ')');
 
 			if (openParents <= closeParents)
 				return true;
@@ -70,22 +68,22 @@ namespace CBinding {
 			return false;
 		}
 
-		private bool isString(CodeCompletionContext context)
+		bool IsString (CodeCompletionContext context)
 		{
-			string text = Editor.GetTextBetween(0, Editor.CaretOffset);
+			string text = Editor.GetTextBetween (0, Editor.CaretOffset);
 
-			text = Regex.Replace(text, @"#\[\[.*\]\]", "", RegexOptions.Singleline);
-			text = Regex.Replace(text, @"#.*\n", "\n", RegexOptions.Singleline);
+			text = Regex.Replace (text, @"#\[\[.*\]\]", "", RegexOptions.Singleline);
+			text = Regex.Replace (text, @"#.*\n", "\n", RegexOptions.Singleline);
 
-			int quotes = text.Count((char arg) => arg == '"');
+			int quotes = text.Count ((char arg) => arg == '"');
 
-			MatchCollection openString = Regex.Matches(text, @"\[[0-9]*=\[");
-			MatchCollection closeString = Regex.Matches(text, @"\][0-9]*=\]");
+			MatchCollection openString = Regex.Matches (text, @"\[[0-9]*=\[");
+			MatchCollection closeString = Regex.Matches (text, @"\][0-9]*=\]");
 			if (openString.Count > 0) {
 				if (closeString.Count <= 0)
 					return true;
 
-				if (openString[openString.Count].Index > closeString[closeString.Count].Index)
+				if (openString [openString.Count].Index > closeString [closeString.Count].Index)
 					return true;
 			}
 
@@ -95,25 +93,26 @@ namespace CBinding {
 			return true;
 		}
 
-		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
+		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext,
+																			 char completionChar,
+																			 CancellationToken token = default (CancellationToken))
 		{
-			if (!char.IsLetter(completionChar))
+			if (!char.IsLetter (completionChar))
 				return null;
 
 			if (completionContext.TriggerOffset > 1 &&
-			    (char.IsLetterOrDigit(Editor.GetCharAt(completionContext.TriggerOffset - 2))
-				|| Editor.GetCharAt(completionContext.TriggerOffset - 2) == '_'))
-                return null;
-
-			if (isComment(completionContext) || isString(completionContext))
+				(char.IsLetterOrDigit (Editor.GetCharAt (completionContext.TriggerOffset - 2))
+				|| Editor.GetCharAt (completionContext.TriggerOffset - 2) == '_'))
 				return null;
 
-			if (isCommand(completionContext)) {
-				MonoDevelop.Ide.CodeCompletion.CompletionDataList list =
-					new CompletionDataList(CMakeCompletionDataLists.commands);
+			if (IsComment (completionContext) || IsString (completionContext))
+				return null;
+
+			if (IsCommand (completionContext)) {
+				var list = new CompletionDataList (CMakeCompletionDataLists.Commands);
 				list.TriggerWordLength = 1;
 
-				return Task.FromResult<ICompletionDataList>(list);
+				return Task.FromResult<ICompletionDataList> (list);
 			}
 			return null;
 		}
