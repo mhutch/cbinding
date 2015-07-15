@@ -11,8 +11,6 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AdjacentMD>..\..\monodevelop\main\build\bin</AdjacentMD>
     <MDBinDir Condition="Exists('$(AdjacentMD)')">$(AdjacentMD)</MDBinDir>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -264,6 +262,8 @@
     <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
     <Compile Include="Parser\OverloadCandidate.cs" />
     <Compile Include="Parser\CParsedDocument.cs" />
+    <Compile Include="Project\UnsavedFilesManager.cs" />
+    <Compile Include="Project\UnsavedFile.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

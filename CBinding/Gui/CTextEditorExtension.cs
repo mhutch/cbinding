@@ -293,10 +293,10 @@ namespace CBinding
 			if (ShouldCompleteOn(completionChar)) {
 				var project = (CProject)DocumentContext.Project;
 				unsavedFiles = new List<CXUnsavedFile> ();
-				foreach (Document openDocument in IdeApp.Workbench.Documents) {
-					if (openDocument.IsDirty) {
-						var unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
+				foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
+					if (unsaved.Value.IsDirty) {
+						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+						unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.IsBomPresentInFile (unsaved.Key));
 						unsavedFiles.Add (unsavedFile);
 					}
 				}
@@ -456,10 +456,10 @@ namespace CBinding
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<ParameterHintingResult> (null);
 			var unsavedFiles = new List<CXUnsavedFile> ();
-			foreach (Document openDocument in IdeApp.Workbench.Documents) {
-				if (openDocument.IsDirty) {
-					var unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
+			foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
+				if (unsaved.Value.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.IsBomPresentInFile (unsaved.Key));
 					unsavedFiles.Add (unsavedFile);
 				}
 			}
