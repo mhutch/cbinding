@@ -1,10 +1,10 @@
 //
-// Member.cs
+// LanguageItemEventArgs.cs
 //
 // Authors:
-//   Levi Bard <taktaktaktaktaktaktaktaktaktak@gmail.com>
+//   Marcos David Marin Amador <MarcosMarin@gmail.com>
 //
-// Copyright (C) 2008 Levi Bard
+// Copyright (C) 2007 Marcos David Marin Amador
 //
 //
 // This source code is licenced under The MIT License:
@@ -30,18 +30,23 @@
 //
 
 using System;
+using CBinding.Parser;
 
-using MonoDevelop.Projects;
-
-namespace CBinding.Parser
+namespace CBinding.Navigation
 {
-	/// <summary>
-	/// Class for local variables
-	/// </summary>
-	public class Local : Member
+	public delegate void SymbolEventHandler (object sender, SymbolEventArgs e);
+	
+	public class SymbolEventArgs : EventArgs
 	{
-		public Local (Tag tag, Project project, string ctags_output) : base (tag, project, ctags_output)
+		Symbol item;
+		
+		public SymbolEventArgs (Symbol item)
 		{
+			this.item = item;
+		}
+		
+		public Symbol Item {
+			get { return item; }
 		}
 	}
 }

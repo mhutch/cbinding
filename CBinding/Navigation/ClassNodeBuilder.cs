@@ -30,16 +30,10 @@
 //
 
 using System;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
- 
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
@@ -48,90 +42,71 @@ namespace CBinding.Navigation
 		public override Type NodeDataType {
 			get { return typeof(Class); }
 		}
-		
+
 		public override Type CommandHandlerType {
-			get { return typeof(LanguageItemCommandHandler); }
+			get { return typeof(SymbolCommandHandler); }
 		}
-		
+
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
 		{
-			return ((Class)dataObject).Name;
+			Class c = (Class)dataObject;
+			return c.IsDefinition
+				? 
+				c.Name
+				:
+				c.Name + " declaration";
 		}
-		
+
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Class c = (Class)dataObject;
 				
-			nodeInfo.Label = c.Name;
+			nodeInfo.Label = c.IsDefinition
+				? 
+				c.Name
+				:
+				c.Name + " declaration";
 			
-			switch (c.Access)
-			{
-			case AccessModifier.Public:
+			switch (c.Access) {
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
-			case AccessModifier.Protected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedClass);
 				break;
-			case AccessModifier.Private:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateClass);
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
 			}
 		}
-		
+
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
-			if (p == null) return;
+			if (p == null)
+				return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
+			ClangProjectSymbolDatabase info = p.DB;
 			
-			bool publicOnly = treeBuilder.Options["PublicApiOnly"];
+			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
 			Class thisClass = (Class)dataObject;
-			
-			// Classes
-			foreach (Class c in info.Classes)
-				if (c.Parent != null && c.Parent.Equals (thisClass) && (!publicOnly || c.Access == AccessModifier.Public))
-					treeBuilder.AddChild (c);
-			
-			// Structures
-			foreach (Structure s in info.Structures)
-				if (s.Parent != null && s.Parent.Equals (thisClass) && (!publicOnly || s.Access == AccessModifier.Public))
+
+			foreach (Symbol s in info.CanBeInClasses.Values)
+				if (s.Ours && s.Parent != null && s.Parent.Equals (thisClass) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
 					treeBuilder.AddChild (s);
-			
-			// Unions
-			foreach (Union u in info.Unions)
-				if (u.Parent != null && u.Parent.Equals (thisClass) && (!publicOnly || u.Access == AccessModifier.Public))
-					treeBuilder.AddChild (u);
-			
-			// Enumerations
-			foreach (Enumeration e in info.Enumerations)
-				if (e.Parent != null && e.Parent.Equals (thisClass) && (!publicOnly || e.Access == AccessModifier.Public))
-					treeBuilder.AddChild (e);
-			
-			// Typedefs
-			foreach (Typedef t in info.Typedefs)
-				if (t.Parent != null && t.Parent.Equals (thisClass) && (!publicOnly || t.Access == AccessModifier.Public))
-					treeBuilder.AddChild (t);
-			
-			// Functions
-			foreach (Function f in info.Functions)
-				if (f.Parent != null && f.Parent.Equals (thisClass) && (!publicOnly || f.Access == AccessModifier.Public))
-					treeBuilder.AddChild (f);
-			
-			// Members
-			foreach (Member m in info.Members)
-				if (m.Parent != null && m.Parent.Equals (thisClass) && (!publicOnly || m.Access == AccessModifier.Public))
-					treeBuilder.AddChild (m);
 		}
-		
+
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
 			return true;
 		}
-		
+
 		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
 		{
 			return -1;

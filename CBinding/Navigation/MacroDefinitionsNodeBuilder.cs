@@ -30,21 +30,18 @@
 //
 
 using System;
-
-using Mono.Addins;
-
+using CBinding.Parser;
 using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
-using MonoDevelop.Projects;
 using MonoDevelop.Ide.Gui.Components;
 
-using CBinding.Parser;
+using MonoDevelop.Projects;
+using ClangSharp;
 
 namespace CBinding.Navigation
 {
 	public class MacroDefinitions
 	{
-		private Project project;
+		Project project;
 		
 		public MacroDefinitions (Project project)
 		{
@@ -68,8 +65,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			nodeInfo.Label = "Macro Definitions";
 			nodeInfo.Icon = Context.GetIcon (Stock.OpenFolder);
@@ -78,14 +75,22 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
-			
-			foreach (Macro m in info.Macros)
-				treeBuilder.AddChild (m);
+			ClangProjectSymbolDatabase info = p.DB;
+
+			foreach (Macro m in info.Macros.Values) {
+				/*CXSourceLocation loc = clang.getCursorLocation (m.Represented);
+				CXFile file;
+				uint line, column, offset;
+				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
+				var fileName = clang.getFileName (file).ToString ();
+				if(p.IsFileInProject (fileName))*/
+				if(m.Ours)
+					treeBuilder.AddChild (m);
+			}
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

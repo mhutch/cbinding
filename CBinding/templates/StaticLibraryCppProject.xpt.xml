@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Template
 	originator   = "Marcos David Marin Amador" 
-    created      = "08/16/2007"
-    lastModified = "08/16/2007">
+	created	  = "08/16/2007"
+	lastModified = "08/16/2007">
 	
 	<!-- Template Header -->
 	<TemplateConfiguration>
@@ -20,13 +20,13 @@
 	<Combine name = "${ProjectName}" directory = ".">
 		<Project name = "${ProjectName}" directory = "." type = "C/C++">
 			<Options
-				Target = "StaticLibrary"
+				Target = "Library"
 				PauseConsoleOutput = "True"
 				CompilerArgs = ""
 				LinkerArgs = ""/>
 			
 			<Files>
-				<File name = "main.h" AddStandardHeader="True"><![CDATA[
+				<File name = "main.hpp" AddStandardHeader="True"><![CDATA[
 #ifndef __MAIN_H__
 #define __MAIN_H__
 

@@ -1,5 +1,5 @@
 //
-// Structure.cs
+// FunctionNodeBuilder.cs
 //
 // Authors:
 //   Marcos David Marin Amador <MarcosMarin@gmail.com>
@@ -29,20 +29,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
+using CBinding.Parser;
+using MonoDevelop.Ide;
+using MonoDevelop.Ide.Editor;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
-using MonoDevelop.Projects;
-
-namespace CBinding.Parser
+namespace CBinding.Navigation
 {
-	public class Structure : LanguageItem
+	public class SymbolCommandHandler : NodeCommandHandler
 	{
-		public Structure (Tag tag, Project project, string ctags_output) : base (tag, project)
+		public override void ActivateItem ()
 		{
-			if (GetNamespace (tag, ctags_output)) return;
-			if (GetClass (tag, ctags_output)) return;
-			if (GetStructure (tag, ctags_output)) return;
-			if (GetUnion (tag, ctags_output)) return;
+			Symbol item = (Symbol)CurrentNode.DataItem;
+			Document doc = IdeApp.Workbench.OpenDocument (item.FileName);
+			//bool isMacro = item is Macro;
+			
+			doc.Editor.CaretLocation = new DocumentLocation (item.Begin.Line, item.Begin.Column); // TODO: get column?
 		}
 	}
 }

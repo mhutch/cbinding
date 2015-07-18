@@ -30,22 +30,17 @@
 //
 
 using System;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
- 
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
+using MonoDevelop.Projects;
+using ClangSharp;
 
 namespace CBinding.Navigation
 {
 	public class Globals
 	{
-		private Project project;
+		Project project;
 		
 		public Globals (Project project)
 		{
@@ -69,8 +64,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			nodeInfo.Label = "Globals";
 			nodeInfo.Icon = Context.GetIcon (Stock.OpenFolder);
@@ -79,45 +74,22 @@ namespace CBinding.Navigation
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
+			ClangProjectSymbolDatabase info = p.DB;
 			
-			// Classes
-			foreach (Class c in info.Classes)
-				if (c.Parent == null)
-					treeBuilder.AddChild (c);
-			
-			// Structures
-			foreach (Structure s in info.Structures)
-				if (s.Parent == null)
-					treeBuilder.AddChild (s);
-			
-			// Unions
-			foreach (Union u in info.Unions)
-				if (u.Parent == null)
-					treeBuilder.AddChild (u);
-			
-			// Enumerations
-			foreach (Enumeration e in info.Enumerations)
-				if (e.Parent == null)
-					treeBuilder.AddChild (e);
-			
-			// Typedefs
-			foreach (Typedef t in info.Typedefs)
-				if (t.Parent == null)
-					treeBuilder.AddChild (t);
-			
-			// Functions
-			foreach (Function f in info.Functions)
-				if (f.Parent == null)
-					treeBuilder.AddChild (f);
-			
-			// Variables
-			foreach (Variable v in info.Variables)
-				treeBuilder.AddChild (v);
+			foreach (Symbol glob in info.Globals.Values) {
+				/*CXSourceLocation loc = clang.getCursorLocation (glob.Represented);
+				CXFile file;
+				uint line, column, offset;
+				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
+				var fileName = clang.getFileName (file).ToString ();
+				if(p.IsFileInProject (fileName))*/
+				if(glob.Ours)
+					treeBuilder.AddChild (glob);
+}		
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
@@ -127,7 +99,7 @@ namespace CBinding.Navigation
 		
 		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
 		{
-			if (otherNode.DataItem is Structure)
+			if (otherNode.DataItem is Struct)
 				return 1;
 			else
 				return -1;

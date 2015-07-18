@@ -134,12 +134,6 @@ namespace CBinding
 			PropertyService.Set ("CBinding.ParseSystemTags", parseSystemTagsCheck.Active);
 			PropertyService.Set ("CBinding.ParseLocalVariables", parseLocalVariablesCheck.Active);
 			PropertyService.SaveProperties ();
-			try {
-				// Flush cached system tags, which are ctags-version-specific
-				System.IO.Directory.Delete (Parser.CTagsManager.SystemTagsDirectory);
-				System.IO.Directory.CreateDirectory (Parser.CTagsManager.SystemTagsDirectory);
-			} catch {
-			}
 			return true;
 		}
 

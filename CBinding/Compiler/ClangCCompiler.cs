@@ -1,9 +1,9 @@
-//
-// LanguageItemEventArgs.cs
+﻿//
+// ClangCCompiler.cs: Provides functionality to compile using clang
 //
 // Authors:
 //   Marcos David Marin Amador <MarcosMarin@gmail.com>
-//
+//	 Guba Dániel Olivér <gudaol@gmx.com>
 // Copyright (C) 2007 Marcos David Marin Amador
 //
 //
@@ -29,25 +29,27 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 
-using CBinding.Parser;
+using Mono.Addins;
 
-namespace CBinding.Navigation
+
+namespace CBinding
 {
-	public delegate void LanguageItemEventHandler (object sender, LanguageItemEventArgs e);
-	
-	public class LanguageItemEventArgs : EventArgs
-	{
-		LanguageItem item;
-		
-		public LanguageItemEventArgs (LanguageItem item)
-		{
-			this.item = item;
+	[Extension ("/CBinding/Compilers")]
+	public class ClangCCompiler : GNUCompiler
+	{		
+		public override string Name {
+			get { return "clang"; }
 		}
-		
-		public LanguageItem Item {
-			get { return item; }
+
+		public override Language Language {
+			get { return Language.C; }
+		}
+
+		public ClangCCompiler ()
+		{
+			compilerCommand = "clang";
+			linkerCommand = "clang";
 		}
 	}
 }

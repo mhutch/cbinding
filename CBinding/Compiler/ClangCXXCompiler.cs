@@ -1,9 +1,9 @@
-//
-// DataProvider.cs
+﻿//
+// ClangCXXCompiler.cs: Provides functionality to compile using clang++
 //
 // Authors:
 //   Marcos David Marin Amador <MarcosMarin@gmail.com>
-//
+//	 Guba Dániel Olivér <gudaol@gmx.com>
 // Copyright (C) 2007 Marcos David Marin Amador
 //
 //
@@ -29,57 +29,27 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 
+using Mono.Addins;
 
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.CodeCompletion;
-
-using CBinding.Parser;
-using MonoDevelop.Core;
-using MonoDevelop.Ide.Editor;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace CBinding
 {
-	sealed class DataWrapper : ParameterHintingData
+	[Extension ("/CBinding/Compilers")]
+	public class ClangCXXCompiler : GNUCompiler
 	{
-		readonly Function f;
-
-		public Function Function {
-			get {
-				return f;
-			}
+		public override string Name {
+			get { return "clang++"; }
 		}
 
-		public DataWrapper (Function f) : base(null)
+		public override Language Language {
+			get { return Language.CPP; }
+		}
+
+		public ClangCXXCompiler ()
 		{
-			this.f = f;
-		}
-
-		public override int ParameterCount {
-			get {
-				return f.ParameterCount;
-			}
-		}
-
-		public override bool IsParameterListAllowed {
-			get {
-				return f.IsParameterListAllowed;
-			}
-		}
-
-		public override string GetParameterName (int parameter)
-		{
-			return f.GetParameterName (parameter);
-		}
-
-		public override Task<TooltipInformation> CreateTooltipInformation (TextEditor editor, DocumentContext ctx, int currentParameter, bool smartWrap, CancellationToken ctoken)
-		{
-			return Task.FromResult<TooltipInformation> (null);
+			compilerCommand = "clang++";
+			linkerCommand = "clang++";
 		}
 	}
 }

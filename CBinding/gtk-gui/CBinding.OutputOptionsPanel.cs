@@ -5,15 +5,25 @@ namespace CBinding
 	public partial class OutputOptionsPanel
 	{
 		private global::Gtk.VBox vbox2;
+		
 		private global::Gtk.Table table1;
+		
 		private global::Gtk.Label label1;
+		
 		private global::Gtk.Label label2;
+		
 		private global::Gtk.Label label3;
+		
 		private global::Gtk.Label label4;
+		
 		private global::MonoDevelop.Components.FolderEntry outputEntry;
+		
 		private global::Gtk.Entry outputNameTextEntry;
+		
 		private global::Gtk.Entry parametersTextEntry;
+		
 		private global::Gtk.CheckButton externalConsoleCheckbox;
+		
 		private global::Gtk.CheckButton pauseCheckbox;
 
 		protected virtual void Build ()
@@ -82,6 +92,7 @@ namespace CBinding
 			// Container child table1.Gtk.Table+TableChild
 			this.outputEntry = new global::MonoDevelop.Components.FolderEntry ();
 			this.outputEntry.Name = "outputEntry";
+			this.outputEntry.DisplayAsRelativePath = false;
 			this.table1.Add (this.outputEntry);
 			global::Gtk.Table.TableChild w5 = ((global::Gtk.Table.TableChild)(this.table1 [this.outputEntry]));
 			w5.TopAttach = ((uint)(2));

@@ -29,23 +29,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using CBinding.Parser;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.Gui.Components;
-using CBinding.Parser;
-using MonoDevelop.Ide;
-using MonoDevelop.Ide.Editor;
+using ClangSharp;
 
 namespace CBinding.Navigation
 {
-	public class LanguageItemCommandHandler : NodeCommandHandler
+	public class FieldNodeBuilder : TypeNodeBuilder
 	{
-		public override void ActivateItem ()
+		public override Type NodeDataType {
+			get { return typeof(Field); }
+		}
+		
+		public override Type CommandHandlerType {
+			get { return typeof(SymbolCommandHandler); }
+		}
+		
+		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
 		{
-			LanguageItem item = (LanguageItem)CurrentNode.DataItem;
-			Document doc = IdeApp.Workbench.OpenDocument (item.File);
-			//bool isMacro = item is Macro;
+			return ((Field)dataObject).Name;
+		}
+		
+		public override void BuildNode (ITreeBuilder treeBuilder,
+										object dataObject,
+										NodeInfo nodeInfo)
+		{
+			Field m = (Field)dataObject;
+				
+			nodeInfo.Label = m.Name;
 			
-			doc.Editor.CaretLocation = new DocumentLocation ((int)item.Line, 1); // TODO: get column?
+			switch (m.Access)
+			{
+			case CX_CXXAccessSpecifier.@Public:
+				nodeInfo.Icon = Context.GetIcon (Stock.Field);
+				break;
+			case CX_CXXAccessSpecifier.@Protected:
+				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedField);
+				break;
+			case CX_CXXAccessSpecifier.@Private:
+				nodeInfo.Icon = Context.GetIcon (Stock.PrivateField);
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon (Stock.Field);
+				break;
+			}
+		}
+		
+		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
+		{
+			return false;
+		}
+		
+		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
+		{
+			return 1;
 		}
 	}
 }

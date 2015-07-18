@@ -1,11 +1,12 @@
-// 
-//  DataProvider.cs
-//  
-//  Author:
-//       Levi Bard <taktaktaktaktaktaktaktaktaktak@gmail.com>
-// 
-//  Copyright (c) 2010 Levi Bard
-// 
+//
+// DataProvider.cs
+//
+// Authors:
+//   Marcos David Marin Amador <MarcosMarin@gmail.com>
+//
+// Copyright (C) 2007 Marcos David Marin Amador
+//
+//
 // This source code is licenced under The MIT License:
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -27,109 +28,177 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using System;
+
 using System.Collections.Generic;
-
-using MonoDevelop.Ide;
 using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Content;
-using MonoDevelop.Ide.CodeCompletion;
-using MonoDevelop.Components;
-
-using Gtk;
-using MonoDevelop.Ide.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem;
-using MonoDevelop.Ide.Editor;
+using MonoDevelop.Core;
+using ClangSharp;
 
 namespace CBinding.Parser
 {
-	// TODO: Roslyn port.
-//	// Yoinked from C# binding
-//	public class DataProvider : DropDownBoxListWindow.IListDataProvider
-//	{
-//		object tag;
-//		Ambience amb;
-//		List<IUnresolvedEntity> memberList = new List<IUnresolvedEntity> ();
-//
-//		TextEditor editor;
-//		
-//		DocumentContext DocumentContext {
-//			get;
-//			set;
-//		}
-//		
-//		public DataProvider (TextEditor editor, DocumentContext documentContext, object tag, Ambience amb)
-//		{
-//			this.editor = editor;
-//			this.DocumentContext = documentContext;
-//			this.tag = tag;
-//			this.amb = amb;
-//			Reset ();
-//		}
-//		
-//		#region IListDataProvider implementation
-//		public void Reset ()
-//		{
-//			memberList.Clear ();
-//			if (tag is IUnresolvedFile) {
-//				var types = new Stack<IUnresolvedTypeDefinition> (((IUnresolvedFile)tag).TopLevelTypeDefinitions);
-//				while (types.Count > 0) {
-//					var type = types.Pop ();
-//					memberList.Add (type);
-//					foreach (var innerType in type.NestedTypes)
-//						types.Push (innerType);
-//				}
-//			} else if (tag is IUnresolvedTypeDefinition) {
-//				memberList.AddRange (((IUnresolvedTypeDefinition)tag).Members);
-//			}
-//			memberList.Sort ((x, y) => String.Compare (GetString (amb, x), GetString (amb, y), StringComparison.OrdinalIgnoreCase));
-//		}
-//		
-//		string GetString (Ambience amb, IUnresolvedEntity x)
-//		{
-//			var ctx = new SimpleTypeResolveContext (DocumentContext.Compilation.MainAssembly);
-//			IEntity rx = null;
-//			if (x is IUnresolvedMember)
-//				rx = ((IUnresolvedMember)x).CreateResolved (ctx);
-//			
-//			if (tag is IUnresolvedFile)
-//				return amb.GetString (rx, OutputFlags.IncludeGenerics | OutputFlags.IncludeParameters | OutputFlags.UseFullInnerTypeName | OutputFlags.ReformatDelegates);
-//			return amb.GetString (rx, OutputFlags.IncludeGenerics | OutputFlags.IncludeParameters | OutputFlags.ReformatDelegates);
-//		}
-//		
-//		public string GetMarkup (int n)
-//		{
-//			var m = memberList[n];
-////			if (m.IsObsolete ())
-////				return "<s>" + GLib.Markup.EscapeText (GetString (amb, m)) + "</s>";
-//			return GLib.Markup.EscapeText (GetString (amb, m));
-//		}
-//		
-//		public Xwt.Drawing.Image GetIcon (int n)
-//		{
-//			return ImageService.GetIcon (memberList[n].GetStockIcon (), Gtk.IconSize.Menu);
-//		}
-//		
-//		public object GetTag (int n)
-//		{
-//			return memberList[n];
-//		}
-//		
-//		public void ActivateItem (int n)
-//		{
-//			var member = memberList[n];
-//			var extEditor = editor;
-//			if (extEditor != null) {
-//				extEditor.SetCaretLocation (Math.Max (1, member.Region.BeginLine), Math.Max (1, member.Region.BeginColumn), true);
-//			}
-//		}
-//		
-//		public int IconCount {
-//			get {
-//				return memberList.Count;
-//			}
-//		}
-//		#endregion
-//	}
-}
+	public class ParameterDataProvider : MonoDevelop.Ide.CodeCompletion.ParameterHintingResult
+	{
+		List<OverloadCandidate> ParameterInformation { get; }
 
+		public ParameterDataProvider (int startOffset, List<OverloadCandidate> parameterInformation) : base (startOffset)
+		{
+			ParameterInformation = parameterInformation;
+			foreach (var pi in ParameterInformation) {
+				data.Add (new DataWrapper (pi));
+			}
+		}
+	}
+	
+	public class CompletionData : MonoDevelop.Ide.CodeCompletion.CompletionData
+	{
+		IconId image;
+		string text;
+		string description;
+		string completionString;
+		
+		public CompletionData (CXCompletionResult item, string dataString){
+			switch (item.CursorKind) {
+			case CXCursorKind.ClassDecl:
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassCategory);
+				break;
+			case CXCursorKind.ClassTemplate:
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassTemplateCategory);
+				break;
+			case CXCursorKind.ClassTemplatePartialSpecialization:
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassTemplatePartialCategory);
+				break;
+			case CXCursorKind.StructDecl:
+				image = Stock.Struct;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.StructCategory);
+				break;
+			case CXCursorKind.UnionDecl:
+				image = "md-union";
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.UnionCategory);
+				break;
+			case CXCursorKind.EnumDecl:
+				image = Stock.Enum;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.EnumerationCategory);
+				break;
+			case CXCursorKind.EnumConstantDecl:
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.EnumeratorCategory);
+				break;
+			case CXCursorKind.FunctionDecl:
+				image = Stock.Method;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FunctionCategory);
+				break;
+			case CXCursorKind.FunctionTemplate:
+				image = Stock.Method;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FunctionTemplateCategory);
+				break;
+			case CXCursorKind.Namespace:
+				image = Stock.NameSpace;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.NamespaceCategory);
+				break;
+			case CXCursorKind.TypedefDecl:
+				image = Stock.Interface;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.TypedefCategory);
+				break;
+			case CXCursorKind.CXXMethod:
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.MethodCategory);
+				break;
+			case CXCursorKind.FieldDecl:
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.FieldCategory);
+				break;
+			case CXCursorKind.VarDecl:
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.VariablesCategory);
+				break;
+			case CXCursorKind.MacroDefinition:
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.MacroCategory);
+				break;
+			case CXCursorKind.ParmDecl:
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ParameterCategory);
+				break;
+			default:
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.OtherCategory);
+				break;
+			}
+			text = dataString;
+			completionString = dataString;
+			description = string.Empty;
+		}
+
+		public CompletionData (Symbol item)
+		{
+			if (item is Class) {
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassCategory);
+}			else if (item is ClassTemplate) {
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplateCategory);
+}			else if (item is ClassTemplatePartial) {
+				image = Stock.Class;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplatePartialCategory);
+}			else if (item is Struct) {
+				image = Stock.Struct;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.StructCategory);
+}			else if (item is Union) {
+				image = "md-union";
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.UnionCategory);
+}			else if (item is Enumeration) {
+				image = Stock.Enum;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumerationCategory);
+}			else if (item is Enumerator) {
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumeratorCategory);
+}			else if (item is Function || item is FunctionTemplate) {
+				image = Stock.Method;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FunctionTemplateCategory);
+}			else if (item is Namespace) {
+				image = Stock.NameSpace;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.NamespaceCategory);
+}			else if (item is Typedef) {
+				image = Stock.Interface;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.TypedefCategory);
+}			else if (item is MemberFunction) {
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MethodCategory);
+}			else if (item is Variable) {
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.VariablesCategory);
+}			else if (item is Field) {
+				image = Stock.Field;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FieldCategory);
+}			else if (item is Macro) {
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MacroCategory);
+}			else {
+				image = Stock.Literal;
+				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.OtherCategory);
+}			
+			text = item.Signature;
+			completionString = item.Signature;
+			description = string.Empty;
+		}
+		
+		public override IconId Icon {
+			get { return image; }
+		}
+		
+		public override string DisplayText {
+			get { return text; }
+		}
+		
+		public override string Description {
+			get { return description; }
+		}
+		
+		public override string CompletionText {
+			get { return completionString; }
+		}
+	}
+}

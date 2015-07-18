@@ -30,16 +30,13 @@
 //
 
 using System;
-using System.IO;
-
-using MonoDevelop.Projects;
-using MonoDevelop.Core.Execution;
-using MonoDevelop.Core;
-using MonoDevelop.Components.Commands;
-using MonoDevelop.Ide.Gui.Components;
 using CBinding;
 using CBinding.Parser;
-using MonoDevelop.Ide;
+using MonoDevelop.Components.Commands;
+using MonoDevelop.Ide.Gui.Components;
+using MonoDevelop.Projects;
+using MonoDevelop.Ide.TypeSystem;
+using ClangSharp;
 
 namespace CBinding.Navigation
 {
@@ -53,23 +50,26 @@ namespace CBinding.Navigation
 		public override Type CommandHandlerType {
 			get { return typeof(ProjectNodeBuilderExtensionHandler); }
 		}
-		
+
+		//this is unneeded?
+		/*
 		protected override void Initialize ()
 		{
-			TagDatabaseManager.Instance.FileUpdated += OnFinishedBuildingTree;
+			//TagDatabaseManager.Instance.FileUpdated += OnFinishedBuildingTree;
 		}
 		
 		public override void Dispose ()
 		{
-			TagDatabaseManager.Instance.FileUpdated -= OnFinishedBuildingTree;
+			//TagDatabaseManager.Instance.FileUpdated -= OnFinishedBuildingTree;
 		}
 		
 		public static void CreatePadTree (object o)
 		{
 			CProject p = o as CProject;
 			if (o == null) return;
-			
-			try {
+
+			//this happens in CDocumentParser.Parse
+			/*try {
 				foreach (ProjectFile f in p.Files) {
 					if (f.BuildAction == BuildAction.Compile)
 						TagDatabaseManager.Instance.UpdateFileTags (p, f.Name);
@@ -77,58 +77,41 @@ namespace CBinding.Navigation
 			} catch (IOException) {
 				return;
 			}
-		}
-		
-		private bool check_ctags = false;
-		private bool have_ctags = false;
-		
-		private void CheckForCtags ()
-		{
-			check_ctags = true;
-			have_ctags = TagDatabaseManager.Instance.DepsInstalled;
-		}
-		
-		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
-		{
-			if (!check_ctags)
-				CheckForCtags ();
-			
-			CProject p = dataObject as CProject;
-			
-			if (p == null)
-				return;
-			
-			if (!have_ctags) {
-				nodeInfo.Label = string.Format ("{0} <span foreground='red' size='small'>(CTags not installed)</span>", p.Name);
-			}
-		}
-
+		}*/
 		
 		public override void BuildChildNodes (ITreeBuilder builder, object dataObject)
 		{			
-			CProject p = dataObject as CProject;
+			CProject p = (CProject)dataObject;
 			
 			if (p == null) return;
 			
 			bool nestedNamespaces = builder.Options["NestedNamespaces"];
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
-			
+			ClangProjectSymbolDatabase info = p.DB;
+
 			// Namespaces
-			foreach (Namespace n in info.Namespaces) {
-				if (nestedNamespaces) {
-					if (n.Parent == null) {
+			foreach (Namespace n in info.Namespaces.Values) {
+				/*CXSourceLocation loc = clang.getCursorLocation (n.Represented);
+				CXFile file;
+				uint line, column, offset;
+				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
+				var fileName = clang.getFileName (file).ToString ();
+				if(p.IsFileInProject (fileName))*/
+				if(n.Ours){
+					if (nestedNamespaces) {
+						if (n.Parent == null) {
+							//if nested is enabled only add if top (Parent is null if the parentCursor is a translation unit)
+							builder.AddChild (n);
+						}
+					} else {
+						//else add every namespace
 						builder.AddChild (n);
 					}
-				} else {
-					builder.AddChild (n);
-				}
+				}			
 			}
 			
 			// Globals
-			builder.AddChild (info.Globals);
+			builder.AddChild (info.GlobalDefinitions);
 			
 			// Macro Definitions
 			builder.AddChild (info.MacroDefinitions);
@@ -139,7 +122,7 @@ namespace CBinding.Navigation
 			return true;
 		}
 		
-		private void OnFinishedBuildingTree (ClassPadEventArgs e)
+		void OnFinishedBuildingTree (ClassPadEventArgs e)
 		{
 			ITreeBuilder builder = Context.GetTreeBuilder (e.Project);
 			if (null != builder)
@@ -164,14 +147,12 @@ namespace CBinding.Navigation
 		[CommandHandler (CProjectCommands.UpdateClassPad)]
 		public void UpdateClassPad ()
 		{
-			CProject p = CurrentNode.DataItem as CProject;
-			
-			if (p == null) return;
-			
-			foreach (ProjectFile f in p.Files) {
-				if (f.BuildAction == BuildAction.Compile)
-					TagDatabaseManager.Instance.UpdateFileTags (p, f.Name);
-			}
+		}
+
+		public override void RefreshItem ()
+		{
+			//TODO need a nice method to sleep while parsing is in process to avoid crashes!
+			base.RefreshItem ();
 		}
 	}
 }

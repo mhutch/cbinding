@@ -30,16 +30,10 @@
 //
 
 using System;
-using System.IO;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
@@ -50,7 +44,7 @@ namespace CBinding.Navigation
 		}
 		
 		public override Type CommandHandlerType {
-			get { return typeof(LanguageItemCommandHandler); }
+			get { return typeof(SymbolCommandHandler); }
 		}
 		
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
@@ -59,8 +53,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Variable v = (Variable)dataObject;
 				
@@ -68,14 +62,17 @@ namespace CBinding.Navigation
 			
 			switch (v.Access)
 			{
-			case AccessModifier.Public:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Field);
 				break;
-			case AccessModifier.Protected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedField);
 				break;
-			case AccessModifier.Private:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateField);
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon (Stock.Field);
 				break;
 			}
 		}

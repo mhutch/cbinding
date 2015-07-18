@@ -30,64 +30,87 @@
 //
 
 using System;
-using System.IO;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
-	public class MemberNodeBuilder : TypeNodeBuilder
+	public class ClassTemplateNodeBuilder : TypeNodeBuilder
 	{
 		public override Type NodeDataType {
-			get { return typeof(Member); }
+			get { return typeof(ClassTemplate); }
 		}
-		
+
 		public override Type CommandHandlerType {
-			get { return typeof(LanguageItemCommandHandler); }
+			get { return typeof(SymbolCommandHandler); }
 		}
-		
+
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
 		{
-			return ((Member)dataObject).Name;
+			ClassTemplate c = (ClassTemplate)dataObject;
+			return c.IsDefinition
+				? 
+				c.Name
+					:
+				c.Name + " declaration";
 		}
-		
+
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
-			Member m = (Member)dataObject;
+			ClassTemplate c = (ClassTemplate)dataObject;
 				
-			nodeInfo.Label = m.Name;
+			nodeInfo.Label = c.IsDefinition
+				? 
+				c.Name
+				:
+				c.Name + " declaration";
 			
-			switch (m.Access)
-			{
-			case AccessModifier.Public:
-				nodeInfo.Icon = Context.GetIcon (Stock.Field);
+			switch (c.Access) {
+			case CX_CXXAccessSpecifier.@Public:
+				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
-			case AccessModifier.Protected:
-				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedField);
+			case CX_CXXAccessSpecifier.@Protected:
+				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedClass);
 				break;
-			case AccessModifier.Private:
-				nodeInfo.Icon = Context.GetIcon (Stock.PrivateField);
+			case CX_CXXAccessSpecifier.@Private:
+				nodeInfo.Icon = Context.GetIcon (Stock.PrivateClass);
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon (Stock.Class);
 				break;
 			}
 		}
-		
+
+		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
+		{
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
+			
+			if (p == null)
+				return;
+			
+			ClangProjectSymbolDatabase info = p.DB;
+			
+			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
+			ClassTemplate thisClass = (ClassTemplate)dataObject;
+			
+			foreach (Symbol s in info.CanBeInClasses.Values)
+				if (s.Ours && s.Parent != null && s.Parent.Equals (thisClass) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
+					treeBuilder.AddChild (s);
+			
+		}
+
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
-			return false;
+			return true;
 		}
-		
+
 		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
 		{
-			return 1;
+			return -1;
 		}
 	}
 }

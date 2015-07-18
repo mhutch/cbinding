@@ -30,16 +30,10 @@
 //
 
 using System;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
- 
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using ClangSharp;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
@@ -50,7 +44,7 @@ namespace CBinding.Navigation
 		}
 		
 		public override Type CommandHandlerType {
-			get { return typeof(LanguageItemCommandHandler); }
+			get { return typeof(SymbolCommandHandler); }
 		}
 		
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
@@ -59,8 +53,8 @@ namespace CBinding.Navigation
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Enumeration e = (Enumeration)dataObject;
 				
@@ -68,31 +62,34 @@ namespace CBinding.Navigation
 			
 			switch (e.Access)
 			{
-			case AccessModifier.Public:
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon (Stock.Enum);
 				break;
-			case AccessModifier.Protected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon (Stock.ProtectedEnum);
 				break;
-			case AccessModifier.Private:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon (Stock.PrivateEnum);
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon (Stock.Enum);
 				break;
 			}
 		}
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			Enumeration thisEnumeration = (Enumeration)dataObject;
 			
 			// Enumerators
-			foreach (Enumerator e in info.Enumerators)
-				if (e.Parent != null && e.Parent.Equals (thisEnumeration))
+			foreach (Enumerator e in info.Enumerators.Values)
+				if (e. Ours && e.Parent != null && e.Parent.Equals (thisEnumeration))
 					treeBuilder.AddChild (e);
 		}
 		
@@ -103,7 +100,7 @@ namespace CBinding.Navigation
 		
 		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
 		{
-			if (otherNode.DataItem is Structure)
+			if (otherNode.DataItem is Struct)
 				return 1;
 			else
 				return -1;

@@ -30,7 +30,6 @@
 //
 
 using System;
-
 using MonoDevelop.Projects;
 
 namespace CBinding.Navigation
@@ -39,13 +38,13 @@ namespace CBinding.Navigation
 	
 	public class ClassPadEventArgs : EventArgs
 	{
-		private Project project;
-		
+		Project project;
+
 		public ClassPadEventArgs (Project project)
 		{
 			this.project = project;
 		}
-		
+
 		public Project Project {
 			get { return project; }
 		}

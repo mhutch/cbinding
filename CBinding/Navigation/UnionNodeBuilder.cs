@@ -30,17 +30,9 @@
 //
 
 using System;
-using System.IO;
-using System.Reflection;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using ClangSharp;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
@@ -49,92 +41,74 @@ namespace CBinding.Navigation
 		public override Type NodeDataType {
 			get { return typeof(Union); }
 		}
-		
+
 		public override Type CommandHandlerType {
-			get { return typeof(LanguageItemCommandHandler); }
+			get { return typeof(SymbolCommandHandler); }
 		}
-		
+
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
 		{
-			return ((Union)dataObject).Name;
+			Union u = (Union)dataObject;
+			return u.IsDefinition
+				? 
+				u.Name
+					:
+				u.Name + " declaration";
 		}
-		
+
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
 			Union u = (Union)dataObject;
 				
-			nodeInfo.Label = u.Name;
+			nodeInfo.Label = u.IsDefinition
+				? 
+				u.Name
+				:
+				u.Name + " declaration";
 			
-			switch (u.Access)
-			{
-			case AccessModifier.Public:
+			switch (u.Access) {
+			case CX_CXXAccessSpecifier.@Public:
 				nodeInfo.Icon = Context.GetIcon ("md-union");
 				break;
-			case AccessModifier.Protected:
+			case CX_CXXAccessSpecifier.@Protected:
 				nodeInfo.Icon = Context.GetIcon ("md-protected-union");
 				break;
-			case AccessModifier.Private:
+			case CX_CXXAccessSpecifier.@Private:
 				nodeInfo.Icon = Context.GetIcon ("md-private-union");
+				break;
+			case CX_CXXAccessSpecifier.@InvalidAccessSpecifier:
+				nodeInfo.Icon = Context.GetIcon ("md-union");
 				break;
 			}
 		}
-		
+
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
-			if (p == null) return;
+			if (p == null)
+				return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
+			ClangProjectSymbolDatabase info = p.DB;
 			
+			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
 			Union thisUnion = (Union)dataObject;
-			
-			// Classes
-			foreach (Class c in info.Classes)
-				if (c.Parent != null && c.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (c);
-			
-			// Structures
-			foreach (Structure s in info.Structures)
-				if (s.Parent != null && s.Parent.Equals (thisUnion))
+
+			foreach (Symbol s in info.CanBeInClasses.Values)
+				if (s.Ours && s.Parent != null && s.Parent.Equals (thisUnion) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
 					treeBuilder.AddChild (s);
-			
-			// Unions
-			foreach (Union u in info.Unions)
-				if (u.Parent != null && u.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (u);
-			
-			// Enumerations
-			foreach (Enumeration e in info.Enumerations)
-				if (e.Parent != null && e.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (e);
-			
-			// Typedefs
-			foreach (Typedef t in info.Typedefs)
-				if (t.Parent != null && t.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (t);
-			
-			// Functions
-			foreach (Function f in info.Functions)
-				if (f.Parent != null && f.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (f);
-			
-			// Members
-			foreach (Member m in info.Members)
-				if (m.Parent != null && m.Parent.Equals (thisUnion))
-					treeBuilder.AddChild (m);
 		}
-		
+
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
 			return true;
 		}
-		
+
 		public override int CompareObjects (ITreeNavigator thisNode, ITreeNavigator otherNode)
 		{
-			if (otherNode.DataItem is Structure)
+			if (otherNode.DataItem is Struct)
 				return 1;
 			else
 				return -1;

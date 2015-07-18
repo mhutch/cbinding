@@ -95,6 +95,7 @@
   <Import Project="..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.2.3\build\net40\MonoDevelop.Addins.targets')" />
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="libclang37.so" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
@@ -106,57 +107,50 @@
     <Folder Include="Navigation\" />
     <Folder Include="Gui\" />
     <Folder Include="ProjectPad\" />
+    <Folder Include="Refactoring\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Mono.Posix" />
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="glib-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>glib-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="gtk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="atk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Package>gtk-sharp-2.0</Package>
+    </Reference>
     <Reference Include="System.Collections.Immutable">
-      <HintPath>..\packages\System.Collections.Immutable.1.1.33-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.Reflection.Metadata">
-      <HintPath>..\packages\System.Reflection.Metadata.1.0.18-beta\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CodeAnalysis.Desktop">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.Desktop.dll</HintPath>
+      <HintPath>..\packages\System.Reflection.Metadata.1.0.21\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp.Desktop">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.CSharp.Desktop.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Composition.AttributedModel">
-      <HintPath>..\packages\Microsoft.Composition.1.0.27\lib\portable-net45+win8+wp8+wpa81\System.Composition.AttributedModel.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Composition.Convention">
-      <HintPath>..\packages\Microsoft.Composition.1.0.27\lib\portable-net45+win8+wp8+wpa81\System.Composition.Convention.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Composition.Hosting">
-      <HintPath>..\packages\Microsoft.Composition.1.0.27\lib\portable-net45+win8+wp8+wpa81\System.Composition.Hosting.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Composition.Runtime">
-      <HintPath>..\packages\Microsoft.Composition.1.0.27\lib\portable-net45+win8+wp8+wpa81\System.Composition.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Composition.TypedParts">
-      <HintPath>..\packages\Microsoft.Composition.1.0.27\lib\portable-net45+win8+wp8+wpa81\System.Composition.TypedParts.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Workspaces.Desktop">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.Workspaces.Desktop.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.Workspaces">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.Workspaces.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.Workspaces.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp.Workspaces.Desktop">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.Workspaces.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.CSharp.Workspaces.Desktop.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.Workspaces.Desktop">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.Workspaces.Desktop.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp.Workspaces">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.Workspaces.1.0.0-rc2\lib\net45\Microsoft.CodeAnalysis.CSharp.Workspaces.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.Workspaces.dll</HintPath>
     </Reference>
-    <Reference Include="ICSharpCode.NRefactory6.CSharp">
-      <HintPath>..\packages\ICSharpCode.NRefactory.6.0.0-beta1\lib\Net45\ICSharpCode.NRefactory6.CSharp.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.VisualBasic">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -179,63 +173,80 @@
     <Compile Include="Project\ProjectPackageEventArgs.cs" />
     <Compile Include="Gui\OutputOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.OutputOptionsPanel.cs" />
-    <Compile Include="Navigation\ProjectNodeBuilderExtension.cs" />
-    <Compile Include="Navigation\NamespaceNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectReferencesExtension.cs" />
     <Compile Include="ProjectPad\ProjectPackagesFolderNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
-    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
-    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
-    <Compile Include="Navigation\ClassNodeBuilder.cs" />
-    <Compile Include="Navigation\LanguageItemCommandHandler.cs" />
-    <Compile Include="Navigation\StructureNodeBuilder.cs" />
-    <Compile Include="Navigation\MemberNodeBuilder.cs" />
-    <Compile Include="Navigation\VariableNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
-    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
-    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
-    <Compile Include="Navigation\UnionNodeBuilder.cs" />
-    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
-    <Compile Include="Navigation\LanguageItemEventArgs.cs" />
-    <Compile Include="Navigation\ClassPadEventArgs.cs" />
-    <Compile Include="Parser\ProjectInformation.cs" />
-    <Compile Include="Parser\ProjectInformationManager.cs" />
-    <Compile Include="Parser\TagDatabaseManager.cs" />
-    <Compile Include="Parser\Tag.cs" />
     <Compile Include="Gui\CTextEditorExtension.cs" />
-    <Compile Include="Gui\DataProvider.cs" />
-    <Compile Include="Parser\Class.cs" />
-    <Compile Include="Parser\Enumeration.cs" />
-    <Compile Include="Parser\Enumerator.cs" />
-    <Compile Include="Parser\Function.cs" />
-    <Compile Include="Parser\LanguageItem.cs" />
-    <Compile Include="Parser\Macro.cs" />
-    <Compile Include="Parser\Member.cs" />
-    <Compile Include="Parser\Namespace.cs" />
-    <Compile Include="Parser\Structure.cs" />
-    <Compile Include="Parser\Typedef.cs" />
-    <Compile Include="Parser\Union.cs" />
-    <Compile Include="Parser\Variable.cs" />
     <Compile Include="Gui\GeneralOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.GeneralOptionsPanel.cs" />
-    <Compile Include="Parser\Local.cs" />
     <Compile Include="Gui\PackageDetails.cs" />
     <Compile Include="gtk-gui\CBinding.PackageDetails.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Parser\CDocumentParser.cs" />
-    <Compile Include="Parser\CompilationUnitDataProvider.cs" />
-    <Compile Include="Parser\DataProvider.cs" />
-    <Compile Include="Parser\CTagsManager.cs" />
-    <Compile Include="Parser\ExuberantCTagsManager.cs" />
-    <Compile Include="Parser\BsdCTagsManager.cs" />
     <Compile Include="Properties\AddinInfo.cs" />
-    <Compile Include="Gui\DataWrapper.cs" />
+    <Compile Include="CLang\CLangManager.cs" />
+    <Compile Include="Compiler\ClangCCompiler.cs" />
+    <Compile Include="Compiler\ClangCXXCompiler.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Generated.cs" />
+    <Compile Include="Parser\ClangCompletionUnit.cs" />
+    <Compile Include="Parser\ClangCompletionCategory.cs" />
+    <Compile Include="Parser\Symbol.cs" />
+    <Compile Include="Parser\Function.cs" />
+    <Compile Include="Parser\MemberFunction.cs" />
+    <Compile Include="Parser\FunctionTemplate.cs" />
+    <Compile Include="Parser\Class.cs" />
+    <Compile Include="Parser\Namespace.cs" />
+    <Compile Include="Parser\Struct.cs" />
+    <Compile Include="Parser\Enumeration.cs" />
+    <Compile Include="Parser\Enumerator.cs" />
+    <Compile Include="Parser\Union.cs" />
+    <Compile Include="Parser\Typedef.cs" />
+    <Compile Include="Parser\Variable.cs" />
+    <Compile Include="Parser\Macro.cs" />
+    <Compile Include="Parser\TranslationUnitParser.cs" />
+    <Compile Include="Parser\ClangFileSymbolDatabase.cs" />
+    <Compile Include="Parser\ClangProjectSymbolDatabase.cs" />
+    <Compile Include="Parser\ClassTemplate.cs" />
+    <Compile Include="Parser\Field.cs" />
+    <Compile Include="Parser\ClassTemplatePartial.cs" />
+    <Compile Include="Parser\SourceLocation.cs" />
+    <Compile Include="Refactoring\Reference.cs" />
+    <Compile Include="Refactoring\FindReferencesHandler.cs" />
+    <Compile Include="Refactoring\FindDerivedSymbolsHandler.cs" />
+    <Compile Include="Parser\DataProvider.cs" />
+    <Compile Include="Parser\DataWrapper.cs" />
+    <Compile Include="Refactoring\GotoDefinitionHandler.cs" />
+    <Compile Include="Refactoring\RefactoryCommands.cs" />
+    <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
+    <Compile Include="Parser\CDocumentParser.cs" />
+    <Compile Include="Gui\RenameHandlerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.RenameHandlerDialog.cs" />
+    <Compile Include="Navigation\ClassPadEventArgs.cs" />
+    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
+    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
+    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
+    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroNodeBuilder.cs" />
+    <Compile Include="Navigation\NamespaceNodeBuilder.cs" />
+    <Compile Include="Navigation\ProjectNodeBuilderExtension.cs" />
+    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
+    <Compile Include="Navigation\UnionNodeBuilder.cs" />
+    <Compile Include="Navigation\VariableNodeBuilder.cs" />
+    <Compile Include="Navigation\SymbolEventArgs.cs" />
+    <Compile Include="Navigation\SymbolCommandHandler.cs" />
+    <Compile Include="Navigation\StructNodeBuilder.cs" />
+    <Compile Include="Navigation\FieldNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassTemplateNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
+    <Compile Include="Navigation\MemberFunctionNodeBuilder.cs" />
+    <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
+    <Compile Include="Parser\OverloadCandidate.cs" />
+    <Compile Include="Parser\CParsedDocument.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AddinReference Include="MonoDevelop.Deployment" />
-    <AddinReference Include="MonoDevelop.Deployment.Linux" />
     <AddinReference Include="MonoDevelop.Refactoring" />
     <AddinReference Include="MonoDevelop.DesignerSupport" />
     <AddinReference Include="MonoDevelop.Xml" />

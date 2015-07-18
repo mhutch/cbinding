@@ -30,15 +30,9 @@
 //
 
 using System;
-
-using Mono.Addins;
-
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Pads;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.Gui.Components;
-
 using CBinding.Parser;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Components;
 
 namespace CBinding.Navigation
 {
@@ -49,74 +43,47 @@ namespace CBinding.Navigation
 		}
 		
 		public override Type CommandHandlerType {
-			get { return typeof (LanguageItemCommandHandler); }
+			get { return typeof (SymbolCommandHandler); }
 		}
 		
 		public override string GetNodeName (ITreeNavigator thisNode, object dataObject)
 		{
-			if (thisNode.Options["NestedNamespaces"])
-				return ((Namespace)dataObject).Name;
-			else
-				return ((Namespace)dataObject).FullName;
+			if (!thisNode.Options ["NestedNamespaces"] && ((Namespace)dataObject).Parent != null)
+				return ((Namespace)dataObject).ParentCursor.ToString () + "::" + ((Namespace)dataObject).Name;
+			return ((Namespace)dataObject).Name;
 		}
 		
 		public override void BuildNode (ITreeBuilder treeBuilder,
-		                                object dataObject,
-		                                NodeInfo nodeInfo)
+										object dataObject,
+										NodeInfo nodeInfo)
 		{
-			if (treeBuilder.Options["NestedNamespaces"])
-				nodeInfo.Label = ((Namespace)dataObject).Name;
+			if (!treeBuilder.Options["NestedNamespaces"] && ((Namespace)dataObject).Parent != null)
+				nodeInfo.Label = ((Namespace)dataObject).ParentCursor.ToString () + "::" + ((Namespace)dataObject).Name;
 			else
-				nodeInfo.Label = ((Namespace)dataObject).FullName;
-			
+				nodeInfo.Label = ((Namespace)dataObject).Name;			
 			nodeInfo.Icon = Context.GetIcon (Stock.NameSpace);
 		}
 		
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			CProject p = treeBuilder.GetParentDataItem (typeof(CProject), false) as CProject;
+			CProject p = (CProject)treeBuilder.GetParentDataItem (typeof(CProject), false);
 			
 			if (p == null) return;
 			
-			ProjectInformation info = ProjectInformationManager.Instance.Get (p);
+			ClangProjectSymbolDatabase info = p.DB;
 			
 			Namespace thisNamespace = ((Namespace)dataObject);
 			
 			// Namespaces
 			if (treeBuilder.Options["NestedNamespaces"])
-				foreach (Namespace n in info.Namespaces)
+				foreach (Namespace n in info.Namespaces.Values)
 					if (n.Parent != null && n.Parent.Equals (thisNamespace))
 						treeBuilder.AddChild (n);
 			
-			// Classes
-			foreach (Class c in info.Classes)
-				if (c.Parent != null && c.Parent.Equals (thisNamespace))
+			foreach(Symbol c in info.CanBeInNamespaces.Values)
+				if (c.Ours && c.Parent != null && c.Parent.Equals (thisNamespace))
 					treeBuilder.AddChild (c);
-			
-			// Structures
-			foreach (Structure s in info.Structures)
-				if (s.Parent != null && s.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (s);
-			
-			// Unions
-			foreach (Union u in info.Unions)
-				if (u.Parent != null && u.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (u);
-			
-			// Enumerations
-			foreach (Enumeration e in info.Enumerations)
-				if (e.Parent != null && e.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (e);
-			
-			// Typedefs
-			foreach (Typedef t in info.Typedefs)
-				if (t.Parent != null && t.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (t);
-			
-			// Functions
-			foreach (Function f in info.Functions)
-				if (f.Parent != null && f.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (f);
+
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

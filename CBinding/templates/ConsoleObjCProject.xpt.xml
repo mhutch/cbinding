@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Template
 	originator   = "Levi Bard" 
-    created      = "07/30/2010"
-    lastModified = "07/30/2010">
+	created	  = "07/30/2010"
+	lastModified = "07/30/2010">
 	
 	<!-- Template Header -->
 	<TemplateConfiguration>
@@ -20,7 +20,7 @@
 	<Combine name = "${ProjectName}" directory = ".">
 		<Project name = "${ProjectName}" directory = "." type = "C/C++">
 			<Options
-				Target = "Bin"
+				Target = "Exe"
 				ExternalConsole = "True"
 				CompilerArgs = ""
 				LinkerArgs = ""/>
