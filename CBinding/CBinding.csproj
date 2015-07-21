@@ -188,6 +188,8 @@
     <Compile Include="ProjectPad\ProjectPackagesFolderNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
+	<Compile Include="ProjectPad\SolutionItemNodeBuilder.cs" />
+	<Compile Include="ProjectPad\CMakeTargetNodeBuilder.cs" />
     <Compile Include="Navigation\FunctionNodeBuilder.cs" />
     <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
     <Compile Include="Navigation\ClassNodeBuilder.cs" />
