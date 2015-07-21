@@ -190,7 +190,6 @@ namespace CBinding
 		{
 			this.file = file;
 			CMakeFileFormat fileFormat = new CMakeFileFormat (file, this);
-			fileFormat.Parse ();
 			name = fileFormat.ProjectName;
 			this.fileFormat = fileFormat;
 		}

@@ -72,12 +72,12 @@ namespace CBinding
 		Dictionary<FilePath, CMakeFileFormat> children = new Dictionary<FilePath, CMakeFileFormat> ();
 
 		Dictionary<string, CMakeCommand> allCommands = new Dictionary<string, CMakeCommand> ();
-		Stack<string> blocks = new Stack<string> ();
+		Stack<CMakeCommand> blocks = new Stack<CMakeCommand> ();
 		TextFile contentFile;
 
 		//[A-Za-z_][A-Za-z0-9_]*	: ID
 		//\[=[0-9]*\[.*?\]=[0-9]*\]	: bracket argument.
-		static readonly string commandPattern = @"[A-Za-z_][A-Za-z0-9_]*\s*\((\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|.)*?\)";
+		static readonly string commandPattern = @"[A-Za-z_][A-Za-z0-9_]*\s*\((\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|\(.*?\)|.)*?\)";
 		static readonly string blockCommentPattern = @"#\[\[.*?\]\]";
 		static readonly string lineCommentPattern = @"#.*?\n";
 		static readonly string filePartPattern = string.Format ("{0}|{1}|{2}", commandPattern,
@@ -122,27 +122,30 @@ namespace CBinding
 
 			switch (command.Name.ToLower ()) {
 			case "if":
-				blocks.Push ("if");
+				blocks.Push (command);
 				break;
 			case "elseif":
 				blocks.Pop ();
-				blocks.Push ("elseif");
+				blocks.Push (command);
 				break;
 			case "else":
 				blocks.Pop ();
-				blocks.Push ("else");
+				blocks.Push (command);
 				break;
 			case "endif":
 				blocks.Pop ();
 				break;
 			case "while":
-				blocks.Push ("while");
+				blocks.Push (command);
 				break;
 			case "endwhile":
 				blocks.Pop ();
 				break;
 			case "foreach":
-				blocks.Push ("foreach");
+				blocks.Push (command);
+				break;
+			case "endforeach":
+				blocks.Pop ();
 				break;
 			case "project":
 				projectName = command.Arguments [0].ToString ();
@@ -161,14 +164,17 @@ namespace CBinding
 				}
 				break;
 			case "add_subdirectory":
+				var temp = new FilePath (command.Arguments [0].ToString ());
+				var fullPath = file.ParentDirectory.Combine (temp).Combine ("CMakeLists.txt");
+
+				if (!System.IO.File.Exists (fullPath)) break;
+
 				if (Parent == null) {
-					var temp = new FilePath (command.Arguments [0].ToString ());
 					if (!Children.ContainsKey (temp))
-						Children.Add (temp, new CMakeFileFormat (temp, Project, this));
+						Children.Add (temp, new CMakeFileFormat (fullPath, Project, this));
 				} else {
-					var temp = new FilePath (command.Arguments [0].ToString ());
 					if (!Parent.Children.ContainsKey (temp))
-						Children.Add (temp, new CMakeFileFormat (temp, Project, Parent));
+						Children.Add (temp, new CMakeFileFormat (fullPath, Project, Parent));
 				}
 				break;
 			}
@@ -189,11 +195,23 @@ namespace CBinding
 
 			contentFile = new TextFile (file);
 			foreach (Match m in ReadNextCommand ()) {
-				ParseCommand (m);
+				try {
+					ParseCommand (m);
+				} catch (Exception ex) {
+					throw new Exception (string.Format ("Exception: {0}\nFile: {1}", ex.Message, file));
+				}
+
 			}
 
-			if (blocks.Count > 0)
-				throw new Exception ("Unmatched block command (if, while or foreach).");
+			foreach (CMakeFileFormat f in Children.Values)
+				targets = targets.Concat (f.Targets).ToDictionary (x => x.Key, x => x.Value);
+
+			if (blocks.Count > 0) {
+				CMakeCommand c = blocks.Pop ();
+				throw new Exception (string.Format ("Unmatched block command '{0}' in file '{1}' offset '{2}'.", c.Name, file, c.Offset));
+			}
+
+			LoggingService.LogDebug ("CMake file '{0}' is Loaded.", file);
 		}
 
 		public void NewTarget (string name, CMakeTarget.Types type)
@@ -304,6 +322,7 @@ namespace CBinding
 		{
 			this.file = file;
 			this.project = project;
+			Parse ();
 		}
 
 		public CMakeFileFormat (FilePath file, CMakeProject project, CMakeFileFormat parent)
@@ -311,6 +330,7 @@ namespace CBinding
 			this.file = file;
 			this.project = project;
 			this.parent = parent;
+			Parse ();
 		}
 	}
 }

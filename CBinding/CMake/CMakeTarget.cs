@@ -135,6 +135,9 @@ namespace CBinding
 				case "module":
 					type = Types.Module;
 					return;
+				case "object":
+					type = Types.ObjectLibrary;
+					return;
 				case "unknown":
 					type = Types.Unknown;
 					return;
