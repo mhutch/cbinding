@@ -306,8 +306,8 @@ namespace CBinding
 					var operatorFilter = new Regex (operatorPattern, RegexOptions.Compiled);
 					bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
 					IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
+					if (pResults.ToInt64 () != 0) {
 					CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);
-					if (results.Results.ToInt64 () != 0) {
 						for (int i = 0; i < results.NumResults; i++) {
 							IntPtr iteratingPointer = results.Results + i * Marshal.SizeOf<CXCompletionResult> ();
 							CXCompletionResult resultItem = Marshal.PtrToStructure<CXCompletionResult> (iteratingPointer);
