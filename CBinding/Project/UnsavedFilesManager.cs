@@ -2,7 +2,7 @@
 using MonoDevelop.Ide;
 using MonoDevelop.Core.Text;
 using MonoDevelop.Ide.Gui;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace CBinding
 {
@@ -11,21 +11,21 @@ namespace CBinding
 	{
 		Document current;
 		CProject Project { get; }
-		public Dictionary<string, UnsavedFile> UnsavedFileCollection { get; }
+		public ConcurrentDictionary<string, UnsavedFile> UnsavedFileCollection { get; }
 
 		public UnsavedFilesManager (CProject proj)
 		{
 			Project = proj;
 			IdeApp.Workbench.ActiveDocumentChanged += HandleChange;
 			IdeApp.Workbench.DocumentOpened += HandleOpen;
-			UnsavedFileCollection = new Dictionary<string, UnsavedFile> ();
+			UnsavedFileCollection = new ConcurrentDictionary<string, UnsavedFile> ();
 		}
 
 		void HandleOpen (object sender, DocumentEventArgs e)
 		{
 			e.Document.Saved += HandleSave;
 			e.Document.Closed += HandleClose;
-			UnsavedFileCollection.Add (e.Document.Name, new UnsavedFile (false, e.Document.Editor.Text));
+			UnsavedFileCollection.TryAdd (e.Document.Name, new UnsavedFile (false, e.Document.Editor.Text));
 		}
 
 		void HandleChange (object sender, EventArgs e)
@@ -43,16 +43,17 @@ namespace CBinding
 
 		void HandleSave (object sender, EventArgs e)
 		{
-			var realSender = (Document) sender;
-			UnsavedFileCollection [realSender.Name].IsDirty = false;
+			var document = (Document) sender;
+			UnsavedFileCollection [document.Name].IsDirty = false;
 		}
 
 		void HandleClose (object sender, EventArgs e)
 		{
-			var realSender = (Document) sender;
-			realSender.Closed -= HandleClose;
-			realSender.Saved -= HandleSave;
-			UnsavedFileCollection.Remove (realSender.Name);
+			var document = (Document) sender;
+			document.Closed -= HandleClose;
+			document.Saved -= HandleSave;
+			UnsavedFile dummy = null;
+			UnsavedFileCollection.TryRemove (document.Name, out dummy);
 		}
 
 		void HandleTextChange (object sender, TextChangeEventArgs e)
