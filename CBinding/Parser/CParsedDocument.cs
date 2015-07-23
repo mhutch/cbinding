@@ -51,10 +51,10 @@ namespace CBinding.Parser
 		public CParsedDocument(CProject proj, string fileName) : base(fileName)
 		{
 			Initialize (proj);
-			foreach (Document openDocument in MonoDevelop.Ide.IdeApp.Workbench.Documents) {
-				if (openDocument.IsDirty) {
+			foreach (var unsaved in Project.UnsavedFiles.UnsavedFileCollection) {
+				if (unsaved.Value.IsDirty) {
 					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (openDocument.FileName, openDocument.Editor.Text, Project.IsBomPresentInFile (openDocument.FileName));
+					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, Project.IsBomPresentInFile (unsaved.Key));
 					unsavedFiles.Add (unsavedFile);
 				}
 			}

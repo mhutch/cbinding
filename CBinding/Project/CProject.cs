@@ -78,6 +78,8 @@ namespace CBinding
 
 		public ClangProjectSymbolDatabase DB { get; private set; }
 
+		public UnsavedFilesManager UnsavedFiles { get; private set; }
+
 		ProjectPackageCollection packages = new ProjectPackageCollection ();
 		
 		public event ProjectPackageEventHandler PackageAddedToProject;
@@ -118,6 +120,7 @@ namespace CBinding
 			packages.Project = this;
 			ClangManager = new CLangManager (this);
 			DB = new ClangProjectSymbolDatabase (this);
+			UnsavedFiles = new UnsavedFilesManager (this);
 		}
 
 		/// <summary>

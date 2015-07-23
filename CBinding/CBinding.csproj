@@ -11,8 +11,6 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AdjacentMD>..\..\monodevelop\main\build\bin</AdjacentMD>
     <MDBinDir Condition="Exists('$(AdjacentMD)')">$(AdjacentMD)</MDBinDir>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -114,50 +112,6 @@
   <ItemGroup>
     <Reference Include="Mono.Posix" />
     <Reference Include="System" />
-    <Reference Include="ICSharpCode.NRefactory.CSharp">
-      <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory.CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory">
-      <HintPath>..\..\monodevelop\main\build\bin\ICSharpCode.NRefactory.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\..\monodevelop\main\build\bin\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Addins">
-      <HintPath>..\..\monodevelop\main\build\bin\Mono.Addins.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.TextEditor">
-      <HintPath>..\..\monodevelop\main\build\bin\Mono.TextEditor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.Core">
-      <HintPath>..\..\monodevelop\main\build\bin\MonoDevelop.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.DesignerSupport">
-      <HintPath>..\..\monodevelop\main\build\AddIns\MonoDevelop.DesignerSupport\MonoDevelop.DesignerSupport.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.Ide">
-      <HintPath>..\..\monodevelop\main\build\bin\MonoDevelop.Ide.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.Refactoring">
-      <HintPath>..\..\monodevelop\main\build\AddIns\MonoDevelop.Refactoring\MonoDevelop.Refactoring.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoDevelop.Xml">
-      <HintPath>..\..\monodevelop\main\build\AddIns\Xml\MonoDevelop.Xml.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Xwt">
-      <HintPath>..\..\monodevelop\main\build\bin\Xwt.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
       <Package>gtk-sharp-2.0</Package>
@@ -170,6 +124,33 @@
     </Reference>
     <Reference Include="atk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
       <Package>gtk-sharp-2.0</Package>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reflection.Metadata">
+      <HintPath>..\packages\System.Reflection.Metadata.1.0.21\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.Workspaces">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.Workspaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.Workspaces.Desktop">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Workspaces.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.Workspaces.Desktop.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.Workspaces">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.Workspaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.VisualBasic">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -264,10 +245,10 @@
     <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
     <Compile Include="Parser\OverloadCandidate.cs" />
     <Compile Include="Parser\CParsedDocument.cs" />
+    <Compile Include="Project\UnsavedFilesManager.cs" />
+    <Compile Include="Project\UnsavedFile.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AddinReference Include="MonoDevelop.Deployment" />
-    <AddinReference Include="MonoDevelop.Deployment.Linux" />
     <AddinReference Include="MonoDevelop.Refactoring" />
     <AddinReference Include="MonoDevelop.DesignerSupport" />
     <AddinReference Include="MonoDevelop.Xml" />
