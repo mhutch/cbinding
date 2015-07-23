@@ -60,6 +60,8 @@ namespace CBinding
 	{
 		char previous = ' ';
 		List<CXUnsavedFile> unsavedFiles;
+		static string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
+		static Regex operatorFilter = new Regex (operatorPattern, RegexOptions.Compiled);
 
 		/// <summary>
 		/// Allowed chars to be next to an identifier
@@ -295,15 +297,13 @@ namespace CBinding
 				if (ShouldCompleteOn (completionChar)) {
 					var project = (CProject)DocumentContext.Project;
 					unsavedFiles = new List<CXUnsavedFile> ();
-					foreach (Document openDocument in IdeApp.Workbench.Documents) {
-						if (openDocument.IsDirty) {
+					foreach (var openDocument in project.UnsavedFiles.UnsavedFileCollection) {
+						if (openDocument.Value.IsDirty) {
 							var unsavedFile = new CXUnsavedFile ();
-							unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
+							unsavedFile.Initialize (openDocument.Key, openDocument.Value.Text, project.IsBomPresentInFile (openDocument.Key));
 							unsavedFiles.Add (unsavedFile);
 						}
 					}
-					string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
-					var operatorFilter = new Regex (operatorPattern, RegexOptions.Compiled);
 					bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
 					IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 					if (pResults.ToInt64 () != 0) {
@@ -460,10 +460,10 @@ namespace CBinding
 				if (string.IsNullOrEmpty (functionName))
 					return (ParameterHintingResult) null;
 				var unsavedFiles = new List<CXUnsavedFile> ();
-				foreach (Document openDocument in IdeApp.Workbench.Documents) {
-					if (openDocument.IsDirty) {
+				foreach (var openDocument in project.UnsavedFiles.UnsavedFileCollection) {
+					if (openDocument.Value.IsDirty) {
 						var unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Initialize (openDocument.Name, openDocument.Editor.Text, project.IsBomPresentInFile (openDocument.FileName));
+						unsavedFile.Initialize (openDocument.Key, openDocument.Value.Text, project.IsBomPresentInFile (openDocument.Key));
 						unsavedFiles.Add (unsavedFile);
 					}
 				}
