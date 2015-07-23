@@ -15,7 +15,7 @@
 	</TemplateConfiguration>
 	
 	<TemplateFiles>
-		<File DefaultExtension=".h" AddStandardHeader="True"/>
+		<File DefaultExtension=".hpp" AddStandardHeader="True"/>
 	</TemplateFiles>
 	
 	<FileOptions/>

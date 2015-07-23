@@ -54,11 +54,11 @@ namespace CBinding.Parser
 			foreach (var unsaved in Project.UnsavedFiles.UnsavedFileCollection) {
 				if (unsaved.Value.IsDirty) {
 					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, Project.IsBomPresentInFile (unsaved.Key));
+					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, Manager.IsBomPresentInFile (unsaved.Key));
 					unsavedFiles.Add (unsavedFile);
 				}
 			}
-			TU = Manager.CreateTranslationUnit(proj, fileName, unsavedFiles.ToArray ());
+			TU = Manager.CreateTranslationUnit(fileName, unsavedFiles.ToArray ());
 		}
 
 		/// <summary>
@@ -104,7 +104,7 @@ namespace CBinding.Parser
 					}
 					clang.disposeDiagnostic (diag);
 				}
-				Manager.UpdateDatabase (Project, FileName, TU, cancellationToken);
+				Manager.UpdateDatabase (FileName, TU, cancellationToken);
 			}
 		}
 	}

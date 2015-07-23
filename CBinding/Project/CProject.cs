@@ -43,8 +43,6 @@ using MonoDevelop.Ide;
 using System.Threading.Tasks;
 using System.Threading;
 using CBinding.Parser;
-using ClangSharp;
-using MonoDevelop.Ide.TypeSystem;
 
 namespace CBinding
 {
@@ -94,22 +92,6 @@ namespace CBinding
 		/// Extensions for C/C++ header files
 		/// </summary>
 		public static string[] HeaderExtensions = { ".H", ".HH", ".HPP", ".HXX" };
-
-
-		Dictionary<string, bool> bomPresentInFile = new Dictionary<string, bool> ();
-
-		public bool IsBomPresentInFile (string filename)
-		{
-			return bomPresentInFile [filename];
-		}
-
-		public void BomPresentInFile (string filename, bool value)
-		{
-			if (bomPresentInFile.ContainsKey (filename))
-				bomPresentInFile [filename] = value;
-			else 
-				bomPresentInFile.Add (filename, value);
-		}
 
 		/// <summary>
 		/// Initialize this instance.
@@ -522,79 +504,6 @@ namespace CBinding
 			set {
 				packages = value;
 				packages.Project = this;
-			}
-		}
-
-		/// <summary>
-		/// This methods checks if a file has a Byte Order Marker, and sets it accordingly in the project model.
-		/// This is needed to fix cursor misalignations.
-		/// </summary>
-		/// <param name="fileName"></param>
-		public void CheckForBom (string fileName)
-		{
-			using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-				var BOM = new byte[3];
-				s.Read (BOM, 0, 3);
-				bool bomPresent = (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF);
-				BomPresentInFile (fileName, bomPresent);
-			}
-		}
-
-		/// <summary>
-		/// Invoked when a file is added to project. Detects UTF-8 BOM.
-		/// </summary>
-		/// <param name="args">Arguments.</param>
-		protected override void OnFileAddedToProject (ProjectFileEventArgs args)
-		{
-			base.OnFileAddedToProject (args);
-			foreach (var e in args) {
-
-				CheckForBom (e.ProjectFile.Name);
-
-				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-					e.ProjectFile.BuildAction == BuildAction.Compile) {
-					e.ProjectFile.BuildAction = BuildAction.None;
-				}
-
-				if (!Loading && e.ProjectFile.BuildAction == BuildAction.Compile)
-					TypeSystemService.ParseFile (this, e.ProjectFile.Name);
-			}
-		}
-
-		/// <summary>
-		/// Invoked when a file is changed to project. Detects UTF-8 BOM.
-		/// </summary>
-		/// <param name="e">E.</param>
-		protected override void OnFileChangedInProject (ProjectFileEventArgs args)
-		{
-			base.OnFileChangedInProject (args);
-			foreach (var e in args) {
-
-				CheckForBom (e.ProjectFile.Name);
-
-				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-					e.ProjectFile.BuildAction == BuildAction.Compile) {
-					e.ProjectFile.BuildAction = BuildAction.None;
-				}
-			
-			}
-
-		}
-
-		/// <summary>
-		/// Invoked when a file is removed from project.
-		/// </summary>
-		/// <param name="args">Arguments.</param>
-		protected override void OnFileRemovedFromProject (ProjectFileEventArgs args)
-		{
-			base.OnFileRemovedFromProject (args);
-			foreach (ProjectFileEventInfo e in args) {
-				if (!Loading && !IsCompileable (e.ProjectFile.Name) &&
-					e.ProjectFile.BuildAction == BuildAction.Compile) {
-					e.ProjectFile.BuildAction = BuildAction.None;
-				}
-				if (e.ProjectFile.BuildAction == BuildAction.Compile)
-					ClangManager.RemoveTranslationUnit (this, e.ProjectFile.Name);
 			}
 		}
 

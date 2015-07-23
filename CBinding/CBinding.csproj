@@ -247,6 +247,7 @@
     <Compile Include="Parser\CParsedDocument.cs" />
     <Compile Include="Project\UnsavedFilesManager.cs" />
     <Compile Include="Project\UnsavedFile.cs" />
+    <Compile Include="CLang\PrecompiledHeadersManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Refactoring" />

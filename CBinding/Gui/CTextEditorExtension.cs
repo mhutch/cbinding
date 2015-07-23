@@ -296,7 +296,7 @@ namespace CBinding
 				foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
 					if (unsaved.Value.IsDirty) {
 						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.IsBomPresentInFile (unsaved.Key));
+						unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.ClangManagerIsBomPresentInFile (unsaved.Key));
 						unsavedFiles.Add (unsavedFile);
 					}
 				}
@@ -459,7 +459,7 @@ namespace CBinding
 			foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
 				if (unsaved.Value.IsDirty) {
 					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.IsBomPresentInFile (unsaved.Key));
+					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.ClangManagerIsBomPresentInFile (unsaved.Key));
 					unsavedFiles.Add (unsavedFile);
 				}
 			}
