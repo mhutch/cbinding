@@ -245,6 +245,8 @@
     <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
     <Compile Include="Parser\OverloadCandidate.cs" />
     <Compile Include="Parser\CParsedDocument.cs" />
+    <Compile Include="Project\UnsavedFilesManager.cs" />
+    <Compile Include="Project\UnsavedFile.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Refactoring" />
