@@ -268,10 +268,10 @@ namespace CBinding
 
 		public void Save ()
 		{
-			contentFile.Text = "";
-			foreach (var command in allCommands)
-				contentFile.Text += command.Value.ToString () + '\n';
-
+			foreach (var command in allCommands) {
+				if (command.Value.IsDirty)
+					contentFile.Text = contentFile.Text.Replace (command.Value.OldValue, command.Value.ToString ());
+			}
 			contentFile.Save ();
 		}
 
