@@ -53,6 +53,11 @@ namespace CBinding
 		}
 		bool isEditable;
 
+		public bool IsDirty {
+			get { return isDirty; }
+		}
+		bool isDirty;
+
 		public int Offset {
 			get {
 				return command.Index;
@@ -67,18 +72,23 @@ namespace CBinding
 		public void AddArgument (string argument)
 		{
 			CMakeArgument arg = new CMakeArgument (argument);
-			if (!Arguments.Contains (arg))
+			if (!Arguments.Contains (arg)) {
 				Arguments.Add (arg);
+				isDirty = true;
+			}
 		}
 
 		public bool RemoveArgument (string argument)
 		{
 			foreach (CMakeArgument arg in Arguments) {
-				if (arg.ToString () == argument)
+				if (arg.ToString () == argument) {
+					isDirty = true;
 					return Arguments.Remove (arg);
-				else {
-					if (arg.Remove (argument))
+				} else {
+					if (arg.Remove (argument)) {
+						isDirty = true;
 						return true;
+					}
 				}
 			}
 			return false;
@@ -87,10 +97,11 @@ namespace CBinding
 		public bool EditArgument (string oldArgument, string newArgument)
 		{
 			foreach (var argument in Arguments) {
-				if (argument.Edit (oldArgument, newArgument))
+				if (argument.Edit (oldArgument, newArgument)) {
+					isDirty = true;
 					return true;
+				}
 			}
-
 			return false;
 		}
 
@@ -103,6 +114,10 @@ namespace CBinding
 
 			foreach (Match m in Regex.Matches (argumentsText, @"\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|[^\s\""\[]+"))
 				Arguments.Add (new CMakeArgument (m.Value));
+		}
+
+		public string OldValue {
+			get { return command.Value; }
 		}
 
 		public override string ToString ()
