@@ -180,7 +180,7 @@ namespace CBinding
 
 		public bool RemoveFile (string filename)
 		{
-			if (Files [filename].IsEditable)
+			if (Files [filename].IsNested)
 				return Files [filename].RemoveArgument (filename);
 
 			return false;

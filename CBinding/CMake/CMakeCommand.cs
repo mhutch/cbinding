@@ -35,6 +35,8 @@ namespace CBinding
 		readonly Match command;
 		string argumentsText;
 		readonly CMakeFileFormat parent;
+		static readonly Regex openingRegex = new Regex (@"^[A-Za-z_][A-Za-z0-9_]*\s*\(");
+		static readonly Regex argumentsRegex = new Regex (@"\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|[^\s\""\[]+");
 
 		public string Name {
 			get { return name; }
@@ -47,11 +49,11 @@ namespace CBinding
 		}
 		List<CMakeArgument> arguments = new List<CMakeArgument> ();
 
-		public bool IsEditable {
-			get { return isEditable; }
-			set { isEditable = value; }
+		public bool IsNested {
+			get { return isNested; }
+			set { isNested = value; }
 		}
-		bool isEditable;
+		bool isNested;
 
 		public bool IsDirty {
 			get { return isDirty; }
@@ -60,7 +62,10 @@ namespace CBinding
 
 		public int Offset {
 			get {
-				return command.Index;
+				if (command != null)
+					return command.Index;
+				else
+					return -1;
 			}
 		}
 		public FilePath FileName {
@@ -107,12 +112,12 @@ namespace CBinding
 
 		void ParseArguments ()
 		{
-			argumentsText = Regex.Replace (command.Value, @"^[A-Za-z_][A-Za-z0-9_]*\s*\(", "").TrimEnd (')').Trim ();
+			argumentsText = openingRegex.Replace (command.Value, "").TrimEnd (')').Trim ();
 
 			if (argumentsText.Length == 0)
 				return;
 
-			foreach (Match m in Regex.Matches (argumentsText, @"\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|[^\s\""\[]+"))
+			foreach (Match m in argumentsRegex.Matches (argumentsText))
 				Arguments.Add (new CMakeArgument (m.Value));
 		}
 

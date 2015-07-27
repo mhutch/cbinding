@@ -34,8 +34,7 @@ namespace CBinding.ProjectPad
 		[CommandUpdateHandler (ProjectCommands.RunEntryWithList)]
 		void updateDisabledCommands (CommandInfo info)
 		{
-			info.Enabled = false;
-			info.Visible = false;
+			info.Enabled = info.Visible = false;
 		}
 
 

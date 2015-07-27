@@ -46,22 +46,24 @@ namespace CBinding.ProjectPad
 
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
-			var item = (SolutionItem)dataObject;
-			return item.GetItemFiles (true).GetEnumerator ().MoveNext () ||
-				item.GetChildren ().GetEnumerator ().MoveNext ();
+			//var item = (SolutionItem)dataObject;
+			//return item.GetItemFiles (true).GetEnumerator ().MoveNext () ||
+			//	item.GetChildren ().GetEnumerator ().MoveNext ();
+			return true;
 		}
 
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
 			var item = (SolutionItem)dataObject;
-			foreach (FilePath file in item.GetItemFiles (true)) {
-				bool transparent = !File.Exists (file);
-				var systemFile = new MonoDevelop.Ide.Gui.Pads.ProjectPad.SystemFile (file, item, transparent);
-				treeBuilder.AddChild (systemFile);
-			}
+			//foreach (FilePath file in item.GetItemFiles (true)) {
+			//	bool transparent = !File.Exists (file);
+			//	var systemFile = new MonoDevelop.Ide.Gui.Pads.ProjectPad.SystemFile (file, item, transparent);
+			//	treeBuilder.AddChild (systemFile);
+			//}
 
-			foreach (WorkspaceObject obj in item.GetChildren ())
-				treeBuilder.AddChild (obj);
+			//foreach (WorkspaceObject obj in item.GetChildren ())
+			//	treeBuilder.AddChild (obj);
+			treeBuilder.AddChild (new SystemFolder (item.BaseDirectory, item, false));
 		}
 
 		public override object GetParentObject (object dataObject)

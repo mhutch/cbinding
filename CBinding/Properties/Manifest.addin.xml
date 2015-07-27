@@ -172,6 +172,7 @@
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectPackageNodeBuilder" class = "CBinding.ProjectPad.ProjectPackageNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.SolutionItemNodeBuilder" class = "CBinding.ProjectPad.SolutionItemNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.CMakeProjectNodeBuilder" class = "CBinding.ProjectPad.CMakeTargetNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.SystemFolderNodeBuilder" class = "CBinding.ProjectPad.SystemFolderNodeBuilder"/>
 	</Extension>
 	
 	<Extension path = "/MonoDevelop/Ide/Pads/ClassPad">

@@ -246,6 +246,9 @@
     <Compile Include="CMake\CMakeVariableParser.cs" />
     <Compile Include="CMake\CMakeProject.cs" />
     <Compile Include="CMake\CMakeWorkspaceObjectReader.cs" />
+    <Compile Include="CMake\CMakeVariableManager.cs" />
+    <Compile Include="ProjectPad\SystemFolder.cs" />
+    <Compile Include="ProjectPad\SystemFolderNodeBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

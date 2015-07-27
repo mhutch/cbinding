@@ -78,6 +78,16 @@ namespace CBinding
 			}
 		}
 
+		public static List<CMakeArgument> ArgumentsFromString (string text)
+		{
+			var args = new List<CMakeArgument> ();
+
+			foreach (Match m in Regex.Matches (text, @"\"".*?\""|\[=[0-9]*\[.*?\]=[0-9]*\]|[^\s\""\[]+"))
+				args.Add (new CMakeArgument (m.Value));
+
+			return args;
+		}
+
 		public override string ToString ()
 		{
 			if (IsString) {

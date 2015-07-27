@@ -179,7 +179,7 @@ namespace CBinding
 				break;
 			}
 
-			command.IsEditable = blocks.Count == 0;
+			command.IsNested = blocks.Count == 0;
 
 			allCommands.Add (string.Format ("{0}:{1}", commandName, commandMatch.Index), command);
 		}
@@ -245,6 +245,7 @@ namespace CBinding
 				break;
 			default:
 				commandName = "add_executable";
+				LoggingService.LogDebug ("Unknown target type: {0}", type);
 				break;
 			}
 
@@ -269,7 +270,9 @@ namespace CBinding
 		public void Save ()
 		{
 			foreach (var command in allCommands) {
-				if (command.Value.IsDirty)
+				if (command.Value.Offset == -1)
+					contentFile.Text += Environment.NewLine + command.Value.ToString ();
+				else if (command.Value.IsDirty)
 					contentFile.Text = contentFile.Text.Replace (command.Value.OldValue, command.Value.ToString ());
 			}
 			contentFile.Save ();
@@ -318,11 +321,8 @@ namespace CBinding
 			}
 		}
 
-		public CMakeFileFormat (FilePath file, CMakeProject project)
+		public CMakeFileFormat (FilePath file, CMakeProject project) : this (file, project, null)
 		{
-			this.file = file;
-			this.project = project;
-			Parse ();
 		}
 
 		public CMakeFileFormat (FilePath file, CMakeProject project, CMakeFileFormat parent)
