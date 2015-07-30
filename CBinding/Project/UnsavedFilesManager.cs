@@ -3,6 +3,8 @@ using MonoDevelop.Ide;
 using MonoDevelop.Core.Text;
 using MonoDevelop.Ide.Gui;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using ClangSharp;
 
 namespace CBinding
 {
@@ -11,7 +13,7 @@ namespace CBinding
 	{
 		Document current;
 		CProject Project { get; }
-		public ConcurrentDictionary<string, UnsavedFile> UnsavedFileCollection { get; }
+		ConcurrentDictionary<string, UnsavedFile> UnsavedFileCollection { get; }
 
 		public UnsavedFilesManager (CProject proj)
 		{
@@ -64,6 +66,19 @@ namespace CBinding
 					UnsavedFileCollection [current.Name].Text.Remove (e.Offset, e.RemovalLength)
 					:
 					UnsavedFileCollection [current.Name].Text.Insert (e.Offset, e.InsertedText.Text);
+		}
+
+		public List<CXUnsavedFile> Get ()
+		{
+			var unsavedFiles = new List<CXUnsavedFile> ();
+			foreach (var unsaved in UnsavedFileCollection) {
+				if (unsaved.Value.IsDirty) {
+					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
+					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, Project.ClangManager.IsBomPresentInFile (unsaved.Key));
+					unsavedFiles.Add (unsavedFile);
+				}
+			}
+			return unsavedFiles;
 		}
 
 		protected virtual void OnDispose(bool disposing)

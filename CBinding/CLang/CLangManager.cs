@@ -12,6 +12,7 @@ using MonoDevelop.Ide.CodeCompletion;
 using MonoDevelop.Projects;
 using MonoDevelop.Ide.TypeSystem;
 using System.Linq;
+using MonoDevelop.Core;
 
 namespace CBinding
 {
@@ -37,18 +38,28 @@ namespace CBinding
 		Dictionary<string, CXTranslationUnit> translationUnits { get; }
 		PrecompiledHeadersManager PchManager { get; }
 
+		Dictionary<string, bool> Loaded {get;}
+
 		/// <summary>
 		/// Gets the command line arguments. Use with caution, when the project is not fully loaded and there are no active configuration yet, it will fail with nullrefexception.
 		/// </summary>
 		/// <value>The arguments.</value>
-		string [] CmdArguments { 
-			get {
-				var compiler = new ClangCCompiler ();
-				var active_configuration =
-					(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
-				var args = new List<string> (compiler.GetCompilerFlagsAsArray (project, active_configuration));
-				return args.ToArray ();
-			} 
+		public string [] CmdArguments (string name) {
+			var compiler = new ClangCCompiler ();
+			var active_configuration =
+				(CProjectConfiguration)project.GetConfiguration (IdeApp.Workspace.ActiveConfiguration);
+			var args = new List<string> (compiler.GetCompilerFlagsAsArray (project, active_configuration));
+			if (CProject.SourceExtensions.Any(o => o.Equals (new FilePath(name).Extension.ToUpper ()))) {
+				foreach (var f in project.Files) {
+					if (CProject.HeaderExtensions.Any (o => o.Equals (f.FilePath.Extension.ToUpper ()))) {	
+						if (File.Exists (f.Name + ".pch")) {
+							args.Add ("-include-pch");
+							args.Add (f.Name + ".pch");
+						}
+					}
+				}
+			}
+			return args.ToArray ();
 		}
 			
 		/// <summary>
@@ -63,6 +74,7 @@ namespace CBinding
 			index = clang.createIndex (0, 0);
 			PchManager = new PrecompiledHeadersManager (project, this, index);
 			translationUnits = new Dictionary<string, CXTranslationUnit> ();
+			Loaded = new Dictionary<string, bool> ();
 			project.DefaultConfigurationChanged += HandleDefaultConfigurationChange;
 			project.FileAddedToProject += HandleAddition;
 			project.FileChangedInProject += HandleChange;
@@ -83,11 +95,13 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXTranslationUnit"/>: The Translation unit created
 		/// </returns>
-		public CXTranslationUnit CreateTranslationUnit (string fileName, CXUnsavedFile[] unsavedFiles) 
+		public CXTranslationUnit CreateTranslationUnit (string fileName, CXUnsavedFile[] unsavedFiles, bool force = false) 
 		{
 			lock (SyncRoot) {
+				if (!Loaded.ContainsKey (fileName))
+					Loaded.Add (fileName, false);
 				if (!translationUnits.ContainsKey (fileName)) 
-					AddToTranslationUnits (fileName, unsavedFiles);
+					AddToTranslationUnits (fileName, unsavedFiles, force);
 				return translationUnits [fileName];
 			}
 		}
@@ -101,26 +115,28 @@ namespace CBinding
 		/// <param name = "unsavedFiles">
 		/// A <see cref="CXUnsavedFile"/> array: array with the contents of unsaved files in IDE. Safe to be a null sized array - CDocumentParser.Parse reparses the TU with properly initialized unsaved files.
 		/// </param>
-		void AddToTranslationUnits (string fileName, CXUnsavedFile[] unsavedFiles)
+		void AddToTranslationUnits (string fileName, CXUnsavedFile[] unsavedFiles, bool force)
 		{
 			lock (SyncRoot) {
-				//if header file -> parse for serialization (PCH generation)
-				var options = clang.defaultEditingTranslationUnitOptions ();
-				try {
+				var options = clang.defaultEditingTranslationUnitOptions ();// & ~(uint)CXTranslationUnit_Flags.PrecompiledPreamble; <- without this we have NO ERROR MARKERS! 
+				if (!force && CProject.HeaderExtensions.Any (o => o.Equals (new FilePath (fileName).Extension.ToUpper ()))) {
+					if (PrecompiledHeadersManager.PchIsUpToDate (fileName)) {
+						translationUnits.Add (fileName, clang.createTranslationUnit (index, fileName + ".pch"));
+						Loaded [fileName] = true;
+					}
+				} else {
 					translationUnits.Add (fileName, clang.parseTranslationUnit (
 						index,
 						fileName,
-						CmdArguments,
-						CmdArguments.Length,
+						CmdArguments (fileName),
+						CmdArguments (fileName).Length,
 						unsavedFiles,
 						(uint)unsavedFiles.Length,
 						options
 					));
-					UpdateDatabase (fileName, translationUnits[fileName]);
-					PchManager.Add (fileName); //this is here to avoid a data race with configurations.
-				} catch (ArgumentException) {
-					Console.WriteLine (fileName + " is already added, not adding");
 				}
+				UpdateDatabase (fileName, translationUnits[fileName]);
+				PchManager.Add (fileName); //this is here to avoid a data race with configurations.
 			}
 		}
 
@@ -160,24 +176,12 @@ namespace CBinding
 
 		void ReparseFilesWithExtension (string [] extensions)
 		{
+			var unsavedFiles = project.UnsavedFiles.Get ();
 			foreach (var f in project.Files) {
-				if (extensions.Any (o => o.Equals (f.FilePath.Extension))) {
-					if (translationUnits.ContainsKey (f.Name)) {
-						clang.disposeTranslationUnit (translationUnits [f.Name]);
-						translationUnits [f.Name] = clang.parseTranslationUnit (
-							index,
-							f.Name,
-							CmdArguments,
-							CmdArguments.Length,
-							null,
-							0,
-							clang.defaultEditingTranslationUnitOptions ()
-						);
-					}
-					else {
-						// TODO: Change after merge with unsavedfilesmanager branch
-						CreateTranslationUnit (f.Name, new CXUnsavedFile[0]);
-					}
+				if (extensions.Any (o => o.Equals (f.FilePath.Extension.ToUpper ()))) {
+					if (translationUnits.ContainsKey (f.Name)) 
+						RemoveTranslationUnit (f.Name);
+					CreateTranslationUnit (f.Name, unsavedFiles.ToArray ());
 				}
 			}
 		}
@@ -540,7 +544,7 @@ namespace CBinding
 					e.ProjectFile.BuildAction = BuildAction.None;
 				}
 
-				PchManager.Update (e.ProjectFile.Name, CmdArguments);
+				PchManager.Update (e.ProjectFile.Name, CmdArguments(e.ProjectFile.Name));
 			}
 		}
 
@@ -555,6 +559,43 @@ namespace CBinding
 					RemoveTranslationUnit (e.ProjectFile.Name);
 					
 				PchManager.Remove (e.ProjectFile.Name);
+			}
+		}
+
+		/*public List<string> GetIncludes (string name)
+		{
+			lock (SyncRoot) {
+				var includes = new List<string> ();
+				CXCursorAndRangeVisitor visitor = new CXCursorAndRangeVisitor();
+				visitor.visit = (context, cursor, range) => {
+					includes.Add (cursor.ToString ());
+					return CXVisitorResult.Continue;
+				};
+				CXTranslationUnit tu = translationUnits [name];
+				clang.findIncludesInFile (tu, clang.getFile (tu, name), visitor);
+				Console.WriteLine (string.Join (",", includes));
+				return includes;
+			}
+		}*/
+
+		public CXTranslationUnit Reparse (string name, CXUnsavedFile [] unsavedFilesArray)
+		{
+			lock (SyncRoot) {
+				CXTranslationUnit TU = translationUnits [name];
+				if(!Loaded[name]) {
+					clang.reparseTranslationUnit (
+						TU,
+						(uint)(unsavedFilesArray.Length),
+						unsavedFilesArray,
+						clang.defaultReparseOptions (TU)
+					);
+				} else {
+					RemoveTranslationUnit (name);
+					CreateTranslationUnit (name, unsavedFilesArray, true);
+					Loaded [name] = false;
+					TU = translationUnits [name];
+				}
+				return TU;
 			}
 		}
 

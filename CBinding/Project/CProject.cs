@@ -210,7 +210,7 @@ namespace CBinding
 		protected override bool OnGetIsCompileable (string fileName)
 		{
 			string ext = Path.GetExtension (fileName.ToUpper ());
-			return (-1 != Array.IndexOf (SourceExtensions, ext));
+			return (-1 != Array.IndexOf (SourceExtensions, ext) || -1 != Array.IndexOf (HeaderExtensions, ext) );
 		}
 
 		/// <summary>

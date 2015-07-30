@@ -292,14 +292,7 @@ namespace CBinding
 			ICompletionDataList list = new CompletionDataList ();
 			if (ShouldCompleteOn(completionChar)) {
 				var project = (CProject)DocumentContext.Project;
-				unsavedFiles = new List<CXUnsavedFile> ();
-				foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
-					if (unsaved.Value.IsDirty) {
-						CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.ClangManagerIsBomPresentInFile (unsaved.Key));
-						unsavedFiles.Add (unsavedFile);
-					}
-				}
+				unsavedFiles = project.UnsavedFiles.Get ();
 				string operatorPattern = "operator\\s*(\\+|\\-|\\*|\\/|\\%|\\^|\\&|\\||\\~|\\!|\\=|\\<|\\>|\\(\\s*\\)|\\[\\s*\\]|new|delete)";
 				var operatorFilter = new Regex (operatorPattern, RegexOptions.Compiled);
 				bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
@@ -455,14 +448,7 @@ namespace CBinding
 
 			if (string.IsNullOrEmpty (functionName))
 				return Task.FromResult<ParameterHintingResult> (null);
-			var unsavedFiles = new List<CXUnsavedFile> ();
-			foreach (var unsaved in project.UnsavedFiles.UnsavedFileCollection) {
-				if (unsaved.Value.IsDirty) {
-					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, project.ClangManagerIsBomPresentInFile (unsaved.Key));
-					unsavedFiles.Add (unsavedFile);
-				}
-			}
+			unsavedFiles = project.UnsavedFiles.Get ();
 
 			IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 			CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);

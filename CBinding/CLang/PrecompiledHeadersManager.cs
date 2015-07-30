@@ -22,17 +22,26 @@ namespace CBinding
 			Index = ind;
 		}
 
+		public static bool PchIsUpToDate (string name)
+		{
+			var source = new FileInfo (name);
+			if (!File.Exists (name + ".pch"))
+				return false;
+			var pch = new FileInfo (name + ".pch");
+			return source.LastWriteTime.Equals (pch.LastWriteTime);
+		}
+
 		void GeneratePch (string name)
 		{
 			bool error = false;
-			CXErrorCode ec;
-			CXSaveError se = CXSaveError.CXSaveError_Unknown;
-			lock (Manager.SyncRoot) {
+			var ec = CXErrorCode.Success;
+			var se = CXSaveError.CXSaveError_None;
+			if (!PchIsUpToDate(name)) {
 				CXTranslationUnit pch;
 				// TODO
-				// reparsing the existing TU and saving it crashes the native clang thread internally and therefore MD
+				// saving existing TU more than once crashes the native clang thread internally and therefore MD
 				// might be fixed in clang 3.7.0 stable release (2015. 08. 21.) || might be intended to work this way
-				ec = clang.parseTranslationUnit2 (Index, name, null, 0, null, 0, (uint)CXTranslationUnit_Flags.ForSerialization, out pch);
+				Console.WriteLine ("Parsing PCH: " + (ec = clang.parseTranslationUnit2 (Index, name, new [] { "-I/usr/include/clang/3.7.0/include" }, 1, null, 0, (uint)CXTranslationUnit_Flags.ForSerialization, out pch)));
 				error |= ec != CXErrorCode.Success;
 				if (!error) {
 					uint numDiag = clang.getNumDiagnostics (pch);
@@ -40,13 +49,20 @@ namespace CBinding
 						CXDiagnostic diag = clang.getDiagnostic (pch, i);
 						Console.WriteLine ("Clang PCH saving diagnostic: " + diag);
 					}
-					se = (CXSaveError)clang.saveTranslationUnit (pch, name + ".pch", clang.defaultSaveOptions (pch));
+					lock (Manager.SyncRoot)
+						Console.WriteLine ("Saving PCH: " + (se = (CXSaveError)clang.saveTranslationUnit (pch, name + ".pch", clang.defaultSaveOptions (pch))));
+					File.SetLastWriteTime (name + ".pch", new FileInfo (name).LastWriteTime); //Parsing takes time, we check up-to-dateness by comparing these values
 					error |= se != CXSaveError.CXSaveError_None;
 				}
 				clang.disposeTranslationUnit (pch);
 			}
+
 			if (error)
-				IdeApp.Workbench.StatusBar.ShowError ("Generating the PCH failed. Is the header you edited valid by all means? (" + ec + "&" + se + ")");
+				Gtk.Application.Invoke (
+					delegate {
+						IdeApp.Workbench.StatusBar.ShowError ("Generating the PCH failed. Is the header you edited valid by all means? (" + ec + "&" + se + ")");
+					}
+				);
 		}
 
 		void AddToIncludes (string name)

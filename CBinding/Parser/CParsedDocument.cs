@@ -27,16 +27,14 @@
 using System.Collections.Generic;
 using MonoDevelop.Ide.TypeSystem;
 using ClangSharp;
-using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.Editor;
 using System.Threading;
-using System;
 
 namespace CBinding.Parser
 {
 	
 	public class CParsedDocument : DefaultParsedDocument {
-		public CXTranslationUnit TU { get; set;}
+		public CXTranslationUnit TU;
 		public CLangManager Manager { get; private set;}
 		public CProject Project { get; set;}
 		List<CXUnsavedFile> unsavedFiles;
@@ -51,13 +49,7 @@ namespace CBinding.Parser
 		public CParsedDocument(CProject proj, string fileName) : base(fileName)
 		{
 			Initialize (proj);
-			foreach (var unsaved in Project.UnsavedFiles.UnsavedFileCollection) {
-				if (unsaved.Value.IsDirty) {
-					CXUnsavedFile unsavedFile = new CXUnsavedFile ();
-					unsavedFile.Initialize (unsaved.Key, unsaved.Value.Text, Manager.IsBomPresentInFile (unsaved.Key));
-					unsavedFiles.Add (unsavedFile);
-				}
-			}
+			unsavedFiles = Project.UnsavedFiles.Get ();
 			TU = Manager.CreateTranslationUnit(fileName, unsavedFiles.ToArray ());
 		}
 
@@ -70,12 +62,7 @@ namespace CBinding.Parser
 		{
 			lock (Manager.SyncRoot) {
 				var unsavedFilesArray = unsavedFiles.ToArray ();
-				clang.reparseTranslationUnit (
-					TU,
-					(uint) (unsavedFilesArray.Length),
-					unsavedFilesArray,
-					clang.defaultReparseOptions (TU)
-				);
+				TU = Manager.Reparse (FileName, unsavedFilesArray);
 				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);
