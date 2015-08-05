@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -10,35 +9,6 @@ namespace CBinding
 {
 	public class CMakeVariableManager
 	{
-		class CMakeVariable
-		{
-			public bool IsEditable {
-				get { return isEditable; }
-				set { isEditable = value; }
-			}
-			public string Value {
-				get { return value; }
-				set { this.value = value; }
-			}
-			public CMakeCommand Command {
-				get { return command; }
-				set { command = value; }
-			}
-
-			readonly string key;
-			string value;
-			bool isEditable;
-			CMakeCommand command;
-
-			public CMakeVariable (string variableName, string value, bool isEditable = true, CMakeCommand command = null)
-			{
-				key = variableName;
-				this.value = value;
-				this.isEditable = isEditable;
-				this.command = command;
-			}
-		}
-
 		readonly CMakeFileFormat parent;
 		readonly Dictionary<string, CMakeVariable> variables = new Dictionary<string, CMakeVariable> ();
 		static readonly List<string> toIgnore = new List<string> () {
@@ -130,17 +100,14 @@ namespace CBinding
 				if (command.Arguments.Count == 0)
 					continue;
 
-				bool isEditable = true;
-				if (command.IsNested)
-					isEditable = false;
-
+				bool isEditable = !command.IsNested;
 
 				if (command.Arguments.Count == 1) {
 					Set (command.Arguments [0].ToString (), "", isEditable, command);
 					continue;
 				}
 
-				StringBuilder sb = new StringBuilder ();
+				var sb = new StringBuilder ();
 				for (int i = 1; i < command.Arguments.Count; i++) {
 					sb.Append (command.Arguments [i].ToString ()).Append (' ');
 				}

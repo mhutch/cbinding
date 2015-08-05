@@ -249,6 +249,7 @@
     <Compile Include="CMake\CMakeVariableManager.cs" />
     <Compile Include="ProjectPad\SystemFolder.cs" />
     <Compile Include="ProjectPad\SystemFolderNodeBuilder.cs" />
+    <Compile Include="CMake\CMakeVariable.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />
