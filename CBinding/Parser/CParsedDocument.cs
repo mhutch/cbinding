@@ -29,6 +29,7 @@ using MonoDevelop.Ide.TypeSystem;
 using ClangSharp;
 using MonoDevelop.Ide.Editor;
 using System.Threading;
+using System;
 
 namespace CBinding.Parser
 {
@@ -92,6 +93,7 @@ namespace CBinding.Parser
 					clang.disposeDiagnostic (diag);
 				}
 				Manager.UpdateDatabase (FileName, TU, cancellationToken);
+				Console.WriteLine ("up");
 			}
 		}
 	}

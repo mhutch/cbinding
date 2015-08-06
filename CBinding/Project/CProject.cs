@@ -74,7 +74,7 @@ namespace CBinding
 
 		public CLangManager ClangManager { get; private set; }
 
-		public ClangProjectSymbolDatabase DB { get; private set; }
+		public SymbolDatabaseMediator DB { get; private set; }
 
 		public UnsavedFilesManager UnsavedFiles { get; private set; }
 
@@ -101,7 +101,7 @@ namespace CBinding
 			base.OnInitialize ();
 			packages.Project = this;
 			ClangManager = new CLangManager (this);
-			DB = new ClangProjectSymbolDatabase (this);
+			DB = new SymbolDatabaseMediator (this, ClangManager);
 			UnsavedFiles = new UnsavedFilesManager (this);
 		}
 

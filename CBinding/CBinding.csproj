@@ -167,6 +167,8 @@
     <Reference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces">
       <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll</HintPath>
     </Reference>
+    <Reference Include="Mono.Data.Sqlite" />
+    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Project\CProject.cs" />
@@ -220,8 +222,6 @@
     <Compile Include="Parser\Variable.cs" />
     <Compile Include="Parser\Macro.cs" />
     <Compile Include="Parser\TranslationUnitParser.cs" />
-    <Compile Include="Parser\ClangFileSymbolDatabase.cs" />
-    <Compile Include="Parser\ClangProjectSymbolDatabase.cs" />
     <Compile Include="Parser\ClassTemplate.cs" />
     <Compile Include="Parser\Field.cs" />
     <Compile Include="Parser\ClassTemplatePartial.cs" />
@@ -263,6 +263,7 @@
     <Compile Include="Project\UnsavedFilesManager.cs" />
     <Compile Include="Project\UnsavedFile.cs" />
     <Compile Include="CLang\PrecompiledHeadersManager.cs" />
+    <Compile Include="Parser\SymbolDatabaseMediator.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Refactoring" />

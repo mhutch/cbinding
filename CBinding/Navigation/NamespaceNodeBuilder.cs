@@ -70,19 +70,19 @@ namespace CBinding.Navigation
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.DB;
+			SymbolDatabaseMediator info = p.DB;
 			
 			Namespace thisNamespace = ((Namespace)dataObject);
 			
 			// Namespaces
-			if (treeBuilder.Options["NestedNamespaces"])
+			/*if (treeBuilder.Options["NestedNamespaces"])
 				foreach (Namespace n in info.Namespaces.Values)
 					if (n.Parent != null && n.Parent.Equals (thisNamespace))
 						treeBuilder.AddChild (n);
 			
 			foreach(Symbol c in info.CanBeInNamespaces.Values)
 				if (c.Ours && c.Parent != null && c.Parent.Equals (thisNamespace))
-					treeBuilder.AddChild (c);
+					treeBuilder.AddChild (c);*/
 
 		}
 		

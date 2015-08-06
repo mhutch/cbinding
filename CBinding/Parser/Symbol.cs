@@ -49,6 +49,22 @@ namespace CBinding.Parser
 		/// <value><c>true</c> if ours; otherwise, <c>false</c>.</value>
 		public bool Ours { get; protected set; }
 
+		public Symbol (CProject project, CXCursor cursor, string file)
+		{
+			Usr = project.ClangManager.GetCursorUsrString (cursor);
+			Begin = project.ClangManager.GetSourceLocation (
+				clang.getRangeStart (clang.Cursor_getSpellingNameRange (cursor, 0, 0))
+			);
+			End = project.ClangManager.GetSourceLocation (
+				clang.getRangeEnd (clang.Cursor_getSpellingNameRange (cursor, 0, 0))
+			);
+			SpellingLength = Convert.ToInt32 (End.Offset - Begin.Offset);
+			IsDefinition = clang.isCursorDefinition (cursor) != 0;
+			IsDeclaration = clang.isDeclaration (cursor.kind) != 0;
+			Ours = file.Equals (Begin.FileName);
+
+		}
+
 		public Symbol (CProject proj, string fileN, CXCursor cursor, bool global)
 		{
 			Project = proj;

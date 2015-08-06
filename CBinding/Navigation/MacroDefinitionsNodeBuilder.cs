@@ -79,18 +79,12 @@ namespace CBinding.Navigation
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.DB;
+			SymbolDatabaseMediator info = p.DB;
 
-			foreach (Macro m in info.Macros.Values) {
-				/*CXSourceLocation loc = clang.getCursorLocation (m.Represented);
-				CXFile file;
-				uint line, column, offset;
-				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
-				var fileName = clang.getFileName (file).ToString ();
-				if(p.IsFileInProject (fileName))*/
+			/*foreach (Macro m in info.Macros.Values) {
 				if(m.Ours)
 					treeBuilder.AddChild (m);
-			}
+			}*/
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

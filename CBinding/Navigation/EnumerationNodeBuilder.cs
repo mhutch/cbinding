@@ -83,14 +83,14 @@ namespace CBinding.Navigation
 			
 			if (p == null) return;
 			
-			ClangProjectSymbolDatabase info = p.DB;
+			SymbolDatabaseMediator info = p.DB;
 			
 			Enumeration thisEnumeration = (Enumeration)dataObject;
 			
 			// Enumerators
-			foreach (Enumerator e in info.Enumerators.Values)
+			/*foreach (Enumerator e in info.Enumerators)
 				if (e. Ours && e.Parent != null && e.Parent.Equals (thisEnumeration))
-					treeBuilder.AddChild (e);
+					treeBuilder.AddChild (e);*/
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

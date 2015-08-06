@@ -93,13 +93,13 @@ namespace CBinding.Navigation
 				return;
 			
 			bool publicOnly = treeBuilder.Options ["PublicApiOnly"];
-			ClangProjectSymbolDatabase info = p.DB;
+			SymbolDatabaseMediator info = p.DB;
 			
 			Struct thisStruct = (Struct)dataObject;
 			
-			foreach (Symbol s in info.CanBeInClasses.Values)
+			/*foreach (Symbol s in info.CanBeInClasses.Values)
 				if (s.Ours && s.Parent != null && s.Parent.Equals (thisStruct) && (!publicOnly || s.Access == CX_CXXAccessSpecifier.@Public))
-					treeBuilder.AddChild (s);
+					treeBuilder.AddChild (s);*/
 		}
 
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

@@ -87,16 +87,10 @@ namespace CBinding.Navigation
 			
 			bool nestedNamespaces = builder.Options["NestedNamespaces"];
 			
-			ClangProjectSymbolDatabase info = p.DB;
+			SymbolDatabaseMediator info = p.DB;
 
-			// Namespaces
+			/*// Namespaces
 			foreach (Namespace n in info.Namespaces.Values) {
-				/*CXSourceLocation loc = clang.getCursorLocation (n.Represented);
-				CXFile file;
-				uint line, column, offset;
-				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
-				var fileName = clang.getFileName (file).ToString ();
-				if(p.IsFileInProject (fileName))*/
 				if(n.Ours){
 					if (nestedNamespaces) {
 						if (n.Parent == null) {
@@ -114,7 +108,7 @@ namespace CBinding.Navigation
 			builder.AddChild (info.GlobalDefinitions);
 			
 			// Macro Definitions
-			builder.AddChild (info.MacroDefinitions);
+			builder.AddChild (info.MacroDefinitions);*/
 		}
 		
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)

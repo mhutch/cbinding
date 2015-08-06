@@ -11,26 +11,25 @@ namespace CBinding.Parser
 	/// </summary>
 	public class TranslationUnitParser
 	{
-		ClangProjectSymbolDatabase db;
+		SymbolDatabaseMediator db;
 		string file;
 		CancellationToken token;
-		CXCursor TUCursor;
+		//CXCursor TUCursor;
 
-		public TranslationUnitParser (ClangProjectSymbolDatabase db, string file, CancellationToken cancelToken, CXCursor TUcur)
+		public TranslationUnitParser (SymbolDatabaseMediator db, string file, CancellationToken cancelToken, CXCursor TUcur)
 		{
 			this.db = db;
 			this.file = file;
 			token = cancelToken;
-			TUCursor = TUcur;
+			//TUCursor = TUcur;
 		}
 
 		public CXChildVisitResult Visit (CXCursor cursor, CXCursor parent, IntPtr data)
 		{
 			if (token.IsCancellationRequested)
 				return CXChildVisitResult.Break;
-
-			bool global = TUCursor.Equals (parent);
-			db.AddToDatabase (file, cursor, global);
+			
+			db.AddToDatabase (file, cursor, token);
 			return CXChildVisitResult.Recurse;
 		}
 	

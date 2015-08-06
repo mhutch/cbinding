@@ -13,6 +13,7 @@ using MonoDevelop.Projects;
 using MonoDevelop.Ide.TypeSystem;
 using System.Linq;
 using MonoDevelop.Core;
+using System.Diagnostics;
 
 namespace CBinding
 {
@@ -120,10 +121,12 @@ namespace CBinding
 			lock (SyncRoot) {
 				var options = clang.defaultEditingTranslationUnitOptions ();// & ~(uint)CXTranslationUnit_Flags.PrecompiledPreamble; <- without this we have NO ERROR MARKERS! 
 				if (!force && CProject.HeaderExtensions.Any (o => o.Equals (new FilePath (fileName).Extension.ToUpper ()))) {
-					if (PrecompiledHeadersManager.PchIsUpToDate (fileName)) {
-						translationUnits.Add (fileName, clang.createTranslationUnit (index, fileName + ".pch"));
-						Loaded [fileName] = true;
+					if (!PrecompiledHeadersManager.PchIsUpToDate (fileName)) {
+						PchManager.Update (fileName, CmdArguments (fileName));
 					}
+					translationUnits.Add (fileName, clang.createTranslationUnit (index, fileName + ".pch"));
+					Loaded [fileName] = true;
+					
 				} else {
 					translationUnits.Add (fileName, clang.parseTranslationUnit (
 						index,
@@ -153,10 +156,18 @@ namespace CBinding
 		public void UpdateDatabase (string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			lock (SyncRoot) {
+				Stopwatch s = new Stopwatch ();
+				s.Start ();
 				project.DB.Reset (fileName);
 				CXCursor TUcursor = clang.getTranslationUnitCursor (TU);
 				var parser = new TranslationUnitParser (project.DB, fileName, cancellationToken, TUcursor);
-				clang.visitChildren (TUcursor, parser.Visit, new CXClientData (new IntPtr (0)));
+				project.DB.Connection.Open ();
+				using (var tr = project.DB.Connection.BeginTransaction ()) {
+					clang.visitChildren (TUcursor, parser.Visit, new CXClientData (new IntPtr (0)));
+					tr.Commit ();
+				}
+				project.DB.Connection.Close ();
+				Console.WriteLine (s.ElapsedMilliseconds);
 			}
 		}
 
@@ -307,10 +318,10 @@ namespace CBinding
 			lock (SyncRoot) {
 				CXSourceLocation loc = clang.getCursorLocation (cursor);
 				CXFile file;
-				uint line, column, offset;
+				uint line, column, offset, length;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
 				var fileName = GetFileNameString (file);
-
+				var extent = clang.getCursorExtent (cursor);
 				CheckForBom (fileName);
 
 				if (IsBomPresentInFile (fileName)) {
