@@ -1,3 +1,5 @@
+using System.Security;
+
 namespace ClangSharp
 {
 	using System;
@@ -118,6 +120,7 @@ namespace ClangSharp
 		public uint @NumResults;
 	}
 
+	[SuppressUnmanagedCodeSecurity]
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 	public delegate CXVisitorResult CXCursorAndRangeVisitorDelegate(IntPtr @context, CXCursor @cursor, CXSourceRange @range);
 
@@ -375,6 +378,7 @@ namespace ClangSharp
 		public IntPtr Pointer;
 	}
 
+	[SuppressUnmanagedCodeSecurity]
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 	public delegate CXChildVisitResult CXCursorVisitor(CXCursor @cursor, CXCursor @parent, IntPtr @client_data);
 
@@ -1150,6 +1154,7 @@ namespace ClangSharp
 		@InOut = 2,
 	}
 
+	[SuppressUnmanagedCodeSecurity]
 	public static partial class clang
 	{
 		private const string libraryPath = "clang37";

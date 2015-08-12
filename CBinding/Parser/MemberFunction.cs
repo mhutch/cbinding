@@ -5,7 +5,7 @@ namespace CBinding.Parser
 
 	public class MemberFunction : Function
 	{
-		public MemberFunction (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
+		public MemberFunction (CProject proj, CXCursor cursor) : base (proj, cursor)
 		{
 		}
 	}

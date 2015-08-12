@@ -4,7 +4,7 @@ namespace CBinding.Parser
 {
 	public class Union : Symbol
 	{
-		public Union (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
+		public Union (CProject proj, CXCursor cursor) : base (proj, cursor)
 		{
 		}
 	

@@ -3,6 +3,8 @@ using ClangSharp;
 using MonoDevelop.Ide;
 using CBinding.Parser;
 using MonoDevelop.Core;
+using MonoDevelop.Ide.FindInFiles;
+using System;
 
 namespace CBinding.Refactoring
 {
@@ -16,14 +18,37 @@ namespace CBinding.Refactoring
 		/// </summary>
 		protected override void Run ()
 		{
-			var doc = IdeApp.Workbench.ActiveDocument;
-			var project = (CProject)doc.Project;
-			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
-			CXCursor definingCursor = project.DB.getDefinition (clang.getCursorReferenced (cursor));
-			if (clang.Cursor_isNull (definingCursor) == 0) {
-				SourceLocation loc = project.ClangManager.GetCursorLocation (definingCursor);
-				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
+			var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor (true, true);
+			try {
+				var doc = IdeApp.Workbench.ActiveDocument;
+				var project = (CProject)doc.Project;
+				CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
+				CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
+				bool leastOne = false;
+				foreach (var decl in project.DB.GetDefinitionLocation (referredCursor)) {
+					leastOne = true;
+					var sr = new SearchResult (
+						new FileProvider (decl.FileName),
+						decl.Offset,
+						1
+					);
+					monitor.ReportResult (sr);
+				}
+				if (!leastOne) {
+					CXCursor defCursor = project.ClangManager.GetCursorDefinition (referredCursor);
+					var loc = project.ClangManager.GetCursorLocation (defCursor);
+					IdeApp.Workbench.OpenDocument (loc.FileName, project, loc.Line, loc.Column);
+				}
+			} catch (Exception ex) {
+				if (monitor != null)
+					monitor.ReportError ("Error finding declarations", ex);
+				else
+					LoggingService.LogError ("Error finding declarations", ex);
+			} finally {
+				if (monitor != null)
+					monitor.Dispose ();
 			}
+			
 		}
 
 		/// <summary>

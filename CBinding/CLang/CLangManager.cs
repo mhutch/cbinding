@@ -1,19 +1,18 @@
 ﻿using System;
-using CBinding;
-using ClangSharp;
-using MonoDevelop.Ide;
 using System.Collections.Generic;
-using System.Threading;
-using System.Runtime.InteropServices;
-using CBinding.Refactoring;
-using CBinding.Parser;
 using System.IO;
-using MonoDevelop.Ide.CodeCompletion;
-using MonoDevelop.Projects;
-using MonoDevelop.Ide.TypeSystem;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using CBinding;
+using CBinding.Parser;
+using CBinding.Refactoring;
+using ClangSharp;
 using MonoDevelop.Core;
-using System.Diagnostics;
+using MonoDevelop.Ide;
+using MonoDevelop.Ide.CodeCompletion;
+using MonoDevelop.Ide.TypeSystem;
+using MonoDevelop.Projects;
 
 namespace CBinding
 {
@@ -80,6 +79,7 @@ namespace CBinding
 			project.FileAddedToProject += HandleAddition;
 			project.FileChangedInProject += HandleChange;
 			project.FileRemovedFromProject += HandleRemoval;
+			project.FileRenamedInProject += HandleRename;
 		}
 
 
@@ -96,6 +96,7 @@ namespace CBinding
 		/// <returns>
 		/// A <see cref="CXTranslationUnit"/>: The Translation unit created
 		/// </returns>
+		/// <param name = "force">Set to true when an existing Translation Unit should be disposed and remade.</param>
 		public CXTranslationUnit CreateTranslationUnit (string fileName, CXUnsavedFile[] unsavedFiles, bool force = false) 
 		{
 			lock (SyncRoot) {
@@ -116,6 +117,7 @@ namespace CBinding
 		/// <param name = "unsavedFiles">
 		/// A <see cref="CXUnsavedFile"/> array: array with the contents of unsaved files in IDE. Safe to be a null sized array - CDocumentParser.Parse reparses the TU with properly initialized unsaved files.
 		/// </param>
+		/// <param name = "force">Set to true when an existing Translation Unit should be disposed and remade.</param>
 		void AddToTranslationUnits (string fileName, CXUnsavedFile[] unsavedFiles, bool force)
 		{
 			lock (SyncRoot) {
@@ -139,7 +141,7 @@ namespace CBinding
 					));
 				}
 				UpdateDatabase (fileName, translationUnits[fileName]);
-				PchManager.Add (fileName); //this is here to avoid a data race with configurations.
+				PchManager.Add (fileName, CmdArguments (fileName)); //this is here to avoid a data race with configurations.
 			}
 		}
 
@@ -153,22 +155,10 @@ namespace CBinding
 		/// A <see cref="CXTranslationUnit"/>: the translation unit which's parsed content fills the symbol database
 		/// </param>
 		/// <param name = "cancellationToken"></param>
-		public void UpdateDatabase (string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken))
+		/// <param name = "force"></param>
+		public void UpdateDatabase (string fileName, CXTranslationUnit TU, CancellationToken cancellationToken = default(CancellationToken), bool force = false)
 		{
-			lock (SyncRoot) {
-				Stopwatch s = new Stopwatch ();
-				s.Start ();
-				project.DB.Reset (fileName);
-				CXCursor TUcursor = clang.getTranslationUnitCursor (TU);
-				var parser = new TranslationUnitParser (project.DB, fileName, cancellationToken, TUcursor);
-				project.DB.Connection.Open ();
-				using (var tr = project.DB.Connection.BeginTransaction ()) {
-					clang.visitChildren (TUcursor, parser.Visit, new CXClientData (new IntPtr (0)));
-					tr.Commit ();
-				}
-				project.DB.Connection.Close ();
-				Console.WriteLine (s.ElapsedMilliseconds);
-			}
+			project.DB.UpdateDatabase (fileName, TU, cancellationToken, force);
 		}
 
 		/// <summary>
@@ -318,10 +308,9 @@ namespace CBinding
 			lock (SyncRoot) {
 				CXSourceLocation loc = clang.getCursorLocation (cursor);
 				CXFile file;
-				uint line, column, offset, length;
+				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
 				var fileName = GetFileNameString (file);
-				var extent = clang.getCursorExtent (cursor);
 				CheckForBom (fileName);
 
 				if (IsBomPresentInFile (fileName)) {
@@ -347,7 +336,6 @@ namespace CBinding
 		/// </returns>
 		public SourceLocation GetSourceLocation (CXSourceLocation loc)
 		{
-			lock (SyncRoot) {
 				CXFile file;
 				uint line, column, offset;
 				clang.getExpansionLocation (loc, out file, out line, out column, out offset);
@@ -362,9 +350,7 @@ namespace CBinding
 						new SourceLocation (fileName, line, column, offset - 3);
 					//else column is good as it is, only align offset
 				}
-
 				return new SourceLocation (fileName, line, column, offset);
-			}
 		}
 
 
@@ -456,10 +442,7 @@ namespace CBinding
 		public string GetCursorUsrString (CXCursor cursor)
 		{
 			lock (SyncRoot) {
-				CXString cxstring = clang.getCursorUSR (cursor);
-				string usr = Marshal.PtrToStringAnsi (clang.getCString (cxstring));
-				clang.disposeString (cxstring);
-				return usr;
+				return clang.getCursorUSR (cursor).ToString ();
 			}
 		}
 
@@ -520,11 +503,15 @@ namespace CBinding
 		/// <param name="fileName"></param>
 		public void CheckForBom (string fileName)
 		{
-			using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-				var BOM = new byte[3];
-				s.Read (BOM, 0, 3);
-				bool bomPresent = (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF);
-				BomPresentInFile (fileName, bomPresent);
+			if (project.Files.Any (arg => arg.Name.Equals (fileName))) {
+				using (var s = new FileStream (fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+					var BOM = new byte[3];
+					s.Read (BOM, 0, 3);
+					bool bomPresent = (BOM [0] == 0xEF && BOM [1] == 0xBB && BOM [2] == 0xBF);
+					BomPresentInFile (fileName, bomPresent);
+				}
+			} else {
+				BomPresentInFile (fileName, false);
 			}
 		}
 
@@ -561,7 +548,7 @@ namespace CBinding
 
 		void HandleRemoval (object sender, ProjectFileEventArgs args)
 		{
-			foreach (ProjectFileEventInfo e in args) {
+			foreach (var e in args) {
 				if (!project.Loading && !project.IsCompileable (e.ProjectFile.Name) &&
 					e.ProjectFile.BuildAction == BuildAction.Compile) {
 					e.ProjectFile.BuildAction = BuildAction.None;
@@ -573,21 +560,14 @@ namespace CBinding
 			}
 		}
 
-		/*public List<string> GetIncludes (string name)
+		void HandleRename (object sender, ProjectFileRenamedEventArgs args)
 		{
-			lock (SyncRoot) {
-				var includes = new List<string> ();
-				CXCursorAndRangeVisitor visitor = new CXCursorAndRangeVisitor();
-				visitor.visit = (context, cursor, range) => {
-					includes.Add (cursor.ToString ());
-					return CXVisitorResult.Continue;
-				};
-				CXTranslationUnit tu = translationUnits [name];
-				clang.findIncludesInFile (tu, clang.getFile (tu, name), visitor);
-				Console.WriteLine (string.Join (",", includes));
-				return includes;
+			foreach (var e in args) {
+				translationUnits.Remove (e.OldName);
+				CreateTranslationUnit (e.NewName, project.UnsavedFiles.Get ().ToArray ());
+				PchManager.Rename (e.OldName, e.NewName, CmdArguments (e.NewName));
 			}
-		}*/
+		}
 
 		public CXTranslationUnit Reparse (string name, CXUnsavedFile [] unsavedFilesArray)
 		{
@@ -618,6 +598,7 @@ namespace CBinding
 					project.FileAddedToProject -= HandleAddition;
 					project.FileChangedInProject -= HandleChange;
 					project.FileRemovedFromProject -= HandleRemoval;
+					project.FileRenamedInProject -= HandleRename;
 					foreach (CXTranslationUnit unit in translationUnits.Values)
 						clang.disposeTranslationUnit (unit);
 					clang.disposeIndex (index);

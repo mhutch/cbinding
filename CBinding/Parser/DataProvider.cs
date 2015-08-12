@@ -131,59 +131,6 @@ namespace CBinding.Parser
 			completionString = dataString;
 			description = string.Empty;
 		}
-
-		public CompletionData (Symbol item)
-		{
-			if (item is Class) {
-				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory (ClangCompletionCategory.ClassCategory);
-}			else if (item is ClassTemplate) {
-				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplateCategory);
-}			else if (item is ClassTemplatePartial) {
-				image = Stock.Class;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.ClassTemplatePartialCategory);
-}			else if (item is Struct) {
-				image = Stock.Struct;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.StructCategory);
-}			else if (item is Union) {
-				image = "md-union";
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.UnionCategory);
-}			else if (item is Enumeration) {
-				image = Stock.Enum;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumerationCategory);
-}			else if (item is Enumerator) {
-				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.EnumeratorCategory);
-}			else if (item is Function || item is FunctionTemplate) {
-				image = Stock.Method;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FunctionTemplateCategory);
-}			else if (item is Namespace) {
-				image = Stock.NameSpace;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.NamespaceCategory);
-}			else if (item is Typedef) {
-				image = Stock.Interface;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.TypedefCategory);
-}			else if (item is MemberFunction) {
-				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MethodCategory);
-}			else if (item is Variable) {
-				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.VariablesCategory);
-}			else if (item is Field) {
-				image = Stock.Field;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.FieldCategory);
-}			else if (item is Macro) {
-				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.MacroCategory);
-}			else {
-				image = Stock.Literal;
-				CompletionCategory = new ClangCompletionCategory(ClangCompletionCategory.OtherCategory);
-}			
-			text = item.Signature;
-			completionString = item.Signature;
-			description = string.Empty;
-		}
 		
 		public override IconId Icon {
 			get { return image; }

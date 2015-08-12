@@ -3,6 +3,8 @@ using ClangSharp;
 using MonoDevelop.Ide;
 using CBinding.Parser;
 using MonoDevelop.Core;
+using System;
+using MonoDevelop.Ide.FindInFiles;
 
 namespace CBinding.Refactoring
 {
@@ -16,15 +18,34 @@ namespace CBinding.Refactoring
 		/// </summary>
 		public void Run ()
 		{
-			var doc = IdeApp.Workbench.ActiveDocument;
-			var project = (CProject)doc.Project;
-			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
-			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
-			CXCursor declCursor = project.DB.getDeclaration (referredCursor);
-			referredCursor = declCursor;
-			if (clang.Cursor_isNull (referredCursor) == 0) {
-				SourceLocation loc = project.ClangManager.GetCursorLocation (referredCursor);
-				IdeApp.Workbench.OpenDocument ((FilePath)loc.FileName, project, (int)loc.Line, (int)loc.Column);
+			var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor (true, true);
+			try {
+				var doc = IdeApp.Workbench.ActiveDocument;
+				var project = (CProject)doc.Project;
+				CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
+				CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
+				bool leastOne = false;
+				foreach (var decl in project.DB.getDeclarations (referredCursor)) {
+					leastOne = true;
+					var sr = new SearchResult (
+						new FileProvider (decl.FileName),
+						decl.Offset,
+						1
+					);
+					monitor.ReportResult (sr);
+				}
+				if (!leastOne) {
+					var loc = project.ClangManager.GetCursorLocation (referredCursor);
+					IdeApp.Workbench.OpenDocument (loc.FileName, project, loc.Line, loc.Column);
+				}
+			} catch (Exception ex) {
+				if (monitor != null)
+					monitor.ReportError ("Error finding declarations", ex);
+				else
+					LoggingService.LogError ("Error finding declarations", ex);
+			} finally {
+				if (monitor != null)
+					monitor.Dispose ();
 			}
 		}
 
@@ -38,8 +59,6 @@ namespace CBinding.Refactoring
 			var project = (CProject)doc.Project;
 			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
 			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
-			CXCursor declCursor = project.DB.getDeclaration (referredCursor);
-			referredCursor = declCursor;
 			info.Visible = (clang.Cursor_isNull (referredCursor) == 0);
 			info.Bypass = !info.Visible;
 		}

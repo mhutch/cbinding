@@ -22,7 +22,6 @@
     <ConsolePause>False</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
     <Optimize>True</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <WarningLevel>4</WarningLevel>
@@ -96,6 +95,27 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="libclang37.so" />
+    <None Include="Navigation\ClassPadEventArgs.cs" />
+    <None Include="Navigation\EnumerationNodeBuilder.cs" />
+    <None Include="Navigation\EnumeratorNodeBuilder.cs" />
+    <None Include="Navigation\FunctionNodeBuilder.cs" />
+    <None Include="Navigation\GlobalsNodeBuilder.cs" />
+    <None Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
+    <None Include="Navigation\MacroNodeBuilder.cs" />
+    <None Include="Navigation\NamespaceNodeBuilder.cs" />
+    <None Include="Navigation\ProjectNodeBuilderExtension.cs" />
+    <None Include="Navigation\TypedefNodeBuilder.cs" />
+    <None Include="Navigation\UnionNodeBuilder.cs" />
+    <None Include="Navigation\VariableNodeBuilder.cs" />
+    <None Include="Navigation\SymbolEventArgs.cs" />
+    <None Include="Navigation\SymbolCommandHandler.cs" />
+    <None Include="Navigation\StructNodeBuilder.cs" />
+    <None Include="Navigation\FieldNodeBuilder.cs" />
+    <None Include="Navigation\ClassNodeBuilder.cs" />
+    <None Include="Navigation\ClassTemplateNodeBuilder.cs" />
+    <None Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
+    <None Include="Navigation\MemberFunctionNodeBuilder.cs" />
+    <None Include="Navigation\FunctionTemplateNodeBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
@@ -167,8 +187,9 @@
     <Reference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces">
       <HintPath>..\packages\Microsoft.CodeAnalysis.VisualBasic.Workspaces.1.0.0\lib\net45\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Data.Sqlite" />
     <Reference Include="System.Data" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="Mono.Data.Sqlite" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Project\CProject.cs" />
@@ -209,22 +230,7 @@
     <Compile Include="Parser\ClangCompletionUnit.cs" />
     <Compile Include="Parser\ClangCompletionCategory.cs" />
     <Compile Include="Parser\Symbol.cs" />
-    <Compile Include="Parser\Function.cs" />
-    <Compile Include="Parser\MemberFunction.cs" />
-    <Compile Include="Parser\FunctionTemplate.cs" />
-    <Compile Include="Parser\Class.cs" />
-    <Compile Include="Parser\Namespace.cs" />
-    <Compile Include="Parser\Struct.cs" />
-    <Compile Include="Parser\Enumeration.cs" />
-    <Compile Include="Parser\Enumerator.cs" />
-    <Compile Include="Parser\Union.cs" />
-    <Compile Include="Parser\Typedef.cs" />
-    <Compile Include="Parser\Variable.cs" />
-    <Compile Include="Parser\Macro.cs" />
     <Compile Include="Parser\TranslationUnitParser.cs" />
-    <Compile Include="Parser\ClassTemplate.cs" />
-    <Compile Include="Parser\Field.cs" />
-    <Compile Include="Parser\ClassTemplatePartial.cs" />
     <Compile Include="Parser\SourceLocation.cs" />
     <Compile Include="Refactoring\Reference.cs" />
     <Compile Include="Refactoring\FindReferencesHandler.cs" />
@@ -237,27 +243,6 @@
     <Compile Include="Parser\CDocumentParser.cs" />
     <Compile Include="Gui\RenameHandlerDialog.cs" />
     <Compile Include="gtk-gui\CBinding.RenameHandlerDialog.cs" />
-    <Compile Include="Navigation\ClassPadEventArgs.cs" />
-    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
-    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
-    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
-    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
-    <Compile Include="Navigation\MacroNodeBuilder.cs" />
-    <Compile Include="Navigation\NamespaceNodeBuilder.cs" />
-    <Compile Include="Navigation\ProjectNodeBuilderExtension.cs" />
-    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
-    <Compile Include="Navigation\UnionNodeBuilder.cs" />
-    <Compile Include="Navigation\VariableNodeBuilder.cs" />
-    <Compile Include="Navigation\SymbolEventArgs.cs" />
-    <Compile Include="Navigation\SymbolCommandHandler.cs" />
-    <Compile Include="Navigation\StructNodeBuilder.cs" />
-    <Compile Include="Navigation\FieldNodeBuilder.cs" />
-    <Compile Include="Navigation\ClassNodeBuilder.cs" />
-    <Compile Include="Navigation\ClassTemplateNodeBuilder.cs" />
-    <Compile Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
-    <Compile Include="Navigation\MemberFunctionNodeBuilder.cs" />
-    <Compile Include="Navigation\FunctionTemplateNodeBuilder.cs" />
     <Compile Include="Parser\OverloadCandidate.cs" />
     <Compile Include="Parser\CParsedDocument.cs" />
     <Compile Include="Project\UnsavedFilesManager.cs" />

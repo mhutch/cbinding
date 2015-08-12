@@ -24,12 +24,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
 using System.Collections.Generic;
-using MonoDevelop.Ide.TypeSystem;
+using System.Threading;
 using ClangSharp;
 using MonoDevelop.Ide.Editor;
-using System.Threading;
-using System;
+using MonoDevelop.Ide.TypeSystem;
 
 namespace CBinding.Parser
 {
@@ -92,10 +92,8 @@ namespace CBinding.Parser
 					}
 					clang.disposeDiagnostic (diag);
 				}
-				Manager.UpdateDatabase (FileName, TU, cancellationToken);
-				Console.WriteLine ("up");
+				Manager.UpdateDatabase (FileName, TU, cancellationToken, true);
 			}
 		}
 	}
-	
 }

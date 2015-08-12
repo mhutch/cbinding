@@ -1,6 +1,7 @@
 using System;
 using ClangSharp;
 using System.Threading;
+using System.Security;
 
 
 namespace CBinding.Parser
@@ -27,12 +28,25 @@ namespace CBinding.Parser
 		public CXChildVisitResult Visit (CXCursor cursor, CXCursor parent, IntPtr data)
 		{
 			if (token.IsCancellationRequested)
-				return CXChildVisitResult.Break;
+				return CXChildVisitResult.Break; 
+
+			if (!file.Equals (GetFileName (cursor)))
+				return CXChildVisitResult.Continue;
 			
-			db.AddToDatabase (file, cursor, token);
+			if (clang.isDeclaration (cursor.kind) != 0)
+				db.AddToDatabase (file, cursor, token);
 			return CXChildVisitResult.Recurse;
 		}
 	
+		string GetFileName(CXCursor cursor)
+		{
+			CXSourceLocation loc = clang.getCursorLocation (cursor);
+			CXFile cxfile;
+			uint line, column, offset;
+			clang.getExpansionLocation (loc, out cxfile, out line, out column, out offset);
+			return clang.getFileName (cxfile).ToString ();
+		}
+
 	}
 
 }

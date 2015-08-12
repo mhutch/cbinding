@@ -5,6 +5,7 @@ using MonoDevelop.Ide;
 using MonoDevelop.Core;
 using System.Linq;
 using System.IO;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace CBinding
 {
@@ -31,7 +32,7 @@ namespace CBinding
 			return source.LastWriteTime.Equals (pch.LastWriteTime);
 		}
 
-		void GeneratePch (string name)
+		void GeneratePch (string name, string [] args)
 		{
 			bool error = false;
 			var ec = CXErrorCode.Success;
@@ -41,7 +42,7 @@ namespace CBinding
 				// TODO
 				// saving existing TU more than once crashes the native clang thread internally and therefore MD
 				// might be fixed in clang 3.7.0 stable release (2015. 08. 21.) || might be intended to work this way
-				Console.WriteLine ("Parsing PCH: " + (ec = clang.parseTranslationUnit2 (Index, name, new [] { "-I/usr/include/clang/3.7.0/include" }, 1, null, 0, (uint)CXTranslationUnit_Flags.ForSerialization, out pch)));
+				Console.WriteLine ("Parsing PCH: " + (ec = clang.parseTranslationUnit2 (Index, name, args, args.Length, null, 0, (uint)CXTranslationUnit_Flags.ForSerialization, out pch)));
 				error |= ec != CXErrorCode.Success;
 				if (!error) {
 					uint numDiag = clang.getNumDiagnostics (pch);
@@ -70,11 +71,11 @@ namespace CBinding
 			Headers.Add (name);
 		}
 
-		public void Add (string name)
+		public void Add (string name, string [] args)
 		{
 			if (!CProject.HeaderExtensions.Any (o => o.Equals (new FilePath (name).Extension.ToUpper ())))
 				return;
-			GeneratePch (name);
+			GeneratePch (name, args);
 			AddToIncludes (name);
 		}
 
@@ -82,7 +83,7 @@ namespace CBinding
 		{
 			if (!CProject.HeaderExtensions.Any (o => o.Equals (new FilePath (name).Extension.ToUpper ())))
 				return;
-			GeneratePch (name);
+			GeneratePch (name, args);
 		}
 
 		public void Remove (string name)
@@ -91,6 +92,12 @@ namespace CBinding
 				Headers.Remove (name);
 				File.Delete (name + ".pch");
 			}
+		}
+
+		public void Rename (string oldName, string newName, string [] args)
+		{
+			Remove (oldName);
+			Add (newName, args);
 		}
 	}
 }

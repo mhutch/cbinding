@@ -43,15 +43,15 @@ namespace CBinding
 		protected void OnButtonOkClicked (object sender, EventArgs e)
 		{
 			newSpelling = renameEntry.Text;
-			Regex identifier = new Regex ("^[a-zA-Z_][a-zA-Z0-9_]*$");
+			var identifier = new Regex ("^[a-zA-Z_][a-zA-Z0-9_]*$");
 			if(identifier.IsMatch (newSpelling)) {
 				FindRefsAndRename (project, cursorReferenced);
-				this.Destroy ();
+				Destroy ();
 				return;
 			}
 			if(unsafeCheckBox.Active) {
 				FindRefsAndRename (project, cursorReferenced);
-				this.Destroy ();
+				Destroy ();
 				return;
 			}
 			unsafeLabel.Show ();
@@ -62,16 +62,18 @@ namespace CBinding
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
 			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
 			string USR = project.ClangManager.GetCursorUsrString (referenced);
+
 			if (UsrOfReferenced.Equals (USR)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
-				Reference reference = new Reference (project, cursor, range);
+				var reference = new Reference (project, cursor, range);
 				var file = project.Files.GetFile (reference.FileName);
+
 				if (file != null) {
 					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
 					if (!references.Contains (reference)
 						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
 						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
-						&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (cursor.ToString ())) {
+						&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (referenced.ToString ())) {
 						references.Add (reference);
 					}			
 				}
@@ -87,11 +89,15 @@ namespace CBinding
 		public void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
 			try {
-				project.ClangManager.FindReferences (this);
+				
+				lock(project.ClangManager.SyncRoot)
+					project.ClangManager.FindReferences (this);
+				
 				references.Sort ();
 				int diff = newSpelling.Length - spelling.Length;
-				Dictionary<string, int> offsets = new Dictionary<string, int>();
-				Dictionary<string, StringBuilder> tmp = new Dictionary<string, StringBuilder>();
+				var offsets = new Dictionary<string, int>();
+				var tmp = new Dictionary<string, StringBuilder>();
+
 				foreach (var reference in references) {
 					try {
 						var doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
@@ -103,9 +109,9 @@ namespace CBinding
 						tmp[reference.FileName].Remove (reference.Offset + i*diff, reference.Length);
 						tmp[reference.FileName].Insert (reference.Offset + i*diff, newSpelling);
 						offsets[reference.FileName] = ++i;
-					} catch (Exception){
-					}
+					} catch (Exception){}
 				}
+
 				foreach(var content in tmp)
 					IdeApp.Workbench.GetDocument (content.Key).Editor.ReplaceText (
 						new TextSegment (
@@ -114,6 +120,7 @@ namespace CBinding
 						),
 						content.Value.ToString ()
 					);
+				
 			} catch (Exception ex) {
 				LoggingService.LogError ("Error renaming references", ex);
 			} 

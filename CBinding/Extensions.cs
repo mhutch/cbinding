@@ -6,7 +6,7 @@
 	{
 		public override string ToString()
 		{
-			string retval = Marshal.PtrToStringAnsi(this.data);
+			string retval = Marshal.PtrToStringAnsi(clang.getCString (this));
 			clang.disposeString(this);
 			return retval;
 		}

@@ -5,7 +5,7 @@ namespace CBinding.Parser
 {
 	public class Field : Symbol
 	{
-		public Field (CProject proj, string fileN, CXCursor cursor, bool global) : base (proj, fileN, cursor, global)
+		public Field (CProject proj, CXCursor cursor) : base (proj, cursor)
 		{
 		}
 
