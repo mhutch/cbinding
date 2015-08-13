@@ -59,11 +59,11 @@ namespace CBinding.Parser
 		/// Updates Symbol Database
 		/// Places error markers on document
 		/// </summary>
-		public void ParseAndDiagnose (CancellationToken cancellationToken = default(CancellationToken))
+		public void ParseAndDiagnose (CancellationToken cancellationToken)
 		{
 			lock (Manager.SyncRoot) {
 				var unsavedFilesArray = unsavedFiles.ToArray ();
-				TU = Manager.Reparse (FileName, unsavedFilesArray);
+				TU = Manager.Reparse (FileName, unsavedFilesArray, cancellationToken);
 				uint numDiag = clang.getNumDiagnostics (TU);
 				for (uint i = 0; i < numDiag; i++) {
 					CXDiagnostic diag = clang.getDiagnostic (TU, i);

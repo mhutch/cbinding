@@ -52,6 +52,7 @@ using CBinding.Refactoring;
 using CBinding.Parser;
 using System.Text.RegularExpressions;
 using MonoDevelop.Ide.Gui.Dialogs;
+using Microsoft.CodeAnalysis;
 
 
 namespace CBinding
@@ -296,14 +297,7 @@ namespace CBinding
 				ICompletionDataList list = new CompletionDataList ();
 				if (ShouldCompleteOn (completionChar)) {
 					var project = (CProject)DocumentContext.Project;
-					unsavedFiles = new List<CXUnsavedFile> ();
-					foreach (var openDocument in project.UnsavedFiles.UnsavedFileCollection) {
-						if (openDocument.Value.IsDirty) {
-							var unsavedFile = new CXUnsavedFile ();
-							unsavedFile.Initialize (openDocument.Key, openDocument.Value.Text, project.IsBomPresentInFile (openDocument.Key));
-							unsavedFiles.Add (unsavedFile);
-						}
-					}
+					unsavedFiles = project.UnsavedFiles.Get ();
 					bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
 					IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 					if (pResults.ToInt64 () != 0) {
@@ -458,21 +452,8 @@ namespace CBinding
 				#endregion
 
 				if (string.IsNullOrEmpty (functionName))
-					return Task.FromResult<ParameterHintingResult> (null);
-				unsavedFiles = project.UnsavedFiles.Get ();
-
-				#endregion
-
-				if (string.IsNullOrEmpty (functionName))
 					return (ParameterHintingResult) null;
-				var unsavedFiles = new List<CXUnsavedFile> ();
-				foreach (var openDocument in project.UnsavedFiles.UnsavedFileCollection) {
-					if (openDocument.Value.IsDirty) {
-						var unsavedFile = new CXUnsavedFile ();
-						unsavedFile.Initialize (openDocument.Key, openDocument.Value.Text, project.IsBomPresentInFile (openDocument.Key));
-						unsavedFiles.Add (unsavedFile);
-					}
-				}
+				unsavedFiles = project.UnsavedFiles.Get ();
 
 				IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
 				CXCodeCompleteResults results = Marshal.PtrToStructure<CXCodeCompleteResults> (pResults);

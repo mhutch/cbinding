@@ -216,17 +216,15 @@ namespace CBinding
 			CXUnsavedFile[] unsavedFiles,
 			string fileName)
 		{
-			lock (SyncRoot) {
-				string name = fileName;
-				CXTranslationUnit TU = translationUnits [name];
-				string complete_filename = fileName;
 				uint complete_line = (uint) (completionContext.TriggerLine);
 				uint complete_column = (uint) (completionContext.TriggerLineOffset + 1);
 				uint numUnsavedFiles = (uint) (unsavedFiles.Length);
 				uint options = (uint) CXCodeComplete_Flags.IncludeCodePatterns | (uint)CXCodeComplete_Flags.IncludeCodePatterns;
+			lock (SyncRoot) {
+				CXTranslationUnit TU = translationUnits [fileName];
 				return clang.codeCompleteAt (
 									  TU,
-									  complete_filename, 
+									  fileName, 
 									  complete_line, 
 									  complete_column, 
 									  unsavedFiles, 
@@ -573,17 +571,19 @@ namespace CBinding
 			}
 		}
 
-		public CXTranslationUnit Reparse (string name, CXUnsavedFile [] unsavedFilesArray)
+		public CXTranslationUnit Reparse (string name, CXUnsavedFile[] unsavedFilesArray, CancellationToken token)
 		{
 			lock (SyncRoot) {
 				CXTranslationUnit TU = translationUnits [name];
-				if(!Loaded[name]) {
-					clang.reparseTranslationUnit (
-						TU,
-						(uint)(unsavedFilesArray.Length),
-						unsavedFilesArray,
-						clang.defaultReparseOptions (TU)
-					);
+				if (!Loaded[name]) {
+					if (!token.IsCancellationRequested) {
+						clang.reparseTranslationUnit (
+							TU,
+							(uint)(unsavedFilesArray.Length),
+							unsavedFilesArray,
+							clang.defaultReparseOptions (TU)
+						);
+					}
 				} else {
 					RemoveTranslationUnit (name);
 					CreateTranslationUnit (name, unsavedFilesArray, true);
