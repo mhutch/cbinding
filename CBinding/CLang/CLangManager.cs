@@ -364,6 +364,7 @@ namespace CBinding
 		{
 			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
+					visitor.File = T.Key;
 					clang.visitChildren (
 						clang.getTranslationUnitCursor (T.Value),
 						visitor.Visit,
@@ -383,6 +384,7 @@ namespace CBinding
 		{
 			lock (SyncRoot) {
 				foreach (var T in translationUnits) {
+					visitor.File = T.Key;
 					clang.visitChildren (
 						clang.getTranslationUnitCursor (T.Value),
 						visitor.Visit,
@@ -485,15 +487,17 @@ namespace CBinding
 
 		public bool IsBomPresentInFile (string filename)
 		{
-			return bomPresentInFile [filename];
+			return filename != null && bomPresentInFile.ContainsKey (filename) ? bomPresentInFile [filename] : false;
 		}
 
 		public void BomPresentInFile (string filename, bool value)
 		{
-			if (bomPresentInFile.ContainsKey (filename))
-				bomPresentInFile [filename] = value;
-			else 
-				bomPresentInFile.Add (filename, value);
+			if (filename != null) {
+				if (bomPresentInFile.ContainsKey (filename))
+					bomPresentInFile [filename] = value;
+				else
+					bomPresentInFile.Add (filename, value);
+			}
 		}
 
 		/// <summary>

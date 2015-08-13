@@ -41,9 +41,9 @@ namespace CBinding.Refactoring
 				}
 			} catch (Exception ex) {
 				if (monitor != null)
-					monitor.ReportError ("Error finding declarations", ex);
+					monitor.ReportError ("Error finding definition", ex);
 				else
-					LoggingService.LogError ("Error finding declarations", ex);
+					LoggingService.LogError ("Error finding definition", ex);
 			} finally {
 				if (monitor != null)
 					monitor.Dispose ();
@@ -60,7 +60,10 @@ namespace CBinding.Refactoring
 			var doc = IdeApp.Workbench.ActiveDocument;
 			var project = (CProject)doc.Project;
 			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
-			info.Visible = (clang.Cursor_isNull (cursor) == 0);
+			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
+			CXCursor defCursor = project.ClangManager.GetCursorDefinition (referredCursor);
+			var loc = project.ClangManager.GetCursorLocation (defCursor);
+			info.Visible = (clang.Cursor_isNull (referredCursor) == 0 && loc.FileName != null);
 			info.Bypass = !info.Visible;
 		}
 

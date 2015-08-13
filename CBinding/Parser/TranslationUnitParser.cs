@@ -38,7 +38,7 @@ namespace CBinding.Parser
 			return CXChildVisitResult.Recurse;
 		}
 	
-		string GetFileName(CXCursor cursor)
+		public static string GetFileName(CXCursor cursor)
 		{
 			CXSourceLocation loc = clang.getCursorLocation (cursor);
 			CXFile cxfile;

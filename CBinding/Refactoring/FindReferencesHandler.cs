@@ -6,6 +6,7 @@ using ClangSharp;
 using System.Collections.Generic;
 using MonoDevelop.Ide.FindInFiles;
 using MonoDevelop.Ide.Gui;
+using CBinding.Parser;
 
 namespace CBinding.Refactoring
 {	
@@ -18,6 +19,7 @@ namespace CBinding.Refactoring
 		CProject project;
 		CXCursor cursorReferenced;
 		string UsrReferenced;
+		public string File;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CBinding.Refactoring.FindReferencesHandler"/> class.
@@ -47,23 +49,24 @@ namespace CBinding.Refactoring
 		/// <param name="data">Data.</param>
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data)
 		{
+			if (!File.Equals (TranslationUnitParser.GetFileName (cursor)))
+				return CXChildVisitResult.Continue;
+			
 			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
 			string Usr = project.ClangManager.GetCursorUsrString (referenced);
 
 			if (UsrReferenced.Equals (Usr)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				var reference = new Reference (project, cursor, range);
-				var file = project.Files.GetFile (reference.FileName);
 
-				if (file != null) {
-					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
-					if (!references.Contains (reference)
-						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
-						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
-						&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (referenced.ToString ())){
-						references.Add (reference);
-					}			
-				}
+				Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
+				if (!references.Contains (reference)
+					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
+					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
+					&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (referenced.ToString ())){
+					references.Add (reference);
+				}			
+
 			}
 			return CXChildVisitResult.Recurse;
 		}

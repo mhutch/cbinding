@@ -9,6 +9,7 @@ using MonoDevelop.Components.Commands;
 using MonoDevelop.Core.Text;
 using System.Text;
 using System.Text.RegularExpressions;
+using CBinding.Parser;
 
 namespace CBinding
 {
@@ -16,10 +17,11 @@ namespace CBinding
 	{
 		protected CProject project;
 		protected CXCursor cursorReferenced;
-		protected string UsrOfReferenced;
+		protected string UsrReferenced;
 		protected string spelling;
 		protected string newSpelling;
 		protected Document document;
+		public string File;
 
 		public RenameHandlerDialog (CProject proj, Document doc)
 		{
@@ -30,7 +32,7 @@ namespace CBinding
 					doc.Editor.CaretLocation
 				)
 			);
-			UsrOfReferenced = project.ClangManager.GetCursorUsrString (cursorReferenced);
+			UsrReferenced = project.ClangManager.GetCursorUsrString (cursorReferenced);
 			spelling = project.ClangManager.GetCursorSpelling(cursorReferenced);
 			document = doc;
 		}
@@ -60,23 +62,24 @@ namespace CBinding
 		List<Reference> references = new List<Reference>();
 
 		public CXChildVisitResult Visit(CXCursor cursor, CXCursor parent, IntPtr data){
-			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
-			string USR = project.ClangManager.GetCursorUsrString (referenced);
+			if (!File.Equals (TranslationUnitParser.GetFileName (cursor)))
+				return CXChildVisitResult.Continue;
 
-			if (UsrOfReferenced.Equals (USR)) {
+			CXCursor referenced = project.ClangManager.GetCursorReferenced (cursor);
+			string Usr = project.ClangManager.GetCursorUsrString (referenced);
+
+			if (UsrReferenced.Equals (Usr)) {
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				var reference = new Reference (project, cursor, range);
-				var file = project.Files.GetFile (reference.FileName);
 
-				if (file != null) {
-					Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
-					if (!references.Contains (reference)
-						//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
-						//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
-						&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (referenced.ToString ())) {
-						references.Add (reference);
-					}			
-				}
+				Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
+				if (!references.Contains (reference)
+					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
+					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
+					&& doc.Editor.GetTextAt (reference.Begin.Offset, reference.Length).Equals (referenced.ToString ())){
+					references.Add (reference);
+				}			
+
 			}
 			return CXChildVisitResult.Recurse;
 		}
