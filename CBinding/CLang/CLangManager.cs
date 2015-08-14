@@ -36,7 +36,7 @@ namespace CBinding
 		CProject project;
 		CXIndex index;
 		Dictionary<string, CXTranslationUnit> translationUnits { get; }
-		PrecompiledHeadersManager PchManager { get; }
+		SerializationManager SerManager { get; }
 
 		Dictionary<string, bool> Loaded {get;}
 
@@ -72,7 +72,7 @@ namespace CBinding
 		{
 			project = proj;
 			index = clang.createIndex (0, 0);
-			PchManager = new PrecompiledHeadersManager (project, this, index);
+			SerManager = new SerializationManager (project, this, index);
 			translationUnits = new Dictionary<string, CXTranslationUnit> ();
 			Loaded = new Dictionary<string, bool> ();
 			project.DefaultConfigurationChanged += HandleDefaultConfigurationChange;
@@ -122,13 +122,13 @@ namespace CBinding
 		{
 			lock (SyncRoot) {
 				var options = clang.defaultEditingTranslationUnitOptions ();// & ~(uint)CXTranslationUnit_Flags.PrecompiledPreamble; <- without this we have NO ERROR MARKERS! 
-				if (!force && CProject.HeaderExtensions.Any (o => o.Equals (new FilePath (fileName).Extension.ToUpper ()))) {
-					if (!PrecompiledHeadersManager.PchIsUpToDate (fileName)) {
-						PchManager.Update (fileName, CmdArguments (fileName));
+			
+				if (!force) {
+					if (!SerializationManager.SerFormIsUpToDate (fileName)) {
+						SerManager.Update (fileName, CmdArguments (fileName));
 					}
 					translationUnits.Add (fileName, clang.createTranslationUnit (index, fileName + ".pch"));
 					Loaded [fileName] = true;
-					
 				} else {
 					translationUnits.Add (fileName, clang.parseTranslationUnit (
 						index,
@@ -141,7 +141,7 @@ namespace CBinding
 					));
 				}
 				UpdateDatabase (fileName, translationUnits[fileName]);
-				PchManager.Add (fileName, CmdArguments (fileName)); //this is here to avoid a data race with configurations.
+				SerManager.Add (fileName, CmdArguments (fileName)); //this is here to avoid a data race with configurations.
 			}
 		}
 
@@ -544,7 +544,7 @@ namespace CBinding
 					e.ProjectFile.BuildAction = BuildAction.None;
 				}
 
-				PchManager.Update (e.ProjectFile.Name, CmdArguments(e.ProjectFile.Name));
+				SerManager.Update (e.ProjectFile.Name, CmdArguments(e.ProjectFile.Name));
 			}
 		}
 
@@ -558,8 +558,8 @@ namespace CBinding
 				if (e.ProjectFile.BuildAction == BuildAction.Compile)
 					RemoveTranslationUnit (e.ProjectFile.Name);
 					
-				PchManager.Remove (e.ProjectFile.Name);
-			}
+				SerManager.Remove (e.ProjectFile.Name);
+				}
 		}
 
 		void HandleRename (object sender, ProjectFileRenamedEventArgs args)
@@ -567,7 +567,7 @@ namespace CBinding
 			foreach (var e in args) {
 				translationUnits.Remove (e.OldName);
 				CreateTranslationUnit (e.NewName, project.UnsavedFiles.Get ().ToArray ());
-				PchManager.Rename (e.OldName, e.NewName, CmdArguments (e.NewName));
+				SerManager.Rename (e.OldName, e.NewName, CmdArguments (e.NewName));
 			}
 		}
 
