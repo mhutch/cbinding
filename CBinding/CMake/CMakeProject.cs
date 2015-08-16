@@ -27,20 +27,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
+using Gtk;
 using MonoDevelop.Core;
 using MonoDevelop.Core.Execution;
+using MonoDevelop.Ide;
 using MonoDevelop.Projects;
 
 namespace CBinding
 {
-	public class CMakeProject : SolutionItem
+	public class CMakeProject : FolderBasedProject
 	{
 		FilePath file;
 		string name;
 		FilePath outputDirectory = new FilePath ("./bin");
 		CMakeFileFormat fileFormat;
+		Regex extensions = new Regex (@"(\.c|\.c\+\+|\.cc|\.cpp|\.cxx|\.m|\.mm|\.h|\.hh|\.h\+\+|\.hm|\.hpp|\.hxx|\.in|\.txx)$",
+									  RegexOptions.IgnoreCase);
 
 		public override FilePath FileName {
 			get {
@@ -208,8 +212,8 @@ namespace CBinding
 			return fileFormat.Targets.Values.ToList ();
 		}
 
-		/*
 		List<FilePath> files = new List<FilePath> ();
+
 		protected override IEnumerable<FilePath> OnGetItemFiles (bool includeReferencedFiles)
 		{
 			files.Clear ();
@@ -218,19 +222,19 @@ namespace CBinding
 			}
 			return files;
 		}
-		
+
 		CMakeTarget GetTarget (FilePath fileName)
 		{
 			string filename = fileName.FileName;
 			foreach (CMakeTarget target in fileFormat.Targets.Values) {
-				foreach (string file in target.Files.Keys) {
+				foreach (string file in target.Files) {
 					if (file.EndsWith (filename, StringComparison.OrdinalIgnoreCase))
 						return target;
 				}
 			}
 			return null;
 		}
-		
+
 		void AddFile (FilePath fileName, string targetName)
 		{
 			fileName = fileName.ToRelative (file.ParentDirectory);
@@ -239,15 +243,6 @@ namespace CBinding
 					fileFormat.Targets [target].AddFile (fileName.ToString ());
 			}
 		}
-		
-		void RemoveFile (FilePath fileName)
-		{
-			fileName = fileName.ToRelative (file.ParentDirectory);
-			foreach (CMakeTarget target in fileFormat.Targets.Values) {
-				target.RemoveFile (fileName);
-			}
-		}
-		//*/
 
 		protected override Task<BuildResult> OnBuild (ProgressMonitor monitor, ConfigurationSelector configuration,
 													  OperationContext operationContext)
@@ -346,6 +341,147 @@ namespace CBinding
 				if (target.Type == CMakeTarget.Types.Binary) return true;
 			}
 			return false;
+		}
+
+		public override void OnFileRemoved (FilePath file)
+		{
+			base.OnFileRemoved (file);
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RemoveFile (file);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFilesRemoved (List<FilePath> files)
+		{
+			base.OnFilesRemoved (files);
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RemoveFiles (files);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFileRenamed (FilePath oldFile, FilePath newFile)
+		{
+			base.OnFileRenamed (oldFile, newFile);
+
+			var oldFiles = new List<FilePath> () { oldFile };
+			var newFiles = new List<FilePath> () { newFile };
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RenameFiles (oldFiles, newFiles);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFileMoved (FilePath src, FilePath dst)
+		{
+			base.OnFileMoved (src, dst);
+
+			var oldFiles = new List<FilePath> () { src };
+			var newFiles = new List<FilePath> () { dst };
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RenameFiles (oldFiles, newFiles);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFilesMoved (List<FilePath> src, List<FilePath> dst)
+		{
+			base.OnFilesMoved (src, dst);
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RenameFiles (src, dst);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFilesRenamed (List<FilePath> oldFiles, List<FilePath> newFiles)
+		{
+			base.OnFilesRenamed (oldFiles, newFiles);
+
+			foreach (var target in fileFormat.Targets.Values.ToList ()) {
+				target.RenameFiles (oldFiles, newFiles);
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFileAdded (FilePath file)
+		{
+			base.OnFileAdded (file);
+
+			if (!extensions.IsMatch (file))
+				return;
+
+			using (var dlg = new TargetPickerDialog ("Pick a target", fileFormat)) {
+				if (MessageService.ShowCustomDialog (dlg) != (int)ResponseType.Ok)
+					return;
+
+				foreach (var target in dlg.SelectedTargets) {
+					target.AddFile (file.CanonicalPath.ToRelative (fileFormat.File.ParentDirectory));
+				}
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFilesAdded (List<FilePath> files)
+		{
+			base.OnFilesAdded (files);
+
+			var filesToAdd = new List<FilePath> ();
+			foreach (var file in files) {
+				if (extensions.IsMatch (file))
+					filesToAdd.Add (file);
+			}
+
+			if (filesToAdd.Count == 0)
+				return;
+
+			using (var dlg = new TargetPickerDialog ("Pick a target", fileFormat)) {
+				if (MessageService.ShowCustomDialog (dlg) != (int)ResponseType.Ok)
+					return;
+
+				foreach (var target in dlg.SelectedTargets) {
+					foreach (var file in filesToAdd)
+						target.AddFile (file.CanonicalPath.ToRelative (fileFormat.File.ParentDirectory));
+				}
+			}
+
+			fileFormat.SaveAll ();
+		}
+
+		public override void OnFileCopied (FilePath src, FilePath dst)
+		{
+			base.OnFileCopied (src, dst);
+
+			if (dst.IsDirectory) {
+				dst = dst + Path.DirectorySeparatorChar + src.FileName;
+			}
+
+			OnFileAdded (dst);
+		}
+
+		public override void OnFilesCopied (List<FilePath> src, List<FilePath> dst)
+		{
+			base.OnFilesCopied (src, dst);
+
+			for (int i = 0; i < src.Count; i++) {
+				if (dst [i].IsDirectory) {
+					dst [i] = dst [i] + Path.DirectorySeparatorChar + src [i].FileName;
+				}
+			}
+
+			OnFilesAdded (dst);
 		}
 
 		public CMakeProject ()

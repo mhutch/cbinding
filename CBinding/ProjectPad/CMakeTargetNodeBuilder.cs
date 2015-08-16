@@ -9,7 +9,7 @@ using MonoDevelop.Projects.Text;
 
 namespace CBinding.ProjectPad
 {
-	public class CMakeTargetNodeBuilder : SolutionItemNodeBuilder
+	public class CMakeTargetNodeBuilder : FolderBasedProjectNodeBuilder
 	{
 		public override Type NodeDataType {
 			get {

@@ -170,8 +170,9 @@
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectNodeExtension" class = "CBinding.ProjectPad.ProjectNodeExtension"/>
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectPackagesFolderNodeBuilder" class = "CBinding.ProjectPad.ProjectPackagesFolderNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectPackageNodeBuilder" class = "CBinding.ProjectPad.ProjectPackageNodeBuilder"/>
-		<NodeBuilder id = "CBinding.ProjectPad.SolutionItemNodeBuilder" class = "CBinding.ProjectPad.SolutionItemNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.FolderBasedProjectNodeBuilder" class = "CBinding.ProjectPad.FolderBasedProjectNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.CMakeProjectNodeBuilder" class = "CBinding.ProjectPad.CMakeTargetNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.SystemFileNodeBuilder" class = "CBinding.ProjectPad.SystemFileNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.SystemFolderNodeBuilder" class = "CBinding.ProjectPad.SystemFolderNodeBuilder"/>
 	</Extension>
 
@@ -206,7 +207,7 @@
 	</Extension>
 
 	<Extension path = "/MonoDevelop/Ide/ContextMenu/ProjectPad">
-		<Condition id="ItemType" value="SolutionItem">
+		<Condition id="ItemType" value="FolderBasedProject">
 			<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.EditSolutionItem" />
 		</Condition>
 

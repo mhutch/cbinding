@@ -11,17 +11,17 @@ using MonoDevelop.Projects;
 
 namespace CBinding.ProjectPad
 {
-	public class SolutionItemNodeBuilder : TypeNodeBuilder
+	public class FolderBasedProjectNodeBuilder : TypeNodeBuilder
 	{
 		public override Type NodeDataType {
 			get {
-				return typeof (SolutionItem);
+				return typeof (FolderBasedProject);
 			}
 		}
 
 		public override Type CommandHandlerType {
 			get {
-				return typeof (SolutionItemCommandHandler);
+				return typeof (FolderBasedProjectCommandHandler);
 			}
 		}
 
@@ -46,46 +46,40 @@ namespace CBinding.ProjectPad
 
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
-			//var item = (SolutionItem)dataObject;
-			//return item.GetItemFiles (true).GetEnumerator ().MoveNext () ||
-			//	item.GetChildren ().GetEnumerator ().MoveNext ();
 			return true;
 		}
 
 		public override void BuildChildNodes (ITreeBuilder treeBuilder, object dataObject)
 		{
-			var item = (SolutionItem)dataObject;
-			//foreach (FilePath file in item.GetItemFiles (true)) {
-			//	bool transparent = !File.Exists (file);
-			//	var systemFile = new MonoDevelop.Ide.Gui.Pads.ProjectPad.SystemFile (file, item, transparent);
-			//	treeBuilder.AddChild (systemFile);
-			//}
-
-			//foreach (WorkspaceObject obj in item.GetChildren ())
-			//	treeBuilder.AddChild (obj);
+			var item = (FolderBasedProject)dataObject;
 			treeBuilder.AddChild (new SystemFolder (item.BaseDirectory, item, false));
 		}
 
 		public override object GetParentObject (object dataObject)
 		{
-			var item = (SolutionItem)dataObject;
+			var item = (FolderBasedProject)dataObject;
 			return item.ParentObject;
 		}
 	}
 
-	public class SolutionItemCommandHandler : NodeCommandHandler
+	public class FolderBasedProjectCommandHandler : NodeCommandHandler
 	{
+		public override void ActivateItem ()
+		{
+			CurrentNode.Expanded = !CurrentNode.Expanded;
+		}
+
 		[CommandUpdateHandler (ProjectCommands.EditSolutionItem)]
 		public void OnEditProjectUpdate (CommandInfo info)
 		{
-			var item = (SolutionItem)CurrentNode.DataItem;
+			var item = (FolderBasedProject)CurrentNode.DataItem;
 			info.Visible = info.Enabled = !string.IsNullOrEmpty (item.FileName) && File.Exists (item.FileName);
 		}
 
 		[CommandHandler (ProjectCommands.EditSolutionItem)]
 		public void OnEditProject ()
 		{
-			var item = (SolutionItem)CurrentNode.DataItem;
+			var item = (FolderBasedProject)CurrentNode.DataItem;
 			IdeApp.Workbench.OpenDocument (item.FileName);
 		}
 	}

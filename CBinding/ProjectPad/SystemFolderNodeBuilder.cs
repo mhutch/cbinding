@@ -8,18 +8,14 @@ using Gtk;
 
 using MonoDevelop.Projects;
 using MonoDevelop.Core;
-using MonoDevelop.Core.Collections;
-using MonoDevelop.Core.Execution;
 using MonoDevelop.Ide.Commands;
 using MonoDevelop.Components;
 using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Dialogs;
 using MonoDevelop.Components.Commands;
 using MonoDevelop.Ide.Gui.Components;
 using MonoDevelop.Ide.Projects;
 using MonoDevelop.Ide.Gui.Pads.ProjectPad;
 using MonoDevelop.Ide;
-using MonoDevelop.Ide.Gui.Pads;
 
 namespace CBinding.ProjectPad
 {
@@ -52,7 +48,8 @@ namespace CBinding.ProjectPad
 
 		public override bool HasChildNodes (ITreeBuilder builder, object dataObject)
 		{
-			return true;
+			var folder = (SystemFolder)dataObject;
+			return Directory.GetFiles (folder.Path).Length > 0 || Directory.GetDirectories (folder.Path).Length > 0;
 		}
 
 		public override void BuildChildNodes (ITreeBuilder builder, object dataObject)
@@ -68,6 +65,12 @@ namespace CBinding.ProjectPad
 			foreach (string path in Directory.GetDirectories (folder.Path)) {
 				builder.AddChild (new SystemFolder (new FilePath (path), item, false));
 			}
+		}
+
+		public override object GetParentObject (object dataObject)
+		{
+			var folder = (SystemFolder)dataObject;
+			return new SystemFolder (folder.Path.ParentDirectory, folder.ParentWorkspaceObject, false);
 		}
 
 		public override string GetFolderPath (object dataObject)
@@ -136,6 +139,8 @@ namespace CBinding.ProjectPad
 			if (Directory.Exists (targetPath)) {
 				if (MessageService.Confirm (string.Format ("The directory '{0}' already exists. Do you want to delete it?\nThis will remove all its contents as well.", targetPath.FileName), AlertButton.Delete)) {
 					//TODO: Iterate over all files and overwrite them individually.
+					//var foundFiles = Directory.GetFiles (sourcePath, "*", SearchOption.AllDirectories);
+					//pass files relative to sourcePath combine it with targetPath
 					FileService.DeleteDirectory (targetPath);
 				} else {
 					return;
@@ -155,12 +160,11 @@ namespace CBinding.ProjectPad
 		{
 			string targetDirectory = GetPath (CurrentNode.DataItem);
 
-			if (dataObject is SystemFile) {
-				var file = (SystemFile)dataObject;
-
+			var systemFile = dataObject as SystemFile;
+			if (systemFile != null) {
 				switch (operation) {
 				case DragOperation.Move:
-					return targetDirectory != file.Path.ParentDirectory;
+					return targetDirectory != systemFile.Path.ParentDirectory;
 				case DragOperation.Copy:
 					return true;
 				default:
@@ -172,8 +176,9 @@ namespace CBinding.ProjectPad
 				return ((SystemFolder)dataObject).Path != targetDirectory || operation == DragOperation.Copy;
 			}
 
-			if (dataObject is Gtk.SelectionData) {
-				var data = (Gtk.SelectionData)dataObject;
+			var selectionData = dataObject as SelectionData;
+			if (selectionData != null) {
+				var data = selectionData;
 				if (data.Type == "text/uri-list")
 					return true;
 			}
@@ -193,13 +198,47 @@ namespace CBinding.ProjectPad
 
 		public override void OnMultipleNodeDrop (object [] dataObjects, DragOperation operation)
 		{
-			foreach (object obj in dataObjects)
-				OnNodeDrop (obj, operation);
+			var project = CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true) as FolderBasedProject;
+			var srcFiles = new List<FilePath> ();
+			var dstFiles = new List<FilePath> ();
+
+			foreach (object obj in dataObjects) {
+				var builder = Tree.BuilderContext.GetTreeBuilder (obj);
+				builder.MoveToParent ();
+				Tuple<FilePath, FilePath> t = NodeDrop (obj, operation);
+				srcFiles.Add (t.Item1);
+				dstFiles.Add (t.Item2);
+				builder.UpdateChildren ();
+				Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
+			}
+
+			if (operation == DragOperation.Move) {
+				project.OnFilesMoved (srcFiles, dstFiles);
+			} else if (operation == DragOperation.Copy) {
+				project.OnFilesCopied (srcFiles, dstFiles);
+			}
 		}
 
 		public override void OnNodeDrop (object dataObjects, DragOperation operation)
 		{
-			//TODO: add project specific On... calls e.g. (OnFileMoved, OnFileCopied...)
+			var project = CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true) as FolderBasedProject;
+			var builder = Tree.BuilderContext.GetTreeBuilder (dataObjects);
+			builder.MoveToParent ();
+			Tuple<FilePath, FilePath> t = NodeDrop (dataObjects, operation);
+			Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
+			builder.UpdateChildren ();
+
+			if (t != null) {
+				if (operation == DragOperation.Move) {
+					project.OnFileMoved (t.Item1, t.Item2);
+				} else {
+					project.OnFileCopied (t.Item1, t.Item2);
+				}
+			}
+		}
+
+		Tuple<FilePath, FilePath> NodeDrop (object dataObjects, DragOperation operation)
+		{
 			FilePath sourcePath = GetPath (dataObjects);
 			FilePath targetPath = GetPath (CurrentNode.DataItem);
 
@@ -227,7 +266,7 @@ namespace CBinding.ProjectPad
 				var noSave = new AlertButton (GettextCatalog.GetString ("Don't Save"));
 				AlertButton res = MessageService.AskQuestion (question, AlertButton.Cancel, noSave, AlertButton.Save);
 				if (res == AlertButton.Cancel)
-					return;
+					return null;
 				if (res == AlertButton.Save) {
 					try {
 						foreach (Document doc in filesToSave) {
@@ -235,32 +274,34 @@ namespace CBinding.ProjectPad
 						}
 					} catch (Exception ex) {
 						MessageService.ShowError (GettextCatalog.GetString ("Save operation failed."), ex);
-						return;
+						return null;
 					}
 				}
 			}
 
 			if (dataObjects is SystemFile) {
 				CopyFile (sourcePath, targetPath, operation == DragOperation.Move);
+				return Tuple.Create (sourcePath, targetPath);
 			} else if (dataObjects is SystemFolder) {
 				CopyDirectory (sourcePath, targetPath, operation == DragOperation.Move);
-			} else if (dataObjects is Gtk.SelectionData) {
+				return Tuple.Create (sourcePath, targetPath);
+			} else if (dataObjects is SelectionData) {
 				SelectionData data = (SelectionData)dataObjects;
 				if (data.Type != "text/uri-list")
-					return;
+					return null;
 				string sources = Encoding.UTF8.GetString (data.Data);
 				Console.WriteLine ("text/uri-list:\n{0}", sources);
 				string [] files = sources.Split (new string [] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
 				for (int n = 0; n < files.Length; n++) {
-					Uri uri = new Uri (files [n]);
+					var uri = new Uri (files [n]);
 					if (uri.Scheme != "file")
-						return;
+						return null;
 					if (Directory.Exists (uri.LocalPath))
-						return;
+						return null;
 					CopyFile (uri.LocalPath, targetPath, operation == DragOperation.Move);
 				}
 			}
-
+			return null;
 		}
 
 		[CommandUpdateHandler (ProjectCommands.AddFiles)]
@@ -276,14 +317,14 @@ namespace CBinding.ProjectPad
 		[CommandHandler (ProjectCommands.AddFiles)]
 		public void AddFilesToProject ()
 		{
-			var project = (SolutionItem)CurrentNode.GetParentDataItem (typeof (SolutionItem), true);
+			var project = (FolderBasedProject)CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true);
 			var targetRoot = ((FilePath)GetPath (CurrentNode.DataItem)).CanonicalPath;
 
-			AddFileDialog fdiag = new AddFileDialog (GettextCatalog.GetString ("Add files"));
+			var fdiag = new AddFileDialog (GettextCatalog.GetString ("Add files"));
 			fdiag.CurrentFolder = !PreviousFolderPath.IsNullOrEmpty ? PreviousFolderPath : targetRoot;
 			fdiag.SelectMultiple = true;
 			fdiag.TransientFor = IdeApp.Workbench.RootWindow;
-			fdiag.BuildActions = BuildAction.StandardActions; //replace with project.GetBuildActions();
+			fdiag.BuildActions = project.GetBuildActions ();
 
 			string overrideAction = null;
 
@@ -298,23 +339,27 @@ namespace CBinding.ProjectPad
 			FilePath baseDirectory = folder != null ? folder.Path : project.BaseDirectory;
 
 			foreach (var file in files) {
-				if (file.IsDirectory) {
-					CopyDirectory (file, baseDirectory);
-				} else {
-					CopyFile (file, baseDirectory);
-				}
+				CopyFile (file, baseDirectory);
 			}
+
+			project.OnFilesAdded (files.ToList ());
+			Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
 		}
 
 		[CommandHandler (ProjectCommands.AddNewFiles)]
 		public void AddNewFiles ()
 		{
 			//TODO: Implement this.
+
+			var project = (FolderBasedProject)CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true);
+
+			project.OnFileAdded (new FilePath ());
 		}
 
 		[CommandHandler (ProjectCommands.AddFilesFromFolder)]
 		public void AddFilesFromFolder ()
 		{
+			var project = (FolderBasedProject)CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true);
 			var targetRoot = ((FilePath)GetPath (CurrentNode.DataItem)).CanonicalPath;
 
 			var ofdlg = new SelectFolderDialog (GettextCatalog.GetString ("Import From Folder"))
@@ -349,13 +394,16 @@ namespace CBinding.ProjectPad
 				foreach (var file in srcFiles.ToArray ()) {
 					CopyFile (file, targetRoot);
 				}
+				project.OnFilesAdded (targetFiles.ToList ());
 			}
+
+			Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
 		}
 
 		[CommandHandler (ProjectCommands.AddExistingFolder)]
 		public void AddExistingFolder ()
 		{
-			var project = (SolutionItem)CurrentNode.GetParentDataItem (typeof (SolutionItem), true);
+			var project = (FolderBasedProject)CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true);
 			var selectedFolder = ((FilePath)GetPath (CurrentNode.DataItem)).CanonicalPath;
 
 			var ofdlg = new SelectFolderDialog (GettextCatalog.GetString ("Add Existing Folder"))
@@ -393,8 +441,10 @@ namespace CBinding.ProjectPad
 								CopyFile (srcFile, targetFile);
 						}
 					}
+					project.OnFilesAdded (targetFiles.ToList ());
 				}
 			}
+			Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
 		}
 
 		[CommandHandler (ProjectCommands.NewFolder)]
@@ -407,7 +457,8 @@ namespace CBinding.ProjectPad
 			int index = -1;
 
 			if (Directory.Exists (directoryName)) {
-				while (Directory.Exists (directoryName + (++index + 1))) ;
+				while (Directory.Exists (directoryName + (++index + 1))) {
+				}
 			}
 
 			if (index >= 0) {
@@ -417,23 +468,45 @@ namespace CBinding.ProjectPad
 			Directory.CreateDirectory (directoryName);
 
 			CurrentNode.Expanded = true;
-			Tree.AddNodeInsertCallback (new SystemFolder (directoryName, project, false), new TreeNodeCallback (OnFileInserted));
-		}
+			Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
 
-		void OnFileInserted (ITreeNavigator nav)
-		{
-			//FIXME: this doesn't work.
-			nav.Selected = true;
-			Tree.StartLabelEdit ();
+			//FIXME: use `Tree.StartLabelEdit ()`
 		}
 
 		public override void RenameItem (string newName)
 		{
-			if (string.IsNullOrWhiteSpace (newName))
-				return;
+			var file = CurrentNode.DataItem as SystemFolder;
 
-			var folder = (SystemFolder)CurrentNode.DataItem;
-			FileService.RenameDirectory (folder.Path, folder.Path.ParentDirectory + Path.DirectorySeparatorChar + newName);
+			string oldname = file.Path;
+			string newname = Path.Combine (Path.GetDirectoryName (oldname), newName);
+
+			if (newname != oldname) {
+				try {
+					if (!FileService.IsValidPath (newname)) {
+						MessageService.ShowWarning (GettextCatalog.GetString ("The name you have chosen contains illegal characters. Please choose a different name."));
+					} else if (File.Exists (newname) || Directory.Exists (newname)) {
+						MessageService.ShowWarning (GettextCatalog.GetString ("File or directory name is already in use. Please choose a different one."));
+					} else {
+						var oldFiles = Array.ConvertAll (
+							Directory.GetFiles (oldname, "*", SearchOption.AllDirectories), (input) => (FilePath)input).ToList ();
+						FileService.RenameDirectory (oldname, newname);
+						var newFiles = Array.ConvertAll (
+							Directory.GetFiles (newname, "*", SearchOption.AllDirectories), (input) => (FilePath)input).ToList ();
+
+						var tb = Tree.BuilderContext.GetTreeBuilder (CurrentNode);
+						tb.MoveToParent ();
+						tb.UpdateChildren ();
+
+						var project = CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true) as FolderBasedProject;
+						if (project == null) return;
+						project.OnFilesRenamed (oldFiles, newFiles);
+					}
+				} catch (ArgumentException) { // new file name with wildcard (*, ?) characters in it
+					MessageService.ShowWarning (GettextCatalog.GetString ("The name you have chosen contains illegal characters. Please choose a different name."));
+				} catch (IOException ex) {
+					MessageService.ShowError (GettextCatalog.GetString ("There was an error renaming the file."), ex);
+				}
+			}
 		}
 
 		public override void ActivateItem ()
@@ -441,16 +514,48 @@ namespace CBinding.ProjectPad
 			CurrentNode.Expanded = !CurrentNode.Expanded;
 		}
 
-		public override void DeleteItem ()
+		public override void DeleteMultipleItems ()
 		{
-			var folder = (SystemFolder)CurrentNode.DataItem;
-			FileService.DeleteDirectory (folder.Path);
+			var project = CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true) as FolderBasedProject;
+
+			if (CurrentNodes.Length == 1) {
+				var file = (SystemFolder)CurrentNodes [0].DataItem;
+				if (!MessageService.Confirm (GettextCatalog.GetString ("Are you sure you want to permanently delete the directory {0}?", file.Path), AlertButton.Delete))
+					return;
+			} else {
+				if (!MessageService.Confirm (GettextCatalog.GetString ("Are you sure you want to permanently delete all selected directories?"), AlertButton.Delete))
+					return;
+			}
+
+			var foundFiles = new List<FilePath> ();
+
+			foreach (SystemFolder folder in CurrentNodes.Select (n => (SystemFolder)n.DataItem)) {
+				try {
+					foundFiles = foundFiles.Concat (Array.ConvertAll (
+						Directory.GetFiles (folder.Path, "*", SearchOption.AllDirectories), (input) => (FilePath)input)).ToList ();
+					FileService.DeleteDirectory (folder.Path);
+				} catch (Exception ex) {
+					MessageService.ShowError (GettextCatalog.GetString ("The directory {0} could not be deleted", folder.Path), ex);
+				}
+			}
+
+			var tb = Tree.BuilderContext.GetTreeBuilder (CurrentNode);
+			tb.MoveToParent ();
+			tb.UpdateChildren ();
+
+			if (project == null) return;
+			project.OnFilesRemoved (foundFiles);
 		}
 
 		public override bool CanDeleteItem ()
 		{
+			var project = CurrentNode.GetParentDataItem (typeof (SolutionItem), true) as SolutionItem;
 			var folder = (SystemFolder)CurrentNode.DataItem;
-			return Directory.Exists (folder.Path);
+
+			if (project != null)
+				return folder.Path != project.BaseDirectory;
+
+			return true;
 		}
 	}
 }

@@ -188,8 +188,8 @@
     <Compile Include="ProjectPad\ProjectPackagesFolderNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
-	<Compile Include="ProjectPad\SolutionItemNodeBuilder.cs" />
-	<Compile Include="ProjectPad\CMakeTargetNodeBuilder.cs" />
+    <Compile Include="ProjectPad\FolderBasedProjectNodeBuilder.cs" />
+    <Compile Include="ProjectPad\CMakeTargetNodeBuilder.cs" />
     <Compile Include="Navigation\FunctionNodeBuilder.cs" />
     <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
     <Compile Include="Navigation\ClassNodeBuilder.cs" />
@@ -243,13 +243,18 @@
     <Compile Include="CMake\CMakeTarget.cs" />
     <Compile Include="CMake\CMakeCommand.cs" />
     <Compile Include="CMake\CMakeArgument.cs" />
-    <Compile Include="CMake\CMakeVariableParser.cs" />
     <Compile Include="CMake\CMakeProject.cs" />
     <Compile Include="CMake\CMakeWorkspaceObjectReader.cs" />
     <Compile Include="CMake\CMakeVariableManager.cs" />
     <Compile Include="ProjectPad\SystemFolder.cs" />
     <Compile Include="ProjectPad\SystemFolderNodeBuilder.cs" />
     <Compile Include="CMake\CMakeVariable.cs" />
+    <Compile Include="Project\FolderBasedProject.cs" />
+    <Compile Include="ProjectPad\SystemFileNodeBuilder.cs" />
+    <Compile Include="Gui\TargetPickerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.TargetPickerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.NewTargetDialog.cs" />
+    <Compile Include="Gui\NewTargetDialog.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Deployment" />

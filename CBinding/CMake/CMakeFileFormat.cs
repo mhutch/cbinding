@@ -90,6 +90,12 @@ namespace CBinding
 		static readonly Regex filePart = new Regex (filePartPattern, RegexOptions.Singleline);
 		static readonly Regex id = new Regex ("^[A-Za-z_][A-Za-z0-9_]*");
 
+		public CMakeVariableManager VariableManager {
+			get; private set;
+		}
+
+		readonly List<CMakeCommand> targetCommands = new List<CMakeCommand> ();
+
 		bool CheckSyntax ()
 		{
 			var checkText = lineComment.Replace (contentFile.Text + '\n', "\n");
@@ -156,12 +162,7 @@ namespace CBinding
 				break;
 			case "add_library":
 			case "add_executable":
-				CMakeTarget target = new CMakeTarget (command, this);
-
-				if (!target.IsAliasOrImported) {
-					Targets.Add (string.Format ("{0}:{1}", target.Name, commandMatch.Index), target);
-					target.PrintTarget ();
-				}
+				targetCommands.Add (command);
 				break;
 			case "add_subdirectory":
 				var temp = new FilePath (command.Arguments [0].ToString ());
@@ -200,8 +201,20 @@ namespace CBinding
 				} catch (Exception ex) {
 					throw new Exception (string.Format ("Exception: {0}\nFile: {1}", ex.Message, file));
 				}
-
 			}
+
+			VariableManager = new CMakeVariableManager (this);
+
+			foreach (CMakeCommand command in targetCommands) {
+				CMakeTarget target = new CMakeTarget (command, this);
+
+				if (!target.IsAliasOrImported) {
+					Targets.Add (string.Format ("{0}:{1}", target.Name, command.Offset), target);
+					target.PrintTarget ();
+				}
+			}
+
+			targetCommands.Clear ();
 
 			foreach (CMakeFileFormat f in Children.Values)
 				targets = targets.Concat (f.Targets).ToDictionary (x => x.Key, x => x.Value);
@@ -255,6 +268,9 @@ namespace CBinding
 				command.AddArgument (libraryType);
 
 			allCommands.Add (string.Format ("{0}:{1}{2}", commandName, "new", allCommands.Count), command);
+
+			SaveAll ();
+			Parse ();
 		}
 
 		public void NewVariable (string name, string value)
@@ -274,6 +290,8 @@ namespace CBinding
 					contentFile.Text += Environment.NewLine + command.Value.ToString ();
 				else if (command.Value.IsDirty)
 					contentFile.Text = contentFile.Text.Replace (command.Value.OldValue, command.Value.ToString ());
+				else if (command.Value.IsDeleted)
+					contentFile.Text = contentFile.Text.Replace (command.Value.OldValue, string.Empty);
 			}
 			contentFile.Save ();
 		}
@@ -283,6 +301,8 @@ namespace CBinding
 			Save ();
 			foreach (var file in Children)
 				file.Value.Save ();
+
+			Parse ();
 		}
 
 		public bool Rename (string oldName, string newName)
@@ -308,15 +328,7 @@ namespace CBinding
 			}).ToList ();
 
 			foreach (var command in commands) {
-				foreach (var file in command.Value.Files)
-					command.Value.RemoveFile (file.Key);
-
-				foreach (var c in allCommands) {
-					if (c.Value.Equals (command.Value.Command)) {
-						allCommands.Remove (c.Key);
-						break;
-					}
-				}
+				command.Value.Command.IsDeleted = true;
 				Targets.Remove (command.Key);
 			}
 		}

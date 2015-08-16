@@ -49,16 +49,9 @@ namespace CBinding
 		}
 		List<CMakeArgument> arguments = new List<CMakeArgument> ();
 
-		public bool IsNested {
-			get { return isNested; }
-			set { isNested = value; }
-		}
-		bool isNested;
-
-		public bool IsDirty {
-			get { return isDirty; }
-		}
-		bool isDirty;
+		public bool IsNested { get; set; }
+		public bool IsDirty { get; private set; }
+		public bool IsDeleted { get; set; }
 
 		public int Offset {
 			get {
@@ -74,12 +67,26 @@ namespace CBinding
 			}
 		}
 
+		public string ArgumentsString {
+			get {
+				if (IsDirty) {
+					if (Arguments.Count > 3)
+						return string.Join (Environment.NewLine + "\t\t", Arguments);
+					else return string.Join (" ", Arguments);
+				} else return argumentsString;
+			}
+			private set {
+				argumentsString = value;
+			}
+		}
+		string argumentsString;
+
 		public void AddArgument (string argument)
 		{
 			CMakeArgument arg = new CMakeArgument (argument);
 			if (!Arguments.Contains (arg)) {
 				Arguments.Add (arg);
-				isDirty = true;
+				IsDirty = true;
 			}
 		}
 
@@ -87,11 +94,11 @@ namespace CBinding
 		{
 			foreach (CMakeArgument arg in Arguments) {
 				if (arg.ToString () == argument) {
-					isDirty = true;
+					IsDirty = true;
 					return Arguments.Remove (arg);
 				} else {
 					if (arg.Remove (argument)) {
-						isDirty = true;
+						IsDirty = true;
 						return true;
 					}
 				}
@@ -103,7 +110,7 @@ namespace CBinding
 		{
 			foreach (var argument in Arguments) {
 				if (argument.Edit (oldArgument, newArgument)) {
-					isDirty = true;
+					IsDirty = true;
 					return true;
 				}
 			}
@@ -113,6 +120,8 @@ namespace CBinding
 		void ParseArguments ()
 		{
 			argumentsText = openingRegex.Replace (command.Value, "").TrimEnd (')').Trim ();
+
+			ArgumentsString = argumentsText;
 
 			if (argumentsText.Length == 0)
 				return;
@@ -130,6 +139,8 @@ namespace CBinding
 			if (Arguments.Count > 3)
 				return string.Format ("{0} ({1})", Name, string.Join (Environment.NewLine + "\t\t", Arguments));
 
+			if (IsDeleted) return string.Empty;
+
 			return string.Format ("{0} ({1})", Name, string.Join (" ", Arguments));
 		}
 
@@ -138,7 +149,8 @@ namespace CBinding
 			this.name = name;
 			this.command = command;
 			this.parent = parent;
-			ParseArguments ();
+			if (command != null)
+				ParseArguments ();
 		}
 	}
 }

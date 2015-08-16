@@ -54,10 +54,10 @@ namespace CBinding
 		bool isAliasOrImported = false;
 
 
-		public Dictionary<string, CMakeCommand> Files {
+		public List<FilePath> Files {
 			get { return files; }
 		}
-		Dictionary<string, CMakeCommand> files = new Dictionary<string, CMakeCommand> ();
+		readonly List<FilePath> files = new List<FilePath> ();
 
 		string name;
 		List<string> ignored = new List<string> () {
@@ -97,11 +97,6 @@ namespace CBinding
 
 		protected override IEnumerable<FilePath> OnGetItemFiles (bool includeReferencedFiles)
 		{
-			var files = new List<FilePath> ();
-			FilePath path = parent.File.ParentDirectory;
-			foreach (var file in Files) {
-				files.Add (path.Combine (file.Key));
-			}
 			return files;
 		}
 
@@ -129,7 +124,7 @@ namespace CBinding
 					type = Types.SharedLibrary;
 					return;
 				case "static":
-					type = Types.SharedLibrary;
+					type = Types.StaticLibrary;
 					return;
 				case "module":
 					type = Types.Module;
@@ -151,23 +146,23 @@ namespace CBinding
 			if (ignored.Contains (value, StringComparer.OrdinalIgnoreCase))
 				return;
 
-			if (!Files.ContainsKey (new FilePath (value)))
-				Files.Add (new FilePath (value), command);
+			var file = new FilePath (value);
+			if (!file.IsAbsolute)
+				file = parent.File.ParentDirectory.Combine (file);
+
+			if (!Files.Contains (file.CanonicalPath))
+				Files.Add (file.CanonicalPath);
 		}
 
 		void PopulateFiles ()
 		{
-			List<CMakeArgument> args = command.Arguments;
-			foreach (var arg in args) {
-				if (isAliasOrImported) return;
-				foreach (string val in arg.GetValues ()) {
-					if (!val.StartsWith ("${", StringComparison.Ordinal)) {
-						parseValue (val);
-						continue;
-					}
+			string args = command.ArgumentsString;
+			args = parent.VariableManager.ResolveString (command.ArgumentsString);
+			List<CMakeArgument> arguments = CMakeArgument.ArgumentsFromString (args);
 
-					var cmvp = new CMakeVariableParser (val, command, parent);
-					files = Files.Concat (cmvp.Values).ToDictionary (x => x.Key, x => x.Value);
+			foreach (var arg in arguments) {
+				foreach (var val in arg.GetValues ()) {
+					parseValue (val);
 				}
 			}
 		}
@@ -177,17 +172,85 @@ namespace CBinding
 			command.AddArgument (filename);
 		}
 
-		public bool RemoveFile (string filename)
+		public void RenameFiles (List<FilePath> oldnames, List<FilePath> newnames)
 		{
-			if (Files [filename].IsNested)
-				return Files [filename].RemoveArgument (filename);
+			var toRename = new List<Tuple<string, int, CMakeCommand>> ();
+			TraverseArguments (command, (a, c) => {
+				FilePath argfile = new FilePath (a);
+				if (!argfile.IsAbsolute) argfile = parent.File.ParentDirectory.Combine (argfile).CanonicalPath;
+				int i = oldnames.IndexOf (argfile);
+				if (i >= 0) {
+					toRename.Add (Tuple.Create (a, i, c));
+				}
+			});
 
-			return false;
+			foreach (var t in toRename) {
+				FilePath newname = !newnames [t.Item2].IsDirectory ? newnames [t.Item2] :
+													  newnames [t.Item2].Combine ("./" + oldnames [t.Item2].FileName);
+
+				newname = newname.CanonicalPath.ToRelative (parent.File.ParentDirectory);
+
+				LoggingService.LogDebug ("{0} -> {1}", t.Item1, newname);
+				t.Item3.EditArgument (t.Item1, newname);
+			}
 		}
 
-		public bool RenameFile (string oldName, string newName)
+		public void RemoveFile (string filename)
 		{
-			return Files [oldName].EditArgument (oldName, newName);
+			FilePath file = new FilePath (filename).CanonicalPath;
+			if (!file.IsAbsolute) file = parent.File.ParentDirectory.Combine (file).CanonicalPath;
+
+			TraverseArguments (command, (a, c) => {
+				FilePath argfile = new FilePath (a).CanonicalPath;
+				if (!argfile.IsAbsolute) argfile = parent.File.ParentDirectory.Combine (argfile).CanonicalPath;
+				if (file.Equals (argfile)) {
+					LoggingService.LogDebug ("Removing {0} from {1}", argfile, c.ToString ());
+					c.RemoveArgument (a);
+				}
+			});
+		}
+
+		public void RemoveFiles (List<FilePath> files)
+		{
+			var toRemove = new List<Tuple<string, CMakeCommand>> ();
+			TraverseArguments (command, (a, c) => {
+				FilePath argfile = new FilePath (a);
+				if (!argfile.IsAbsolute) argfile = parent.File.ParentDirectory.Combine (argfile).CanonicalPath;
+				if (files.Contains (argfile)) {
+					toRemove.Add (Tuple.Create (a, c));
+				}
+			});
+
+			foreach (var t in toRemove) {
+				t.Item2.RemoveArgument (t.Item1);
+			}
+		}
+
+		void TraverseArguments (CMakeCommand command, Action<string, CMakeCommand> callback, HashSet<CMakeCommand> commands = null)
+		{
+			CMakeVariableManager vm = parent.VariableManager;
+			if (commands == null)
+				commands = new HashSet<CMakeCommand> ();
+
+			if (commands.Contains (command))
+				return;
+
+			commands.Add (command);
+
+			foreach (var arg in command.Arguments) {
+				foreach (var val in arg.GetValues ()) {
+					if (vm.IsVariable (val)) {
+						CMakeVariable v = vm.GetVariable (val.Substring (2, val.Length - 3));
+						if (v == null) continue;
+
+						foreach (var c in v.Commands) {
+							TraverseArguments (c, callback, commands);
+						}
+					} else {
+						callback (val, command);
+					}
+				}
+			}
 		}
 
 		public bool Rename (string newName)
@@ -202,6 +265,15 @@ namespace CBinding
 		public void Save ()
 		{
 			parent.Save ();
+		}
+
+		public override string ToString ()
+		{
+			if (isAliasOrImported) {
+				return string.Format ("{0} ({1})", name, "Alias");
+			}
+
+			return string.Format ("{0} ({1})", name, type);
 		}
 
 		public void PrintTarget ()

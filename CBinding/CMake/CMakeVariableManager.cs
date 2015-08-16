@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -15,18 +16,49 @@ namespace CBinding
 			"filepath", "path", "string", "bool", "internal", "cache", "force", "parent_scope"
 		};
 		static readonly Regex variableRegex = new Regex (@"\$\{.*?\}", RegexOptions.Singleline);
+		static readonly Regex fullVariableRegex = new Regex (@"^\$\{.*?\}$", RegexOptions.Singleline);
+		static readonly Regex unquotedElement = new Regex (@"^[^\s\(\)\#\""\\]+$");
 
 		public bool Contains (string variableName)
 		{
 			return !string.IsNullOrEmpty (variableName) && variables.ContainsKey (variableName);
 		}
 
-		public string GetStringValueOf (string variabelName)
+		public bool IsValidUnquotedElement (string text)
 		{
-			if (Contains (variabelName)) {
-				return variables [variabelName].Value;
+			return unquotedElement.IsMatch (text);
+		}
+
+		public bool IsVariable (string text)
+		{
+			return fullVariableRegex.IsMatch (text);
+		}
+
+		public void TraverseVariables (Action<string, CMakeCommand> callback, HashSet<CMakeCommand> visited = null)
+		{
+			if (visited == null)
+				visited = new HashSet<CMakeCommand> ();
+
+			foreach (var command in parent.SetCommands) {
+
 			}
-			LoggingService.LogDebug ("Undefined variable: {0}", variabelName);
+		}
+
+		public CMakeVariable GetVariable (string variableName)
+		{
+			if (Contains (variableName))
+				return variables [variableName];
+
+			LoggingService.LogDebug ("Undefined variable: {0}", variableName);
+			return null;
+		}
+
+		public string GetStringValueOf (string variableName)
+		{
+			if (Contains (variableName)) {
+				return variables [variableName].Value;
+			}
+			LoggingService.LogDebug ("Undefined variable: {0}", variableName);
 			return string.Empty;
 		}
 
@@ -60,8 +92,10 @@ namespace CBinding
 			value = ResolveString (value);
 
 			if (Contains (variableName)) {
-				variables [variableName].Value = value;
-				variables [variableName].IsEditable = false;
+				CMakeVariable v = variables [variableName];
+				v.Value = value;
+				v.IsEditable = false;
+				v.Commands.Add (command);
 				return;
 			}
 
@@ -73,7 +107,7 @@ namespace CBinding
 			variables.Add (variableName, new CMakeVariable (variableName, value, isEditable, command));
 		}
 
-		void PropagetVariables ()
+		void PopulateVariables ()
 		{
 
 			// Initialize important cache/default variables.
@@ -119,7 +153,7 @@ namespace CBinding
 		public CMakeVariableManager (CMakeFileFormat file)
 		{
 			parent = file;
-			PropagetVariables ();
+			PopulateVariables ();
 		}
 	}
 }
