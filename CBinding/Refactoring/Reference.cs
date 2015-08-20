@@ -56,12 +56,12 @@ namespace CBinding.Refactoring
 
 		public int CompareTo (object obj)
 		{	
-			Reference other = (Reference)obj;
-			return FileName.Equals (other.FileName) ?
-				Offset.CompareTo (other.Offset) 
-					:
-				FileName.CompareTo (other.FileName);
-			}
+			var other = (Reference)obj;
+			var cmp = string.CompareOrdinal (FileName, other.FileName);
+			if (cmp == 0)
+				return Offset.CompareTo (other.Offset);
+			return cmp;
+		}
 
 		#endregion
 	}
