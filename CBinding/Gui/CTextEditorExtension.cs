@@ -30,30 +30,27 @@
 //
 
 using System;
-using System.Text;
-using System.Linq;
 using System.Collections.Generic;
-using MonoDevelop.Core;
-using MonoDevelop.Ide;
-using MonoDevelop.Ide.Gui;
-using MonoDevelop.Ide.Gui.Content;
-using MonoDevelop.Ide.CodeCompletion;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using MonoDevelop.Components;
 using MonoDevelop.Components.Commands;
-using MonoDevelop.Ide.TypeSystem;
+using MonoDevelop.Core;
+using MonoDevelop.Ide;
+using MonoDevelop.Ide.CodeCompletion;
+using MonoDevelop.Ide.Commands;
 using MonoDevelop.Ide.Editor;
 using MonoDevelop.Ide.Editor.Extension;
-using System.Threading.Tasks;
-using System.Threading;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Content;
+using MonoDevelop.Ide.TypeSystem;
 using ClangSharp;
-using System.Runtime.InteropServices;
-using MonoDevelop.Ide.Commands;
-using CBinding.Refactoring;
 using CBinding.Parser;
-using System.Text.RegularExpressions;
-using MonoDevelop.Ide.Gui.Dialogs;
-using Microsoft.CodeAnalysis;
-
+using CBinding.Refactoring;
 
 namespace CBinding
 {
@@ -293,10 +290,14 @@ namespace CBinding
 		/// <param name="token">Token.</param>
 		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
 		{
+			var project = (CProject)DocumentContext.Project;
+			if (project == null || !project.HasLibClang) {
+				return Task.FromResult ((ICompletionDataList)null);
+			}
+
 			return Task.Run(() => {
 				ICompletionDataList list = new CompletionDataList ();
 				if (ShouldCompleteOn (completionChar)) {
-					var project = (CProject)DocumentContext.Project;
 					unsavedFiles = project.UnsavedFiles.Get ();
 					bool fieldOrMethodMode = completionChar == '.' || completionChar == '>' ? true : false;
 					IntPtr pResults = project.ClangManager.CodeComplete (completionContext, unsavedFiles.ToArray (), DocumentContext.Name);
@@ -408,15 +409,15 @@ namespace CBinding
 			char completionChar,
 			CancellationToken token = default(CancellationToken))
 		{
-			return Task.Run (() => {
-				if (completionChar != '(' && completionChar != ',')
-					return (ParameterHintingResult) null;
+			if (completionChar != '(' && completionChar != ',')
+				return Task.FromResult ((ParameterHintingResult) null);
 
-				var project = (CProject)DocumentContext.Project;
+			var project = (CProject)DocumentContext.Project;
 
-				if (project == null)
-					return (ParameterHintingResult) null;
+			if (project == null || !project.HasLibClang)
+				return Task.FromResult ((ParameterHintingResult) null);
 			
+			return Task.Run (() => {
 				#region NEEDED_FOR_STARTOFFSET_:(
 
 				int inParenthesis = 0;

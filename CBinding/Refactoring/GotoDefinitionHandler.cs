@@ -58,13 +58,17 @@ namespace CBinding.Refactoring
 		protected override void Update (CommandInfo info)
 		{
 			var doc = IdeApp.Workbench.ActiveDocument;
-			var project = (CProject)doc.Project;
+			CProject project;
+			if (doc == null || (project = doc.Project as CProject) == null || !project.HasLibClang) {
+				info.Enabled = info.Visible = false;
+				return;
+			}
+
 			CXCursor cursor = project.ClangManager.GetCursor (doc.FileName, doc.Editor.CaretLocation);
 			CXCursor referredCursor = project.ClangManager.GetCursorReferenced (cursor);
 			CXCursor defCursor = project.ClangManager.GetCursorDefinition (referredCursor);
 			var loc = project.ClangManager.GetCursorLocation (defCursor);
-			info.Visible = (clang.Cursor_isNull (referredCursor) == 0 && loc.FileName != null);
-			info.Bypass = !info.Visible;
+			info.Enabled = info.Visible = (clang.Cursor_isNull (referredCursor) == 0 && loc.FileName != null);
 		}
 
 	}

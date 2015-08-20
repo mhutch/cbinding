@@ -30,6 +30,9 @@ namespace CBinding.Refactoring
 		public FindReferencesHandler (CProject proj, Document doc)
 		{
 			project = proj;
+			if (!proj.HasLibClang)
+				return;
+			
 			cursorReferenced = project.ClangManager.GetCursorReferenced(
 				project.ClangManager.GetCursor (
 					doc.FileName,
@@ -106,10 +109,10 @@ namespace CBinding.Refactoring
 		/// <param name="info">Info.</param>
 		public void Update (CommandInfo info)
 		{
-			if (clang.Cursor_isNull (cursorReferenced) == 0) {
-				info.Enabled = info.Visible = IsReferenceOrDeclaration (cursorReferenced);
-				info.Bypass = !info.Visible;
-			}
+			info.Enabled = info.Visible =
+				project.HasLibClang &&
+				clang.Cursor_isNull (cursorReferenced) == 0 &&
+				IsReferenceOrDeclaration (cursorReferenced);
 		}
 
 		/// <summary>

@@ -30,19 +30,18 @@
 //
 
 using System;
-using System.IO;
-using System.Xml;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml;
 using Mono.Addins;
 using MonoDevelop.Core;
 using MonoDevelop.Core.Execution;
-using MonoDevelop.Projects;
 using MonoDevelop.Core.Serialization;
 using MonoDevelop.Ide;
-using System.Threading.Tasks;
-using System.Threading;
-using CBinding.Parser;
+using MonoDevelop.Projects;
 
 namespace CBinding
 {
@@ -72,6 +71,8 @@ namespace CBinding
 		[ItemProperty ("OutputType", DefaultValue = CompileTarget.Exe)]
 		public CompileTarget target { get; set; }
 
+		public bool HasLibClang { get; private set; }
+
 		public CLangManager ClangManager { get; private set; }
 
 		public SymbolDatabaseMediator DB { get; private set; }
@@ -100,9 +101,15 @@ namespace CBinding
 		{
 			base.OnInitialize ();
 			packages.Project = this;
-			ClangManager = new CLangManager (this);
-			DB = new SymbolDatabaseMediator (this, ClangManager);
-			UnsavedFiles = new UnsavedFilesManager (this);
+			try {
+				ClangManager = new CLangManager (this);
+				DB = new SymbolDatabaseMediator (this, ClangManager);
+				UnsavedFiles = new UnsavedFilesManager (this);
+				HasLibClang = true;
+			} catch (DllNotFoundException ex) {
+				LoggingService.LogError ("Could not load libclang", ex);
+				HasLibClang = false;
+			}
 		}
 
 		/// <summary>

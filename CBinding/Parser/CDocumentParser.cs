@@ -41,11 +41,12 @@ namespace CBinding.Parser
 		
 		public override Task<ParsedDocument> Parse(ParseOptions options, CancellationToken cancellationToken)
 		{
+			var fileName = options.FileName;
+			var project = (CProject)options.Project;
+				if (project == null || !project.HasLibClang)
+					return Task.FromResult ((ParsedDocument)new DefaultParsedDocument (fileName));
+
 			return Task.Run (() => {
-				var fileName = options.FileName;
-				var project = (CProject)options.Project;
-				if (project == null)
-					return (ParsedDocument)new DefaultParsedDocument (fileName);
 				var doc = new CParsedDocument (project, fileName);
 				doc.Flags |= ParsedDocumentFlags.NonSerializable;
 				doc.ParseAndDiagnose (cancellationToken);

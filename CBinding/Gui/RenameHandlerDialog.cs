@@ -135,10 +135,10 @@ namespace CBinding
 		/// <param name="info">Info.</param>
 		public void Update (CommandInfo info)
 		{
-			if (clang.Cursor_isNull (cursorReferenced) == 0) {
-				info.Enabled = info.Visible = IsReferenceOrDeclaration (cursorReferenced);
-				info.Bypass = !info.Visible;
-			}
+			info.Enabled = info.Visible =
+				project.HasLibClang &&
+				clang.Cursor_isNull (cursorReferenced) == 0 &&
+				IsReferenceOrDeclaration (cursorReferenced);
 		}
 
 		/// <summary>
