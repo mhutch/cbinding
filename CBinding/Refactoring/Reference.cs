@@ -46,6 +46,12 @@ namespace CBinding.Refactoring
 				&& Length.Equals (other.Length);
 		}
 
+		public override int GetHashCode()
+		{
+			//assuming offset and length tend to be small relative to maxint
+			return Begin.FileName.GetHashCode () ^ Length ^ (Offset << 16);
+		}
+
 		#region IComparable implementation
 
 		public int CompareTo (object obj)
