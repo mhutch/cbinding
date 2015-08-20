@@ -144,13 +144,13 @@ namespace CBinding
 						case "C":
 							this.Language = Language.C;
 							break;
-						case "CPP":
+						case "C++":
 							this.Language = Language.CPP;
 							break;
-						case "Objective C":
+						case "Objective-C":
 							this.Language = Language.OBJC;
 							break;
-						case "Objective C++":
+						case "Objective-C++":
 							this.Language = Language.OBJCPP;
 							break;
 						}
@@ -191,7 +191,7 @@ namespace CBinding
 		/// </summary>
 		protected override string[] OnGetSupportedLanguages ()
 		{
-			return new string[] { "C", "CPP", "Objective C", "Objective C++" };
+			return new string[] { "C", "C++", "Objective-C", "Objective-C++" };
 		}
 
 		/// <summary>

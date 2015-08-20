@@ -10,8 +10,8 @@
 		<Category>other/misc/c</Category>
 		<Icon>md-project-console</Icon>
 		<Image id="md-console-project" />
-		<LanguageName>Objective C</LanguageName>
-		<_Description>Creates simple hello world Objective C project.</_Description>
+		<LanguageName>Objective-C</LanguageName>
+		<_Description>Creates simple Hello World Objective-C project.</_Description>
 		<DefaultFilename>ConsoleObjCProject</DefaultFilename>
 		<GroupId>md-project-console</GroupId>
 	</TemplateConfiguration>

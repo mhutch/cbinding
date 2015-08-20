@@ -10,7 +10,7 @@
 		<Category>other/misc/c</Category>
 		<Icon>md-project-library</Icon>
 		<Image id="md-library-project" />
-		<LanguageName>CPP</LanguageName>
+		<LanguageName>C++</LanguageName>
 		<_Description>Creates simple static library C++ project.</_Description>
 		<DefaultFilename>StaticLibraryCppProject</DefaultFilename>
 		<GroupId>md-static-library-project</GroupId>

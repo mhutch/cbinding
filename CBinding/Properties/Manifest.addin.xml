@@ -11,7 +11,7 @@
 	
 	<Extension path = "/MonoDevelop/Ide/FileFilters">
 		<FileFilter
-			id = "CPP"
+			id = "C++"
 			insertbefore = "AllFiles"
 			_label = "C++ Files"
 			extensions = "*.cpp,*.h,*.hpp,*.cxx,*.cc,*.hh,*.hxx"/>
@@ -21,14 +21,14 @@
 			_label = "C Files"
 			extensions = "*.c,*.h"/>
 		<FileFilter
-			id = "Objective C"
+			id = "Objective-C"
 			insertbefore = "AllFiles"
-			_label = "Objective C Files"
+			_label = "Objective-C Files"
 			extensions = "*.m,*.h"/>
 		<FileFilter
-			id = "Objective C++"
+			id = "Objective-C++"
 			insertbefore = "AllFiles"
-			_label = "Objective C++ Files"
+			_label = "Objective-C++ Files"
 			extensions = "*.mm,*.M,*.h"/>
 	</Extension>
 
@@ -91,19 +91,19 @@
 			blockCommentStartTag = "/*"
 			blockCommentEndTag = "*/" />
 		<LanguageBinding
-			id = "CPP"
+			id = "C++"
 			extensions = ".cpp,.cxx,.cc,.h,.hpp,.hh,.hxx"
 			singleLineCommentTag = "//"
 			blockCommentStartTag = "/*"
 			blockCommentEndTag = "*/" />
 		<LanguageBinding
-			id = "Objective C"
+			id = "Objective-C"
 			extensions = ".m,.h"
 			singleLineCommentTag = "//"
 			blockCommentStartTag = "/*"
 			blockCommentEndTag = "*/" />
 		<LanguageBinding
-			id = "Objective C++"
+			id = "Objective-C++"
 			extensions = ".mm,.M"
 			singleLineCommentTag = "//"
 			blockCommentStartTag = "/*"

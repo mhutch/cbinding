@@ -9,7 +9,7 @@
 		<_Name>Empty Project</_Name>
 		<Category>other/misc/c</Category>
 		<Icon>md-project</Icon>
-		<LanguageName>CPP</LanguageName>
+		<LanguageName>C++</LanguageName>
 		<_Description>Creates an empty C++ solution.</_Description>
 		<DefaultFilename>EmptyCppProject</DefaultFilename>
 		<GroupId>md-empty-project</GroupId>
