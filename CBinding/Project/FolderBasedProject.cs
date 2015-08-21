@@ -17,6 +17,11 @@ namespace CBinding
 			return BuildAction.StandardActions;
 		}
 
+		virtual public string [] OnGetSupportedLanguages ()
+		{
+			return new string [] { string.Empty };
+		}
+
 		virtual public void OnFileCopied (FilePath src, FilePath dst)
 		{
 		}

@@ -44,7 +44,7 @@
 		<FileTemplate id = "EmptyCppHeaderFile" resource = "EmptyCppHeaderFile.xft.xml"/>
 		<FileTemplate id = "EmptyObjCSourceFile" resource = "EmptyObjCSourceFile.xft.xml"/>
 		<FileTemplate id = "EmptyObjCppSourceFile" resource = "EmptyObjCppSourceFile.xft.xml"/>
-		<FileTemplate id = "EmptyCMakeFile" resource = "EmptyCMakeFile.xpt.xml"/>
+		<FileTemplate id = "EmptyCMakeListsFile" resource = "EmptyCMakeListsFile.xft.xml"/>
 	</Extension>
 
 	<Extension path = "/MonoDevelop/Ide/ProjectTemplates">

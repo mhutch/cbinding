@@ -81,6 +81,28 @@ namespace CBinding.ProjectPad
 
 	class SystemFolderCommandHandler : NodeCommandHandler
 	{
+		class TempProject : Project
+		{
+			FolderBasedProject project;
+
+			public TempProject (FolderBasedProject project)
+			{
+				Initialize (this);
+				FileName = Path.GetTempPath ();
+				this.project = project;
+			}
+
+			protected override string [] OnGetSupportedLanguages ()
+			{
+				return project.OnGetSupportedLanguages ();
+			}
+
+			protected override void OnGetTypeTags (HashSet<string> types)
+			{
+				types.Add (""); //Throws an exception otherwise.
+			}
+		}
+
 		static FilePath PreviousFolderPath {
 			get; set;
 		}
@@ -349,11 +371,13 @@ namespace CBinding.ProjectPad
 		[CommandHandler (ProjectCommands.AddNewFiles)]
 		public void AddNewFiles ()
 		{
-			//TODO: Implement this.
-
 			var project = (FolderBasedProject)CurrentNode.GetParentDataItem (typeof (FolderBasedProject), true);
 
-			project.OnFileAdded (new FilePath ());
+			var p = new TempProject (project);
+			IdeApp.ProjectOperations.CreateProjectFile (p, ((SystemFolder)CurrentNode.DataItem).Path);
+
+			if (p.Files.FirstOrDefault () != null)
+				project.OnFileAdded (p.Files.FirstOrDefault ().FilePath);
 		}
 
 		[CommandHandler (ProjectCommands.AddFilesFromFolder)]

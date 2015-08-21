@@ -78,6 +78,9 @@
     <EmbeddedResource Include="templates\EmptyObjCppSourceFile.xft.xml">
       <LogicalName>EmptyObjCppSourceFile.xft.xml</LogicalName>
     </EmbeddedResource>
+	<EmbeddedResource Include="templates\EmptyCMakeListsFile.xft.xml">
+      <LogicalName>EmptyCMakeListsFile.xft.xml</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="icons\union-private-16.png">
       <LogicalName>union-private-16.png</LogicalName>
     </EmbeddedResource>

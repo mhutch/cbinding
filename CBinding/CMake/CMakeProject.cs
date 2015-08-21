@@ -43,6 +43,9 @@ namespace CBinding
 		string name;
 		FilePath outputDirectory = new FilePath ("./bin");
 		CMakeFileFormat fileFormat;
+
+		static readonly string [] supportedLanguages = { "C", "CPP", "Objective C", "Objective C++" };
+
 		Regex extensions = new Regex (@"(\.c|\.c\+\+|\.cc|\.cpp|\.cxx|\.m|\.mm|\.h|\.hh|\.h\+\+|\.hm|\.hpp|\.hxx|\.in|\.txx)$",
 									  RegexOptions.IgnoreCase);
 
@@ -333,6 +336,11 @@ namespace CBinding
 					console.Dispose ();
 				}
 			});
+		}
+
+		public override string [] OnGetSupportedLanguages ()
+		{
+			return supportedLanguages;
 		}
 
 		protected override bool OnGetCanExecute (ExecutionContext context, ConfigurationSelector configuration)
