@@ -77,6 +77,9 @@
     <EmbeddedResource Include="templates\EmptyObjCppSourceFile.xft.xml">
       <LogicalName>EmptyObjCppSourceFile.xft.xml</LogicalName>
     </EmbeddedResource>
+	<EmbeddedResource Include="templates\EmptyCMakeListsFile.xft.xml">
+      <LogicalName>EmptyCMakeListsFile.xft.xml</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="icons\union-private-16.png">
       <LogicalName>union-private-16.png</LogicalName>
     </EmbeddedResource>
@@ -88,6 +91,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="icons\update.png">
       <LogicalName>update.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CMake\SyntaxHighlight.xml">
+      <LogicalName>CMake-Syntax</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
@@ -211,6 +217,27 @@
     <Compile Include="ProjectPad\ProjectPackagesFolderNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectPackageNodeBuilder.cs" />
     <Compile Include="ProjectPad\ProjectNodeExtension.cs" />
+    <Compile Include="ProjectPad\FolderBasedProjectNodeBuilder.cs" />
+    <Compile Include="ProjectPad\CMakeTargetNodeBuilder.cs" />
+    <Compile Include="Navigation\FunctionNodeBuilder.cs" />
+    <Compile Include="Navigation\GlobalsNodeBuilder.cs" />
+    <Compile Include="Navigation\ClassNodeBuilder.cs" />
+    <Compile Include="Navigation\LanguageItemCommandHandler.cs" />
+    <Compile Include="Navigation\StructureNodeBuilder.cs" />
+    <Compile Include="Navigation\MemberNodeBuilder.cs" />
+    <Compile Include="Navigation\VariableNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroNodeBuilder.cs" />
+    <Compile Include="Navigation\MacroDefinitionsNodeBuilder.cs" />
+    <Compile Include="Navigation\EnumerationNodeBuilder.cs" />
+    <Compile Include="Navigation\EnumeratorNodeBuilder.cs" />
+    <Compile Include="Navigation\UnionNodeBuilder.cs" />
+    <Compile Include="Navigation\TypedefNodeBuilder.cs" />
+    <Compile Include="Navigation\LanguageItemEventArgs.cs" />
+    <Compile Include="Navigation\ClassPadEventArgs.cs" />
+    <Compile Include="Parser\ProjectInformation.cs" />
+    <Compile Include="Parser\ProjectInformationManager.cs" />
+    <Compile Include="Parser\TagDatabaseManager.cs" />
+    <Compile Include="Parser\Tag.cs" />
     <Compile Include="Gui\CTextEditorExtension.cs" />
     <Compile Include="Gui\GeneralOptionsPanel.cs" />
     <Compile Include="gtk-gui\CBinding.GeneralOptionsPanel.cs" />
@@ -245,6 +272,25 @@
     <Compile Include="Project\UnsavedFile.cs" />
     <Compile Include="Parser\SymbolDatabaseMediator.cs" />
     <Compile Include="CLang\SerializationManager.cs" />
+    <Compile Include="Gui\DataWrapper.cs" />
+    <Compile Include="CMake\CMakeCompletionDataLists.cs" />
+    <Compile Include="CMake\CMakeTextEditorExtension.cs" />
+    <Compile Include="CMake\CMakeFileFormat.cs" />
+    <Compile Include="CMake\CMakeTarget.cs" />
+    <Compile Include="CMake\CMakeCommand.cs" />
+    <Compile Include="CMake\CMakeArgument.cs" />
+    <Compile Include="CMake\CMakeProject.cs" />
+    <Compile Include="CMake\CMakeWorkspaceObjectReader.cs" />
+    <Compile Include="CMake\CMakeVariableManager.cs" />
+    <Compile Include="ProjectPad\SystemFolder.cs" />
+    <Compile Include="ProjectPad\SystemFolderNodeBuilder.cs" />
+    <Compile Include="CMake\CMakeVariable.cs" />
+    <Compile Include="Project\FolderBasedProject.cs" />
+    <Compile Include="ProjectPad\SystemFileNodeBuilder.cs" />
+    <Compile Include="Gui\TargetPickerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.TargetPickerDialog.cs" />
+    <Compile Include="gtk-gui\CBinding.NewTargetDialog.cs" />
+    <Compile Include="Gui\NewTargetDialog.cs" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Refactoring" />

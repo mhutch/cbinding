@@ -8,7 +8,7 @@
 		<StockIcon stockid = "md-h-file" icon = "md-file-header" size="Menu" />
 		<StockIcon stockid = "md-cpp-file" icon = "md-file-source" size="Menu" />
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Ide/FileFilters">
 		<FileFilter
 			id = "C++"
@@ -30,6 +30,11 @@
 			insertbefore = "AllFiles"
 			_label = "Objective-C++ Files"
 			extensions = "*.mm,*.M,*.h"/>
+		<FileFilter
+			id = "CMake file"
+			insertbefore = "AllFiles"
+			_label = "CMake Files"
+			extensions = "CMakeLists.txt,*.cmake"/>
 	</Extension>
 
 	<Extension path = "/MonoDevelop/Ide/FileTemplates">
@@ -39,6 +44,7 @@
 		<FileTemplate id = "EmptyCppHeaderFile" resource = "EmptyCppHeaderFile.xft.xml"/>
 		<FileTemplate id = "EmptyObjCSourceFile" resource = "EmptyObjCSourceFile.xft.xml"/>
 		<FileTemplate id = "EmptyObjCppSourceFile" resource = "EmptyObjCppSourceFile.xft.xml"/>
+		<FileTemplate id = "EmptyCMakeListsFile" resource = "EmptyCMakeListsFile.xft.xml"/>
 	</Extension>
 
 	<Extension path = "/MonoDevelop/Ide/ProjectTemplates">
@@ -47,17 +53,17 @@
 		<ProjectTemplate id = "SharedLibraryCProject" resource = "SharedLibraryCProject.xpt.xml"/>
 		<ProjectTemplate id = "StaticLibraryCProject" resource = "StaticLibraryCProject.xpt.xml"/>
 		<ProjectTemplate id = "ConsoleCProject" resource = "ConsoleCProject.xpt.xml"/>
-		
+
 		<!-- C++ -->
 		<ProjectTemplate id = "EmptyCppProject" resource = "EmptyCppProject.xpt.xml"/>
 		<ProjectTemplate id = "SharedLibraryCppProject" resource = "SharedLibraryCppProject.xpt.xml"/>
 		<ProjectTemplate id = "StaticLibraryCppProject" resource = "StaticLibraryCppProject.xpt.xml"/>
 		<ProjectTemplate id = "ConsoleCppProject" resource = "ConsoleCppProject.xpt.xml"/>
-		
+
 		<!-- ObjC -->
 		<ProjectTemplate id = "ConsoleObjCProject" resource = "ConsoleObjCProject.xpt.xml"/>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Core/MimeTypes">
 		<MimeType id="text/x-csrc" icon="md-c-file" isText="true">
 			<File pattern="*.c" />
@@ -82,8 +88,12 @@
 			<File pattern="*.mm" />
 			<File pattern="*.M" />
 		</MimeType>
+		<MimeType id="text/x-cmake" icon="md-text-file-icon" isText="true">
+			<File pattern="CMakeLists.txt" />
+			<File pattern="*.cmake" />
+		</MimeType>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/ProjectModel/LanguageBindings">
 		<LanguageBinding
 			id = "C"
@@ -108,8 +118,18 @@
 			singleLineCommentTag = "//"
 			blockCommentStartTag = "/*"
 			blockCommentEndTag = "*/" />
+		<LanguageBinding
+			id = "CMake"
+			extensions = ".txt"
+			singleLineCommentTag = "#"
+			blockCommentStartTag = "#[["
+			blockCommentEndTag = "]]" />
 	</Extension>
-	
+
+	<Extension path = "/MonoDevelop/SourceEditor2/SyntaxModes">
+		<Templates resource="CMake-Syntax"/>
+	</Extension>
+
 	<Extension path = "/MonoDevelop/Ide/GlobalOptionsDialog/Projects">
 		<Section
 			id = "CBindingOptions"
@@ -134,24 +154,28 @@
 				class = "CBinding.OutputOptionsPanelBinding"/>
 		</Condition>
 	</Extension>
-	
+
 	<ExtensionPoint path = "/CBinding/Views/ProjectBrowser/ContextMenu/PackagesFolderNode" name = "Packages folder context menu">
 		<Description>Context menu for packages folder in the solution pad.</Description>
 		<ExtensionNodeSet id = "MonoDevelop.Components.Commands.ItemSet"/>
 	</ExtensionPoint>
-	
+
 	<ExtensionPoint path = "/CBinding/Views/ProjectBrowser/ContextMenu/PackageNode" name = "ProjectPackage context menu">
 		<Description>Context menu for a package in the solution pad.</Description>
 		<ExtensionNodeSet id = "MonoDevelop.Components.Commands.ItemSet"/>
 	</ExtensionPoint>
-	
+
 	<Extension path = "/MonoDevelop/Ide/Pads/ProjectPad">
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectReferencesExtension" class = "CBinding.ProjectPad.ProjectReferencesExtension"/>
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectNodeExtension" class = "CBinding.ProjectPad.ProjectNodeExtension"/>
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectPackagesFolderNodeBuilder" class = "CBinding.ProjectPad.ProjectPackagesFolderNodeBuilder"/>
 		<NodeBuilder id = "CBinding.ProjectPad.ProjectPackageNodeBuilder" class = "CBinding.ProjectPad.ProjectPackageNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.FolderBasedProjectNodeBuilder" class = "CBinding.ProjectPad.FolderBasedProjectNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.CMakeProjectNodeBuilder" class = "CBinding.ProjectPad.CMakeTargetNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.SystemFileNodeBuilder" class = "CBinding.ProjectPad.SystemFileNodeBuilder"/>
+		<NodeBuilder id = "CBinding.ProjectPad.SystemFolderNodeBuilder" class = "CBinding.ProjectPad.SystemFolderNodeBuilder"/>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Ide/Pads/ClassPad">
 		<NodeBuilder id = "CBinding.Navigation.ProjectNodeBuilderExtension" class = "CBinding.Navigation.ProjectNodeBuilderExtension"/>
 		<NodeBuilder id = "CBinding.Navigation.NamespaceNodeBuilder" class = "CBinding.Navigation.NamespaceNodeBuilder"/>
@@ -172,7 +196,7 @@
 		<NodeBuilder id = "CBinding.Navigation.UnionNodeBuilder" class = "CBinding.Navigation.UnionNodeBuilder"/>
 		<NodeBuilder id = "CBinding.Navigation.TypedefNodeBuilder" class = "CBinding.Navigation.TypedefNodeBuilder"/>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Ide/Commands">
 		<Category _name = "C/C++" id = "C/C++">
 			<Command id = "CBinding.CProjectCommands.AddPackage" _label = "Edit Packages..." />
@@ -180,25 +204,45 @@
 			<Command id = "CBinding.CProjectCommands.ShowPackageDetails" _label = "Details..." />
 		</Category>
 	</Extension>
-	
+
 	<Extension path = "/CBinding/Views/ProjectBrowser/ContextMenu/PackagesFolderNode">
 		<CommandItem id = "CBinding.CProjectCommands.AddPackage"/>
 		<CommandItem id = "MonoDevelop.Ide.Commands.EditCommands.Paste"/>
 	</Extension>
-	
+
+	<Extension path = "/MonoDevelop/Ide/ContextMenu/ProjectPad">
+		<Condition id="ItemType" value="FolderBasedProject">
+			<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.EditSolutionItem" />
+		</Condition>
+
+		<ItemSet id = "Add" _label = "_Add" autohide="True">
+			<Condition id="ItemType" value="CBinding.SystemFolder">
+				<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.AddNewFiles" />
+				<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.AddFiles" />
+			</Condition>
+			<Condition id="ItemType" value="CBinding.SystemFolder">
+				<SeparatorItem/>
+				<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.AddFilesFromFolder" />
+				<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.AddExistingFolder" />
+				<CommandItem id = "MonoDevelop.Ide.Commands.ProjectCommands.NewFolder" />
+			</Condition>
+		</ItemSet>
+	</Extension>
+
 	<Extension path = "/MonoDevelop/Ide/ContextMenu/ClassPad/Project">
 		<CommandItem id = "CBinding.CProjectCommands.UpdateClassPad"/>
 	</Extension>
-	
+
 	<Extension path = "/CBinding/Views/ProjectBrowser/ContextMenu/PackageNode">
 		<CommandItem id = "CBinding.CProjectCommands.ShowPackageDetails"/>
 		<SeparatorItem id = "Separator1" />
 		<CommandItem id = "MonoDevelop.Ide.Commands.EditCommands.Copy"/>
 		<CommandItem id = "MonoDevelop.Ide.Commands.EditCommands.Delete"/>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Ide/TextEditorExtensions">
 		<Class fileExtensions=".c,.cpp,.cxx,.cc,.h,.hpp,.hh,.hxx,.m,.mm,.M" class = "CBinding.CTextEditorExtension" />
+		<Class fileExtensions=".txt,.cmake" class = "CBinding.CMakeTextEditorExtension" />
 	</Extension>
 
 	<Extension path = "/MonoDevelop/ProjectModel/SerializableClasses">
@@ -210,26 +254,31 @@
 		<DataType class = "CBinding.ClangCXXCompiler"/>
 		<DataType class = "CBinding.Package"/>
 	</Extension>
-	
+
+	<Extension path = "/MonoDevelop/ProjectModel/WorkspaceObjectReaders">
+		<Class class = "CBinding.CMakeWorkspaceObjectReader" />
+	</Extension>
+
 <!-- Current Autotools AddIn is very .NET specific
 	<Module>
 		<Runtime>
 			<Import assembly = "CBinding.Autotools.dll"/>
 		</Runtime>
-		
+
 		<Dependencies>
 			<Addin id = "MonoDevelop.Autotools" version = "4.2.3"/>
 		</Dependencies>
-		
+
 		<Extension path = "/Autotools/SimpleSetups">
 			<Class class = "CBinding.Autotools.CAutotoolsSetup"/>
 		</Extension>
 	</Module>
 -->
-	
+
 	<Extension path = "/MonoDevelop/TypeSystem/Parser">
 		<Parser class="CBinding.Parser.CDocumentParser" mimeType = "text/x-csrc, text/x-chdr, text/x-c++src, text/x-c++hdr, text/x-objcsrc, text/x-objc++src" />
 	</Extension>
+
 	<Extension path = "/MonoDevelop/Ide/Commands">
 		<Command id = "CBinding.Refactoring.RefactoryCommands.GotoDefinition"
 	   		_label = "Go to definition"
@@ -251,7 +300,7 @@
 			<CommandItem id = "MonoDevelop.Ide.Commands.EditCommands.Rename" insertafter="MonoDevelop.SourceEditor.SourceEditorCommands.MarkerOperations" />
 		</Condition>
 	</Extension>
-	
+
 	<Extension path = "/MonoDevelop/Ide/CompletionCharacters">
 		<Complete language="C/C++" commitOnSpace="True" commitChars="{}[]().,:;+-*/%&amp;|^!~=&lt;&gt;?@#'&quot;\"/>
 	</Extension>

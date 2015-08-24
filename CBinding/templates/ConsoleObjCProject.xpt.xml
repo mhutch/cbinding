@@ -33,6 +33,11 @@ int main( int argc, const char *argv[] ) {
 	return 0;
 }
 ]]></File>
+				<File name = "CMakeLists.txt"><![CDATA[cmake_minimum_required (VERSION 3.0)
+project (${ProjectName} OBJC)
+
+add_executable (${ProjectName} main.m)
+include_directories ("${PROJECT_SOURCE_DIR}")]]></File>
 			</Files>
 		</Project>
 	</Combine>

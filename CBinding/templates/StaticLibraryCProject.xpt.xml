@@ -37,6 +37,11 @@
 
 /* Add function definitions here */
 ]]></File>
+				<File name = "CMakeLists.txt"><![CDATA[cmake_minimum_required (VERSION 3.0)
+project (${ProjectName} C)
+
+add_library (${ProjectName} STATIC main.c)
+include_directories ("${PROJECT_SOURCE_DIR}")]]></File>
 			</Files>
 		</Project>
 	</Combine>

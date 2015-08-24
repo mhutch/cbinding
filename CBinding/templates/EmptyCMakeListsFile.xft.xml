@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Template Originator="Elsayed Awdallah" Language="C" Created="08/21/2015" LastModified="08/21/2015">
+	<TemplateConfiguration>
+		<_Name>Empty CMakeLists.txt File</_Name>
+		<Icon>md-text-file-icon</Icon>
+		<_Category>General</_Category>
+		<LanguageName>C</LanguageName>
+		<_Description>Creates an empty CMakeLists.txt file.</_Description>
+		<DefaultFilename>CMakeLists</DefaultFilename>
+	</TemplateConfiguration>
+	<TemplateFiles>
+		<File DefaultExtension=".txt" />
+	</TemplateFiles>
+	<FileOptions />
+</Template>
