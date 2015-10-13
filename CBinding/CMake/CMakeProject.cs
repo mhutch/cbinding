@@ -44,7 +44,7 @@ namespace CBinding
 		FilePath outputDirectory = new FilePath ("./bin");
 		CMakeFileFormat fileFormat;
 
-		static readonly string [] supportedLanguages = { "C", "CPP", "Objective C", "Objective C++" };
+		static readonly string [] supportedLanguages = { "C", "C++", "Objective-C", "Objective-C++" };
 
 		Regex extensions = new Regex (@"(\.c|\.c\+\+|\.cc|\.cpp|\.cxx|\.m|\.mm|\.h|\.hh|\.h\+\+|\.hm|\.hpp|\.hxx|\.in|\.txx)$",
 									  RegexOptions.IgnoreCase);
