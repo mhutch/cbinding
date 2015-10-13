@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <stetic-interface>
   <configuration>
     <images-root-path>..</images-root-path>
@@ -2578,10 +2578,14 @@ Example:
       </widget>
     </child>
   </widget>
-  <widget class="Gtk.Dialog" id="CBinding.NewTargetDialog" design-size="400 181">
+  <widget class="Gtk.Dialog" id="CBinding.NewTargetDialog" design-size="407 149">
     <property name="MemberName" />
     <property name="Title">New Target</property>
     <property name="WindowPosition">Center</property>
+    <property name="BorderWidth">5</property>
+    <property name="Resizable">False</property>
+    <property name="DefaultWidth">410</property>
+    <property name="DefaultHeight">150</property>
     <property name="Buttons">2</property>
     <property name="HelpButton">False</property>
     <child internal-child="VBox">
@@ -2638,6 +2642,7 @@ Example:
                 <property name="MemberName" />
                 <property name="CanFocus">True</property>
                 <property name="IsEditable">True</property>
+                <property name="ActivatesDefault">True</property>
                 <property name="InvisibleChar">●</property>
               </widget>
               <packing>
@@ -2715,6 +2720,7 @@ Object</property>
           <widget class="Gtk.Button" id="buttonOk">
             <property name="MemberName" />
             <property name="CanDefault">True</property>
+            <property name="HasDefault">True</property>
             <property name="CanFocus">True</property>
             <property name="UseStock">True</property>
             <property name="Type">StockItem</property>
