@@ -88,7 +88,7 @@ namespace CBinding.ProjectPad
 			public TempProject (FolderBasedProject project)
 			{
 				Initialize (this);
-				FileName = Path.GetTempPath ();
+				FileName = Path.ChangeExtension (Path.GetTempFileName (), "mdproj");
 				this.project = project;
 			}
 
@@ -100,6 +100,12 @@ namespace CBinding.ProjectPad
 			protected override void OnGetTypeTags (HashSet<string> types)
 			{
 				types.Add (""); //Throws an exception otherwise.
+			}
+
+			protected override void OnDispose ()
+			{
+				if (File.Exists (FileName))
+					File.Delete (FileName);
 			}
 		}
 
@@ -376,8 +382,12 @@ namespace CBinding.ProjectPad
 			var p = new TempProject (project);
 			IdeApp.ProjectOperations.CreateProjectFile (p, ((SystemFolder)CurrentNode.DataItem).Path);
 
-			if (p.Files.FirstOrDefault () != null)
+			if (p.Files.FirstOrDefault () != null) {
 				project.OnFileAdded (p.Files.FirstOrDefault ().FilePath);
+				Tree.BuilderContext.GetTreeBuilder (CurrentNode).UpdateChildren ();
+			}
+
+			p.Dispose ();
 		}
 
 		[CommandHandler (ProjectCommands.AddFilesFromFolder)]
