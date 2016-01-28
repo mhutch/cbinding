@@ -1,0 +1,3 @@
+[submodule "external/libclang-binary"]
+	path = external/libclang-binary
+	url = git://github.com/mhutch/libclang-binary
