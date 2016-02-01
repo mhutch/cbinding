@@ -457,15 +457,11 @@ namespace CBinding
 		/// <summary>
 		/// Create an empty configuration for project. Must fill configuration after.
 		/// </summary>
-		/// <param name="name">Name.</param>
+		/// <param name="id">Name.</param>
 		/// <param name="kind">Kind.</param>
-		protected override SolutionItemConfiguration OnCreateConfiguration (string name, ConfigurationKind kind)
+		protected override SolutionItemConfiguration OnCreateConfiguration (string id, ConfigurationKind kind)
 		{
-			var conf = new CProjectConfiguration ();
-			
-			conf.Name = name;
-			
-			return conf;
+			return new CProjectConfiguration (id);
 		}
 
 		/// <summary>

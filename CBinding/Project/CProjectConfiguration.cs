@@ -67,6 +67,10 @@ namespace CBinding
 	// as some may require...
 	public class CProjectConfiguration : ProjectConfiguration
 	{
+		public CProjectConfiguration (string id) :base (id)
+		{
+		}
+
 		/// <summary>
 		/// The output name.
 		/// </summary>
@@ -202,10 +206,11 @@ namespace CBinding
 			}
 		}
 			
-		public override void CopyFrom (ItemConfiguration configuration)
+		protected override void OnCopyFrom (ItemConfiguration configuration, bool isRename)
 		{
-			base.CopyFrom (configuration);
-			CProjectConfiguration conf = (CProjectConfiguration)configuration;
+			base.OnCopyFrom (configuration, isRename);
+
+			var conf = (CProjectConfiguration)configuration;
 			
 			Output = conf.Output;
 			CompileTarget = conf.CompileTarget;

@@ -72,7 +72,8 @@ namespace CBinding
 				CXSourceRange range = clang.Cursor_getSpellingNameRange (cursor, 0, 0);
 				var reference = new Reference (project, cursor, range);
 
-				Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
+				//FIXME: don't block!
+				Document doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false).Result;
 				if (!references.Contains (reference)
 					//this check is needed because explicit namespace qualifiers, eg: "std" from std::toupper
 					//are also found when finding eg:toupper references, but has the same cursorkind as eg:"toupper"
@@ -89,7 +90,7 @@ namespace CBinding
 		/// </summary>
 		/// <param name="project">Project.</param>
 		/// <param name="cursor">Cursor.</param>
-		public void FindRefsAndRename (CProject project, CXCursor cursor)
+		public async void FindRefsAndRename (CProject project, CXCursor cursor)
 		{
 			try {
 				
@@ -103,7 +104,8 @@ namespace CBinding
 
 				foreach (var reference in references) {
 					try {
-						var doc = IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
+						//FIXME: do we actually need to open the documents?
+						var doc = await IdeApp.Workbench.OpenDocument (reference.FileName, project, false);
 						if(!offsets.ContainsKey (reference.FileName)) {
 							offsets.Add (reference.FileName, 0);
 							tmp.Add(reference.FileName, new StringBuilder(doc.Editor.Text));

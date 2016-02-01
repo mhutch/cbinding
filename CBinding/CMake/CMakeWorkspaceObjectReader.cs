@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 using MonoDevelop.Core;
 using MonoDevelop.Projects;
-using MonoDevelop.Projects.Formats.MSBuild;
+using MonoDevelop.Projects.MSBuild;
 
 namespace CBinding
 {
