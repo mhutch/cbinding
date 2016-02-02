@@ -717,7 +717,13 @@ namespace CBinding
 		/// 0 means no parameter entered
 		/// > 0 is the index of the parameter (1-based)
 		/// </returns>
-		public override int GetCurrentParameterIndex (int startOffset)
+		public override Task<int> GetCurrentParameterIndex (int startOffset, CancellationToken token = default (CancellationToken))
+		{
+			//FIXME make this async
+			return Task.FromResult (GetCurrentParameterIndex (startOffset));
+		}
+
+		int GetCurrentParameterIndex (int startOffset)
 		{
 			int cursor = CompletionWidget.CurrentCodeCompletionContext.TriggerOffset;
 			int i = startOffset;
