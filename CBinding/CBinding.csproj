@@ -121,6 +121,11 @@
     <None Include="Navigation\ClassTemplatePartialNodeBuilder.cs" />
     <None Include="Navigation\MemberFunctionNodeBuilder.cs" />
     <None Include="Navigation\FunctionTemplateNodeBuilder.cs" />
+    <None Include="..\external\libclang-binary\libclang.dylib">
+      <Link>libclang.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
