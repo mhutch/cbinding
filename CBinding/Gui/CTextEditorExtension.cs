@@ -281,14 +281,7 @@ namespace CBinding
 			}
 		}
 
-		/// <summary>
-		/// Handles the code completion async. Invoked automatically on every keypress.
-		/// </summary>
-		/// <returns>The code completion async.</returns>
-		/// <param name="completionContext">Completion context.</param>
-		/// <param name="completionChar">Completion char.</param>
-		/// <param name="token">Token.</param>
-		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, char completionChar, CancellationToken token = default(CancellationToken))
+		public override Task<ICompletionDataList> HandleCodeCompletionAsync (CodeCompletionContext completionContext, CompletionTriggerInfo triggerInfo, CancellationToken token = default (CancellationToken))
 		{
 			var project = (CProject)DocumentContext.Project;
 			if (project == null || !project.HasLibClang) {
@@ -296,6 +289,7 @@ namespace CBinding
 			}
 
 			return Task.Run(() => {
+				var completionChar = triggerInfo.TriggerCharacter ?? ' ';
 				ICompletionDataList list = new CompletionDataList ();
 				if (ShouldCompleteOn (completionChar)) {
 					unsavedFiles = project.UnsavedFiles.Get ();
@@ -345,16 +339,6 @@ namespace CBinding
 				uint priority = clang.getCompletionPriority (completionString.Pointer);
 				yield return new ClangCompletionUnit (resultItem, realstring, priority);
 			}
-		}
-
-		/// <summary>
-		/// Code completion command invoked on explicit code completion requests.
-		/// </summary>
-		/// <returns>The completion command.</returns>
-		/// <param name="completionContext">Completion context.</param>
-		public override Task<ICompletionDataList> CodeCompletionCommand (CodeCompletionContext completionContext)
-		{
-			return HandleCodeCompletionAsync (completionContext, ' ');
 		}
 
 		/// <summary>
